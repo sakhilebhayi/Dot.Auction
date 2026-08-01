@@ -12,14 +12,20 @@
                 {{ now()->format('l, F j Y') }} &nbsp;·&nbsp; Your auction activity at a glance
             </div>
         </div>
-        <a href="#" style="display:inline-flex;align-items:center;gap:0.5rem;border-radius:9999px;background:linear-gradient(135deg,#d97706,#92400e);padding:0.7rem 1.4rem;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:#fff;text-decoration:none;box-shadow:0 8px 24px rgba(217,119,6,0.35);transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-            <span class="material-symbols-rounded" style="font-size:18px;">add_circle</span>
-            List Auction
-        </a>
+        <div style="display:flex;gap:0.75rem;">
+            <a href="{{ route('auctions.index') }}" style="display:inline-flex;align-items:center;gap:0.5rem;border-radius:9999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);padding:0.7rem 1.4rem;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:#f4f4f5;text-decoration:none;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
+                <span class="material-symbols-rounded" style="font-size:18px;">storefront</span>
+                Browse Auctions
+            </a>
+            <a href="#" title="Seller listing management — coming soon" style="display:inline-flex;align-items:center;gap:0.5rem;border-radius:9999px;background:linear-gradient(135deg,#d97706,#92400e);padding:0.7rem 1.4rem;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:#fff;text-decoration:none;box-shadow:0 8px 24px rgba(217,119,6,0.35);transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                <span class="material-symbols-rounded" style="font-size:18px;">add_circle</span>
+                List Auction
+            </a>
+        </div>
     </div>
 
     {{-- ────────────────────────── KPI ROW ────────────────────────── --}}
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:2rem;">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1.25rem;margin-bottom:2rem;">
 
         {{-- Active Auctions --}}
         <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;">
@@ -90,7 +96,48 @@
             </div>
         </div>
 
+        {{-- Watchlist --}}
+        <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:0;right:0;width:80px;height:80px;border-radius:0 1rem 0 80px;background:rgba(56,189,248,0.08);"></div>
+            <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.9rem;">
+                <div style="width:36px;height:36px;border-radius:0.6rem;background:rgba(56,189,248,0.15);display:flex;align-items:center;justify-content:center;">
+                    <span class="material-symbols-rounded" style="font-size:20px;color:#38bdf8;">bookmark</span>
+                </div>
+                <span style="font-size:0.72rem;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:0.1em;">Watchlist</span>
+            </div>
+            <div style="font-family:'Syne',sans-serif;font-size:2.1rem;font-weight:800;color:#38bdf8;line-height:1;">
+                {{ $watchlistCount }}
+            </div>
+            <div style="font-size:0.7rem;color:#0ea5e9;margin-top:0.4rem;font-weight:600;">
+                Auctions you're watching
+            </div>
+        </div>
+
     </div>
+
+    {{-- ────────────────────────── ENDING SOON ────────────────────────── --}}
+    @if($endingSoon->count())
+    <div class="dot-card" style="margin-bottom:2rem;overflow:hidden;">
+        <div style="padding:1.4rem 1.6rem;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:700;color:#f4f4f5;">
+                <span class="material-symbols-rounded" style="font-size:16px;vertical-align:-3px;color:#f59e0b;">timer</span>
+                Ending Soon (next 24h)
+            </div>
+            <a href="{{ route('auctions.index', ['status' => 'active']) }}" style="font-size:0.72rem;font-weight:600;color:#d97706;text-decoration:none;">Browse all</a>
+        </div>
+        <div style="display:flex;flex-direction:column;">
+            @foreach($endingSoon as $lot)
+            <a href="{{ route('auctions.show', $lot) }}" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1.6rem;text-decoration:none;border-bottom:1px solid rgba(67,70,86,0.1);transition:background 0.15s;" onmouseover="this.style.background='rgba(217,119,6,0.04)'" onmouseout="this.style.background='transparent'">
+                <div>
+                    <div style="font-size:0.82rem;font-weight:600;color:#f4f4f5;font-family:'Syne',sans-serif;">{{ $lot->title }}</div>
+                    <div style="font-size:0.7rem;color:#71717a;margin-top:0.15rem;">{{ $lot->category->name ?? 'Uncategorized' }} · ends {{ $lot->ends_at->diffForHumans() }}</div>
+                </div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:700;color:#fcd34d;">R{{ number_format($lot->current_price, 2) }}</div>
+            </a>
+            @endforeach
+        </div>
+    </div>
+    @endif
 
     {{-- ────────────────────────── CATEGORIES ROW ────────────────────────── --}}
     @if($categories->count())
@@ -113,7 +160,7 @@
     <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;margin-bottom:2rem;overflow:hidden;">
         <div style="padding:1.4rem 1.6rem;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">
             <div style="font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:700;color:#f4f4f5;">Recent Auctions</div>
-            <a href="#" style="font-size:0.72rem;font-weight:600;color:#d97706;text-decoration:none;">View all</a>
+            <a href="{{ route('auctions.index') }}" style="font-size:0.72rem;font-weight:600;color:#d97706;text-decoration:none;">View all</a>
         </div>
 
         @if($recentAuctions->count())

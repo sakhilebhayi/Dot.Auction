@@ -11,6 +11,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -67,5 +68,29 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Auctions this user is watching (buyer-side interest tracking).
+     */
+    public function watchlist(): HasMany
+    {
+        return $this->hasMany(Watchlist::class);
+    }
+
+    /**
+     * Bids this user has placed as a bidder.
+     */
+    public function bids(): HasMany
+    {
+        return $this->hasMany(Bid::class, 'bidder_id');
+    }
+
+    /**
+     * Auctions this user is selling.
+     */
+    public function auctions(): HasMany
+    {
+        return $this->hasMany(Auction::class, 'seller_id');
     }
 }

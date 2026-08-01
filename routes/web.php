@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auctions\AuctionController;
 use App\Http\Controllers\Auth\EcosystemAuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,19 @@ Route::middleware([
         $categories = \App\Models\AuctionCategory::withCount([
             'auctions' => fn ($q) => $q->where('seller_id', $userId),
         ])->get();
-        return view('dashboard', compact('activeAuctions', 'totalAuctions', 'totalBids', 'recentAuctions', 'categories'));
+        $watchlistCount = \App\Models\Watchlist::where('user_id', $userId)->count();
+        $endingSoon = \App\Models\Auction::query()
+            ->endingSoon(24)
+            ->with('category')
+            ->orderBy('ends_at')
+            ->limit(5)
+            ->get();
+        return view('dashboard', compact(
+            'activeAuctions', 'totalAuctions', 'totalBids', 'recentAuctions',
+            'categories', 'watchlistCount', 'endingSoon'
+        ));
     })->name('dashboard');
+
+    Route::get('/auctions', [AuctionController::class, 'index'])->name('auctions.index');
+    Route::get('/auctions/{auction}', [AuctionController::class, 'show'])->name('auctions.show');
 });

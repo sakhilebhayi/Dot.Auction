@@ -5,6 +5,7 @@ namespace App\Livewire\Auctions;
 use App\Events\BidPlaced;
 use App\Models\Auction;
 use App\Models\Bid;
+use App\Notifications\OutbidNotification;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Validate;
@@ -83,6 +84,10 @@ class BidPanel extends Component
 
         $this->placing = true;
 
+        // Capture the previous leader before we overwrite is_winning, so we
+        // can notify them that they've been outbid.
+        $previousWinner = $this->auction->bids()->where('is_winning', true)->first();
+
         // Mark previous winning bid as not winning
         $this->auction->bids()->where('is_winning', true)->update(['is_winning' => false]);
 
@@ -98,6 +103,10 @@ class BidPanel extends Component
         $this->bidAmount = $this->auction->minimumBid();
 
         event(new BidPlaced($bid));
+
+        if ($previousWinner && $previousWinner->bidder_id !== $bid->bidder_id) {
+            $previousWinner->bidder?->notify(new OutbidNotification($bid));
+        }
 
         $this->success = 'Bid placed successfully!';
         $this->placing = false;

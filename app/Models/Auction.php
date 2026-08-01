@@ -45,6 +45,16 @@ class Auction extends Model
         return $this->hasOne(Bid::class)->where('is_winning', true);
     }
 
+    public function items(): HasMany
+    {
+        return $this->hasMany(AuctionItem::class);
+    }
+
+    public function watchlists(): HasMany
+    {
+        return $this->hasMany(Watchlist::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active'
@@ -54,5 +64,46 @@ class Auction extends Model
     public function minimumBid(): float
     {
         return (float) $this->current_price + (float) $this->bid_increment;
+    }
+
+    /**
+     * Whether the reserve has been met (or there is no reserve), without
+     * ever exposing the reserve amount itself. Per Dot.Brain's mechanism
+     * scoping rules (wiki.md §5), reserve prices are confidential — only
+     * met/not-met should ever be surfaced to a buyer, never the value.
+     */
+    public function reserveMet(): bool
+    {
+        if ($this->reserve_price === null) {
+            return true;
+        }
+
+        return (float) $this->current_price >= (float) $this->reserve_price;
+    }
+
+    /**
+     * Whether the given user is allowed to see this auction's raw reserve
+     * price (the seller only). Used by seller-facing views; buyer-facing
+     * views should call reserveMet() instead and never read reserve_price.
+     */
+    public function reserveVisibleTo(?User $user): bool
+    {
+        return $user !== null && $user->id === $this->seller_id;
+    }
+
+    public function endsWithin(int $hours): bool
+    {
+        return $this->isActive() && now()->addHours($hours)->greaterThanOrEqualTo($this->ends_at);
+    }
+
+    public function scopeBrowsable($query)
+    {
+        return $query->where('status', '!=', 'draft');
+    }
+
+    public function scopeEndingSoon($query, int $hours = 24)
+    {
+        return $query->where('status', 'active')
+            ->whereBetween('ends_at', [now(), now()->addHours($hours)]);
     }
 }

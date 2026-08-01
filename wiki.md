@@ -1,6 +1,6 @@
 ---
 title: Dot.Auction — Platform Wiki
-version: 0.2.0
+version: 0.3.0
 status: active
 owners: [Auction Platform Lead]
 platform-id: dot-auction
@@ -75,7 +75,7 @@ Nothing about an auction should publish until it settles (status reaches `ended`
 
 ## 6. Roadmap
 
-- [ ] Buyer-facing live bidding UI (Livewire component wired to the `BidPlaced` broadcast, beyond the current seller dashboard)
+- [x] Buyer-facing live bidding UI (platform-loop pass, 2026-08-01): `/auctions` marketplace and `/auctions/{auction}` detail page now render `App\Livewire\Auctions\BidPanel`, which previously had no Blade view at all. Search/filter by title, category, status. Watchlist toggle and an outbid notification (real, live-triggered — not scheduled) were added alongside it. See §8 Change Log for the full list.
 - [ ] Auto-bid execution (the `is_auto_bid` column exists on `bids`; no engine acts on it yet)
 - [ ] Auction settlement job: on `ends_at` passing, resolve winner, flip `status` to `ended`, and emit a settlement event
 - [ ] `auction.reserve.not_met` event when a lot ends below reserve
@@ -88,6 +88,7 @@ Nothing about an auction should publish until it settles (status reaches `ended`
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| 0.3.0 | 2026-08-01 | Auction Platform Lead | Platform-loop engineering pass: built the buyer-facing marketplace (`/auctions`, `/auctions/{auction}`) and gave `BidPanel` its missing Blade view; added `Watchlist`/`AuctionItem` Eloquent models (tables existed, no models did); added `AuctionPolicy` (draft-visibility + reserve-visibility gates) and baked reserve-price confidentiality into every buyer-facing view (`Auction::reserveMet()` only — raw `reserve_price` is never sent to a non-seller); added a watchlist toggle, a database-channel notification bell, and a real (not manually-dispatched) `OutbidNotification` fired from `BidPanel::placeBid()`; added dashboard widgets (watchlist count, ending-soon list); wired the real logo/favicons across nav, auth, and browser tab, removing unreferenced "Coming Soon" template leftovers (`index.html`, `styles.css`, stray logo PNGs/SVG); added Feature tests; brought README up to date with what's actually implemented. Auto-bid execution and the settlement job remain unbuilt — see §6. |
 | 0.2.0 | 2026-08-01 | Auction Platform Lead | Rewrote wiki from actual codebase (Laravel 12 / Livewire 3 / Reverb) instead of a blueprint framing — documented shipped schema, models, and the `BidPlaced` broadcast event; cross-referenced Dot.Brain's mechanism-scoping rules for future Knowledge Pack work |
 | 0.1.0 | 2026-08-01 | Auction Platform Lead | Initial placeholder wiki |
 
@@ -95,4 +96,4 @@ Nothing about an auction should publish until it settles (status reaches `ended`
 
 - Should auto-bid execution run as a queued job per new bid, or a scheduled sweep — affects fairness guarantees under concurrent bidding.
 - Where does the settlement job live: a Laravel scheduled command here, or a Dot.Billing-triggered webhook — affects who owns the "auction ended" moment of truth.
-- Reserve-price confidentiality (per Dot.Brain's gate: reserves publish only as met/not-met rates, never values) needs to be enforced in the Knowledge Pack publisher once it exists, not left to convention.
+- Reserve-price confidentiality (per Dot.Brain's gate: reserves publish only as met/not-met rates, never values) needs to be enforced in the Knowledge Pack publisher once it exists, not left to convention. As of this pass, it's enforced in the buyer-facing UI (`AuctionController@show` never reads `reserve_price`, only `reserveMet()`) — the Knowledge Pack publisher itself still doesn't exist.
