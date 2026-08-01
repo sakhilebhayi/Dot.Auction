@@ -25,6 +25,16 @@ class Auction extends Model
         'bid_increment'  => 'decimal:2',
     ];
 
+    /**
+     * Confidentiality was previously enforced only by convention (no Blade
+     * template happens to print reserve_price). $hidden makes it structural:
+     * blocked from array()/toJson()/wire: serialization regardless of future
+     * template changes. Direct PHP attribute access (Blade's
+     * $auction->reserve_price on the seller's own dashboard) is unaffected —
+     * $hidden only governs serialization, per Eloquent's documented behavior.
+     */
+    protected $hidden = ['reserve_price'];
+
     public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'seller_id');
