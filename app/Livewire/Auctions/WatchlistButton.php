@@ -22,12 +22,18 @@ class WatchlistButton extends Component
 
     public function toggle(): void
     {
-        $watchlist = Watchlist::where('user_id', auth()->id())
+        // `watchlists` has a composite primary key (user_id, auction_id) and no
+        // surrogate `id` column, so Eloquent's model-instance delete() (which
+        // keys off getKey()/`id`) silently deletes zero rows. Delete via the
+        // query builder, scoped to the same two columns, instead.
+        $exists = Watchlist::where('user_id', auth()->id())
             ->where('auction_id', $this->auction->id)
-            ->first();
+            ->exists();
 
-        if ($watchlist) {
-            $watchlist->delete();
+        if ($exists) {
+            Watchlist::where('user_id', auth()->id())
+                ->where('auction_id', $this->auction->id)
+                ->delete();
             $this->watching = false;
         } else {
             Watchlist::create([
