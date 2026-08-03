@@ -1,6 +1,6 @@
 ---
 title: Dot.Auction — Platform Wiki
-version: 0.3.0
+version: 0.4.0
 status: active
 owners: [Auction Platform Lead]
 platform-id: dot-auction
@@ -88,6 +88,7 @@ Nothing about an auction should publish until it settles (status reaches `ended`
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| 0.4.0 | 2026-08-03 | Sakhile Bhayi | `resources/views/welcome.blade.php` was still the unmodified default Laravel/Jetstream scaffold ("Let's get started", Documentation/Laracasts links) — no marketing content, no logo, no hero section existed to swap. Built a full custom marketing page from scratch, matching the structural pattern already piloted on `mines`/Dot.Mines (fixed nav + hero + features + how-it-works + platform/ecosystem + CTA + footer), with the real `public/images/logo.png` lockup in the nav and footer, and a real photographic hero background: a wooden-gavel-on-a-dark-surface photo by Sasun Bughdaryan (@sasun1990), unsplash.com/photos/wooden-gavel-resting-on-a-dark-surface-next-to-book-FaTLrG5-ViE, hotlinked via Unsplash's CDN (`images.unsplash.com/photo-1767972463877-b64ba4283cd0`) under a dark gradient overlay. Copy is drawn honestly from this wiki's own domain-entity, events, and roadmap sections (§3–§6) — real shipped features only (live Reverb bidding, reserve/buy-now pricing, seller dashboard, categories, watchlists, multi-item lots); no fabricated stats or testimonials. Verified the image URL resolves with `curl -sI` (HTTP/2 200) before committing. |
 | 0.3.0 | 2026-08-01 | Auction Platform Lead | Platform-loop engineering pass: built the buyer-facing marketplace (`/auctions`, `/auctions/{auction}`) and gave `BidPanel` its missing Blade view; added `Watchlist`/`AuctionItem` Eloquent models (tables existed, no models did); added `AuctionPolicy` (draft-visibility + reserve-visibility gates) and baked reserve-price confidentiality into every buyer-facing view (`Auction::reserveMet()` only — raw `reserve_price` is never sent to a non-seller); added a watchlist toggle, a database-channel notification bell, and a real (not manually-dispatched) `OutbidNotification` fired from `BidPanel::placeBid()`; added dashboard widgets (watchlist count, ending-soon list); wired the real logo/favicons across nav, auth, and browser tab, removing unreferenced "Coming Soon" template leftovers (`index.html`, `styles.css`, stray logo PNGs/SVG); added Feature tests; brought README up to date with what's actually implemented. Auto-bid execution and the settlement job remain unbuilt — see §6. |
 | 0.2.0 | 2026-08-01 | Auction Platform Lead | Rewrote wiki from actual codebase (Laravel 12 / Livewire 3 / Reverb) instead of a blueprint framing — documented shipped schema, models, and the `BidPlaced` broadcast event; cross-referenced Dot.Brain's mechanism-scoping rules for future Knowledge Pack work |
 | 0.1.0 | 2026-08-01 | Auction Platform Lead | Initial placeholder wiki |
