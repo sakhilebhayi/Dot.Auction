@@ -132,7 +132,7 @@
                 <div class="user-avatar">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>
                 <div style="min-width:0;flex:1;">
                     <div class="user-name">{{ Auth::user()->name }}</div>
-                    <div class="user-team">{{ Auth::user()->currentTeam->name ?? 'Personal' }}</div>
+                    <div class="user-team">{{ Auth::user()->currentTeam?->name ?? 'Personal' }}</div>
                 </div>
             </div>
         </div>
@@ -145,7 +145,7 @@
             @endisset
         </div>
         @auth
-        <span class="topbar-team">{{ Auth::user()->currentTeam->name ?? 'Personal' }}</span>
+        <span class="topbar-team">{{ Auth::user()->currentTeam?->name ?? 'Personal' }}</span>
         <livewire:notification-bell />
         @endauth
         <button
