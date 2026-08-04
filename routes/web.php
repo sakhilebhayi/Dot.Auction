@@ -25,7 +25,9 @@ Route::middleware([
         $categories = \App\Models\AuctionCategory::withCount([
             'auctions' => fn ($q) => $q->where('seller_id', $userId),
         ])->get();
-        $watchlistCount = \App\Models\Watchlist::where('user_id', $userId)->count();
+        // HasUserScope already restricts this query to the authenticated
+        // user's own watchlist rows.
+        $watchlistCount = \App\Models\Watchlist::count();
         $endingSoon = \App\Models\Auction::query()
             ->endingSoon(24)
             ->with('category')

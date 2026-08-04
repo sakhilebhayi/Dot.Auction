@@ -15,9 +15,9 @@ class WatchlistButton extends Component
     public function mount(Auction $auction): void
     {
         $this->auction  = $auction;
-        $this->watching = Watchlist::where('user_id', auth()->id())
-            ->where('auction_id', $auction->id)
-            ->exists();
+        // HasUserScope already restricts this query to the authenticated
+        // user's own rows, so no explicit where('user_id', ...) is needed.
+        $this->watching = Watchlist::where('auction_id', $auction->id)->exists();
     }
 
     public function toggle(): void
@@ -26,14 +26,12 @@ class WatchlistButton extends Component
         // surrogate `id` column, so Eloquent's model-instance delete() (which
         // keys off getKey()/`id`) silently deletes zero rows. Delete via the
         // query builder, scoped to the same two columns, instead.
-        $exists = Watchlist::where('user_id', auth()->id())
-            ->where('auction_id', $this->auction->id)
-            ->exists();
+        // HasUserScope already restricts these queries to the authenticated
+        // user's own rows.
+        $exists = Watchlist::where('auction_id', $this->auction->id)->exists();
 
         if ($exists) {
-            Watchlist::where('user_id', auth()->id())
-                ->where('auction_id', $this->auction->id)
-                ->delete();
+            Watchlist::where('auction_id', $this->auction->id)->delete();
             $this->watching = false;
         } else {
             Watchlist::create([

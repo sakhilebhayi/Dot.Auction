@@ -63,8 +63,9 @@ class AuctionController extends Controller
 
         $auction->load(['category', 'seller', 'items']);
 
-        $isWatching = auth()->check()
-            && $auction->watchlists()->where('user_id', auth()->id())->exists();
+        // HasUserScope already restricts this relation query to the
+        // authenticated user's own watchlist rows.
+        $isWatching = auth()->check() && $auction->watchlists()->exists();
 
         return view('auctions.show', [
             'auction'    => $auction,
