@@ -14,9 +14,7 @@ use Illuminate\Notifications\Notification;
  */
 class OutbidNotification extends Notification
 {
-    public function __construct(public Bid $newBid)
-    {
-    }
+    public function __construct(public Bid $newBid) {}
 
     /**
      * @return array<int, string>
@@ -34,11 +32,11 @@ class OutbidNotification extends Notification
         $auction = $this->newBid->auction;
 
         return [
-            'type'       => 'outbid',
-            'title'      => "You've been outbid",
-            'message'    => "Someone placed a higher bid on \"{$auction->title}\" — new price R" . number_format((float) $auction->current_price, 2) . '.',
+            'type' => 'outbid',
+            'title' => "You've been outbid",
+            'message' => "Someone placed a higher bid on \"{$auction->title}\" — new price R".number_format((float) $auction->current_price, 2).'.',
             'auction_id' => $auction->id,
-            'url'        => route('auctions.show', $auction),
+            'url' => route('auctions.show', $auction),
         ];
     }
 }

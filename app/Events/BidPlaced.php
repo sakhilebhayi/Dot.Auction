@@ -17,15 +17,15 @@ class BidPlaced implements ShouldBroadcast
 
     public function broadcastOn(): array
     {
-        return [new Channel('auction.' . $this->bid->auction_id)];
+        return [new Channel('auction.'.$this->bid->auction_id)];
     }
 
     public function broadcastWith(): array
     {
         return [
-            'auction_id'    => $this->bid->auction_id,
-            'amount'        => $this->bid->amount,
-            'bidder'        => $this->bid->bidder->name,
+            'auction_id' => $this->bid->auction_id,
+            'amount' => $this->bid->amount,
+            'bidder' => $this->bid->bidder->name,
             'current_price' => $this->bid->auction->current_price,
         ];
     }

@@ -46,17 +46,17 @@ class DashboardTest extends TestCase
 
     public function test_dashboard_shows_watchlist_count(): void
     {
-        $user    = User::factory()->withPersonalTeam()->create();
-        $seller  = User::factory()->create();
+        $user = User::factory()->withPersonalTeam()->create();
+        $seller = User::factory()->create();
         $auction = Auction::create([
-            'seller_id'      => $seller->id,
-            'title'          => 'Watched Lot',
+            'seller_id' => $seller->id,
+            'title' => 'Watched Lot',
             'starting_price' => 10,
-            'current_price'  => 10,
-            'bid_increment'  => 5,
-            'status'         => 'active',
-            'starts_at'      => now()->subHour(),
-            'ends_at'        => now()->addDay(),
+            'current_price' => 10,
+            'bid_increment' => 5,
+            'status' => 'active',
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addDay(),
         ]);
 
         Watchlist::create(['user_id' => $user->id, 'auction_id' => $auction->id]);
@@ -70,29 +70,29 @@ class DashboardTest extends TestCase
 
     public function test_dashboard_ending_soon_widget_lists_auctions_closing_within_24_hours(): void
     {
-        $user    = User::factory()->withPersonalTeam()->create();
-        $seller  = User::factory()->create();
+        $user = User::factory()->withPersonalTeam()->create();
+        $seller = User::factory()->create();
 
         Auction::create([
-            'seller_id'      => $seller->id,
-            'title'          => 'Closing Soon Lot',
+            'seller_id' => $seller->id,
+            'title' => 'Closing Soon Lot',
             'starting_price' => 10,
-            'current_price'  => 10,
-            'bid_increment'  => 5,
-            'status'         => 'active',
-            'starts_at'      => now()->subHour(),
-            'ends_at'        => now()->addHours(2),
+            'current_price' => 10,
+            'bid_increment' => 5,
+            'status' => 'active',
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addHours(2),
         ]);
 
         Auction::create([
-            'seller_id'      => $seller->id,
-            'title'          => 'Far Future Lot',
+            'seller_id' => $seller->id,
+            'title' => 'Far Future Lot',
             'starting_price' => 10,
-            'current_price'  => 10,
-            'bid_increment'  => 5,
-            'status'         => 'active',
-            'starts_at'      => now()->subHour(),
-            'ends_at'        => now()->addDays(10),
+            'current_price' => 10,
+            'bid_increment' => 5,
+            'status' => 'active',
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addDays(10),
         ]);
 
         $response = $this->actingAs($user)->get('/dashboard');

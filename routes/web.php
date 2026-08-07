@@ -2,10 +2,13 @@
 
 use App\Http\Controllers\Auctions\AuctionController;
 use App\Http\Controllers\Auth\EcosystemAuthController;
+use App\Models\Auction;
+use App\Models\AuctionCategory;
+use App\Models\Bid;
+use App\Models\Watchlist;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laravel\Jetstream\Jetstream;
-
 
 Route::get('/auth/ecosystem', [EcosystemAuthController::class, 'handle'])->name('ecosystem.auth');
 Route::get('/', function () {
@@ -39,23 +42,24 @@ Route::middleware([
         }
 
         $userId = auth()->id();
-        $activeAuctions = \App\Models\Auction::where('seller_id', $userId)->where('status', 'active')->count();
-        $totalAuctions  = \App\Models\Auction::where('seller_id', $userId)->count();
-        $totalBids      = \App\Models\Bid::whereHas('auction', fn ($q) => $q->where('seller_id', $userId))->count();
-        $recentAuctions = \App\Models\Auction::where('seller_id', $userId)
+        $activeAuctions = Auction::where('seller_id', $userId)->where('status', 'active')->count();
+        $totalAuctions = Auction::where('seller_id', $userId)->count();
+        $totalBids = Bid::whereHas('auction', fn ($q) => $q->where('seller_id', $userId))->count();
+        $recentAuctions = Auction::where('seller_id', $userId)
             ->with('category')->latest()->limit(8)->get();
-        $categories = \App\Models\AuctionCategory::withCount([
+        $categories = AuctionCategory::withCount([
             'auctions' => fn ($q) => $q->where('seller_id', $userId),
         ])->get();
         // HasUserScope already restricts this query to the authenticated
         // user's own watchlist rows.
-        $watchlistCount = \App\Models\Watchlist::count();
-        $endingSoon = \App\Models\Auction::query()
+        $watchlistCount = Watchlist::count();
+        $endingSoon = Auction::query()
             ->endingSoon(24)
             ->with('category')
             ->orderBy('ends_at')
             ->limit(5)
             ->get();
+
         return view('dashboard', compact(
             'activeAuctions', 'totalAuctions', 'totalBids', 'recentAuctions',
             'categories', 'watchlistCount', 'endingSoon'

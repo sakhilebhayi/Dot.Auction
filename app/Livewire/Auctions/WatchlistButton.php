@@ -4,6 +4,7 @@ namespace App\Livewire\Auctions;
 
 use App\Models\Auction;
 use App\Models\Watchlist;
+use Illuminate\View\View;
 use Livewire\Component;
 
 class WatchlistButton extends Component
@@ -14,7 +15,7 @@ class WatchlistButton extends Component
 
     public function mount(Auction $auction): void
     {
-        $this->auction  = $auction;
+        $this->auction = $auction;
         // HasUserScope already restricts this query to the authenticated
         // user's own rows, so no explicit where('user_id', ...) is needed.
         $this->watching = Watchlist::where('auction_id', $auction->id)->exists();
@@ -35,14 +36,14 @@ class WatchlistButton extends Component
             $this->watching = false;
         } else {
             Watchlist::create([
-                'user_id'    => auth()->id(),
+                'user_id' => auth()->id(),
                 'auction_id' => $this->auction->id,
             ]);
             $this->watching = true;
         }
     }
 
-    public function render(): \Illuminate\View\View
+    public function render(): View
     {
         return view('livewire.auctions.watchlist-button');
     }

@@ -27,22 +27,22 @@ class NotificationBellTest extends TestCase
 
     public function test_unread_count_reflects_database_notifications(): void
     {
-        $seller  = User::factory()->create();
-        $bidder  = User::factory()->withPersonalTeam()->create();
+        $seller = User::factory()->create();
+        $bidder = User::factory()->withPersonalTeam()->create();
         $auction = Auction::create([
-            'seller_id'      => $seller->id,
-            'title'          => 'Outbid Test Lot',
+            'seller_id' => $seller->id,
+            'title' => 'Outbid Test Lot',
             'starting_price' => 10,
-            'current_price'  => 30,
-            'bid_increment'  => 5,
-            'status'         => 'active',
-            'starts_at'      => now()->subHour(),
-            'ends_at'        => now()->addDay(),
+            'current_price' => 30,
+            'bid_increment' => 5,
+            'status' => 'active',
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addDay(),
         ]);
         $bid = Bid::create([
             'auction_id' => $auction->id,
-            'bidder_id'  => $bidder->id,
-            'amount'     => 30,
+            'bidder_id' => $bidder->id,
+            'amount' => 30,
             'is_winning' => true,
         ]);
 
@@ -62,22 +62,22 @@ class NotificationBellTest extends TestCase
 
     public function test_mark_all_as_read_clears_unread_count(): void
     {
-        $seller  = User::factory()->create();
-        $bidder  = User::factory()->withPersonalTeam()->create();
+        $seller = User::factory()->create();
+        $bidder = User::factory()->withPersonalTeam()->create();
         $auction = Auction::create([
-            'seller_id'      => $seller->id,
-            'title'          => 'Outbid Test Lot Two',
+            'seller_id' => $seller->id,
+            'title' => 'Outbid Test Lot Two',
             'starting_price' => 10,
-            'current_price'  => 30,
-            'bid_increment'  => 5,
-            'status'         => 'active',
-            'starts_at'      => now()->subHour(),
-            'ends_at'        => now()->addDay(),
+            'current_price' => 30,
+            'bid_increment' => 5,
+            'status' => 'active',
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addDay(),
         ]);
         $bid = Bid::create([
             'auction_id' => $auction->id,
-            'bidder_id'  => $bidder->id,
-            'amount'     => 30,
+            'bidder_id' => $bidder->id,
+            'amount' => 30,
             'is_winning' => true,
         ]);
 

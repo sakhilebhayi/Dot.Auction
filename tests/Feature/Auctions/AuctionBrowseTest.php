@@ -17,15 +17,15 @@ class AuctionBrowseTest extends TestCase
         $seller = User::factory()->create();
 
         return Auction::create(array_merge([
-            'seller_id'      => $seller->id,
-            'title'          => 'Vintage Camera',
-            'description'    => 'A well kept vintage camera.',
+            'seller_id' => $seller->id,
+            'title' => 'Vintage Camera',
+            'description' => 'A well kept vintage camera.',
             'starting_price' => 100,
-            'current_price'  => 100,
-            'bid_increment'  => 10,
-            'status'         => 'active',
-            'starts_at'      => now()->subHour(),
-            'ends_at'        => now()->addDay(),
+            'current_price' => 100,
+            'bid_increment' => 10,
+            'status' => 'active',
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addDay(),
         ], $overrides));
     }
 
@@ -74,7 +74,7 @@ class AuctionBrowseTest extends TestCase
     {
         $user = User::factory()->withPersonalTeam()->create();
         $electronics = AuctionCategory::create(['name' => 'Electronics', 'slug' => 'electronics']);
-        $furniture   = AuctionCategory::create(['name' => 'Furniture', 'slug' => 'furniture']);
+        $furniture = AuctionCategory::create(['name' => 'Furniture', 'slug' => 'furniture']);
 
         $this->makeAuction(['title' => 'Laptop Lot', 'category_id' => $electronics->id]);
         $this->makeAuction(['title' => 'Sofa Lot', 'category_id' => $furniture->id]);

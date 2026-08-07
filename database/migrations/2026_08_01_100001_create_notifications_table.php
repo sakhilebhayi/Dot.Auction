@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Schema;
  * and AuctionEndingSoonNotification are not yet auto-triggered — see
  * wiki.md §6 roadmap (no settlement job / scheduled sweep exists yet).
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('notifications', function (Blueprint $table) {

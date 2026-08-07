@@ -15,9 +15,7 @@ use Illuminate\Notifications\Notification;
  */
 class AuctionEndingSoonNotification extends Notification
 {
-    public function __construct(public Auction $auction)
-    {
-    }
+    public function __construct(public Auction $auction) {}
 
     /**
      * @return array<int, string>
@@ -33,11 +31,11 @@ class AuctionEndingSoonNotification extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
-            'type'       => 'auction_ending_soon',
-            'title'      => 'Auction ending soon',
-            'message'    => "\"{$this->auction->title}\" ends {$this->auction->ends_at->diffForHumans()}.",
+            'type' => 'auction_ending_soon',
+            'title' => 'Auction ending soon',
+            'message' => "\"{$this->auction->title}\" ends {$this->auction->ends_at->diffForHumans()}.",
             'auction_id' => $this->auction->id,
-            'url'        => route('auctions.show', $this->auction),
+            'url' => route('auctions.show', $this->auction),
         ];
     }
 }

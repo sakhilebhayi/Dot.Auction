@@ -6,6 +6,8 @@ use App\Events\BidPlaced;
 use App\Models\Auction;
 use App\Models\Bid;
 use App\Notifications\OutbidNotification;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Validate;
@@ -19,17 +21,19 @@ class BidPanel extends Component
     public float $bidAmount = 0;
 
     public bool $placing = false;
+
     public ?string $error = null;
+
     public ?string $success = null;
 
     public function mount(Auction $auction): void
     {
-        $this->auction   = $auction;
+        $this->auction = $auction;
         $this->bidAmount = $auction->minimumBid();
     }
 
     #[Computed]
-    public function recentBids(): \Illuminate\Database\Eloquent\Collection
+    public function recentBids(): Collection
     {
         return $this->auction->bids()->with('bidder')->limit(10)->get();
     }
@@ -44,12 +48,13 @@ class BidPanel extends Component
         $diff = now()->diff($this->auction->ends_at);
 
         if ($diff->days > 0) {
-            return $diff->days . 'd ' . $diff->h . 'h';
+            return $diff->days.'d '.$diff->h.'h';
         }
         if ($diff->h > 0) {
-            return $diff->h . 'h ' . $diff->i . 'm';
+            return $diff->h.'h '.$diff->i.'m';
         }
-        return $diff->i . 'm ' . $diff->s . 's';
+
+        return $diff->i.'m '.$diff->s.'s';
     }
 
     #[On('echo-public:auction.{auction.id},BidPlaced')]
@@ -63,22 +68,25 @@ class BidPanel extends Component
     public function placeBid(): void
     {
         $this->validate();
-        $this->error   = null;
+        $this->error = null;
         $this->success = null;
 
         if (! $this->auction->isActive()) {
             $this->error = 'This auction is no longer active.';
+
             return;
         }
 
         if (auth()->id() === $this->auction->seller_id) {
             $this->error = 'You cannot bid on your own auction.';
+
             return;
         }
 
         $minimum = $this->auction->minimumBid();
         if ($this->bidAmount < $minimum) {
-            $this->error = 'Minimum bid is R' . number_format($minimum, 2);
+            $this->error = 'Minimum bid is R'.number_format($minimum, 2);
+
             return;
         }
 
@@ -93,8 +101,8 @@ class BidPanel extends Component
 
         $bid = Bid::create([
             'auction_id' => $this->auction->id,
-            'bidder_id'  => auth()->id(),
-            'amount'     => $this->bidAmount,
+            'bidder_id' => auth()->id(),
+            'amount' => $this->bidAmount,
             'is_winning' => true,
         ]);
 
@@ -113,7 +121,7 @@ class BidPanel extends Component
         unset($this->recentBids);
     }
 
-    public function render(): \Illuminate\View\View
+    public function render(): View
     {
         return view('livewire.auctions.bid-panel');
     }

@@ -15,9 +15,7 @@ use Illuminate\Notifications\Notification;
  */
 class AuctionWonNotification extends Notification
 {
-    public function __construct(public Auction $auction)
-    {
-    }
+    public function __construct(public Auction $auction) {}
 
     /**
      * @return array<int, string>
@@ -33,11 +31,11 @@ class AuctionWonNotification extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
-            'type'       => 'auction_won',
-            'title'      => 'Auction won',
-            'message'    => "You won \"{$this->auction->title}\" for R" . number_format((float) $this->auction->current_price, 2) . '.',
+            'type' => 'auction_won',
+            'title' => 'Auction won',
+            'message' => "You won \"{$this->auction->title}\" for R".number_format((float) $this->auction->current_price, 2).'.',
             'auction_id' => $this->auction->id,
-            'url'        => route('auctions.show', $this->auction),
+            'url' => route('auctions.show', $this->auction),
         ];
     }
 }

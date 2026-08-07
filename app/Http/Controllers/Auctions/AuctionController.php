@@ -26,9 +26,9 @@ class AuctionController extends Controller
     {
         Gate::authorize('viewAny', Auction::class);
 
-        $search   = trim((string) $request->get('q', ''));
+        $search = trim((string) $request->get('q', ''));
         $category = $request->get('category');
-        $status   = $request->get('status');
+        $status = $request->get('status');
 
         $auctions = Auction::query()
             ->browsable()
@@ -44,11 +44,11 @@ class AuctionController extends Controller
         $categories = AuctionCategory::withCount('auctions')->orderBy('name')->get();
 
         return view('auctions.index', [
-            'auctions'   => $auctions,
+            'auctions' => $auctions,
             'categories' => $categories,
-            'search'     => $search,
-            'category'   => $category,
-            'status'     => $status,
+            'search' => $search,
+            'category' => $category,
+            'status' => $status,
         ]);
     }
 
@@ -68,7 +68,7 @@ class AuctionController extends Controller
         $isWatching = auth()->check() && $auction->watchlists()->exists();
 
         return view('auctions.show', [
-            'auction'    => $auction,
+            'auction' => $auction,
             'isWatching' => $isWatching,
         ]);
     }

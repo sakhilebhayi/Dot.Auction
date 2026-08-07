@@ -16,13 +16,13 @@ class Auction extends Model
     ];
 
     protected $casts = [
-        'starts_at'      => 'datetime',
-        'ends_at'        => 'datetime',
+        'starts_at' => 'datetime',
+        'ends_at' => 'datetime',
         'starting_price' => 'decimal:2',
-        'current_price'  => 'decimal:2',
-        'reserve_price'  => 'decimal:2',
-        'buy_now_price'  => 'decimal:2',
-        'bid_increment'  => 'decimal:2',
+        'current_price' => 'decimal:2',
+        'reserve_price' => 'decimal:2',
+        'buy_now_price' => 'decimal:2',
+        'bid_increment' => 'decimal:2',
     ];
 
     /**
