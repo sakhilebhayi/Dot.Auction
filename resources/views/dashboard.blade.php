@@ -115,6 +115,23 @@
 
     </div>
 
+    {{-- ────────────────────────── AWAITING YOUR DECISION ────────────────────────── --}}
+    @if($pendingReserveProposals->count())
+    <div class="dot-card" style="margin-bottom:2rem;overflow:hidden;">
+        <div style="padding:1.4rem 1.6rem;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <div style="font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:700;color:#f4f4f5;">
+                <span class="material-symbols-rounded" style="font-size:16px;vertical-align:-3px;color:#fcd34d;">gavel</span>
+                Awaiting Your Decision
+            </div>
+        </div>
+        <div style="display:flex;flex-direction:column;">
+            @foreach($pendingReserveProposals as $proposal)
+                <livewire:auctions.reserve-decision-panel :proposal="$proposal" :key="$proposal->id" />
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     {{-- ────────────────────────── ENDING SOON ────────────────────────── --}}
     @if($endingSoon->count())
     <div class="dot-card" style="margin-bottom:2rem;overflow:hidden;">

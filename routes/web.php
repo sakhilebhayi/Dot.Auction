@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\EcosystemAuthController;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
 use App\Models\Bid;
+use App\Models\ReserveNotMetProposal;
 use App\Models\Watchlist;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -59,10 +60,13 @@ Route::middleware([
             ->orderBy('ends_at')
             ->limit(5)
             ->get();
+        $pendingReserveProposals = ReserveNotMetProposal::whereHas(
+            'auction', fn ($q) => $q->where('seller_id', $userId)
+        )->where('status', 'pending')->with(['auction', 'bid.bidder'])->get();
 
         return view('dashboard', compact(
             'activeAuctions', 'totalAuctions', 'totalBids', 'recentAuctions',
-            'categories', 'watchlistCount', 'endingSoon'
+            'categories', 'watchlistCount', 'endingSoon', 'pendingReserveProposals'
         ));
     })->name('dashboard');
 
