@@ -1,0 +1,16 @@
+[Unit]
+Description=Dot.Auction Laravel Queue Worker
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+Restart=always
+# Database-backed queue (QUEUE_CONNECTION=database, see
+# .env.production.example) -- broadcast jobs (BidPlaced, OutbidNotification's
+# BroadcastMessage) and the auction:settle-ended scheduled sweep both flow
+# through this.
+ExecStart=/usr/bin/php /var/www/html/artisan queue:work database --sleep=3 --tries=3 --timeout=90
+
+[Install]
+WantedBy=multi-user.target

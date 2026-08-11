@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auctions\AuctionController;
 use App\Http\Controllers\Auth\EcosystemAuthController;
+use App\Http\Controllers\RealtimeHealthController;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
 use App\Models\Bid;
@@ -15,6 +16,11 @@ Route::get('/auth/ecosystem', [EcosystemAuthController::class, 'handle'])->name(
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Real-time infrastructure health check -- unauthenticated like Laravel's
+// own /up (bootstrap/app.php), for uptime monitors/load balancers.
+Route::get('/up/realtime', [RealtimeHealthController::class, 'check'])
+    ->name('health.realtime');
 
 // Cookie Policy — Jetstream's termsAndPrivacyPolicy feature covers terms.show/policy.show
 // natively. There's no Jetstream equivalent for a Cookie Policy, so this one is wired by hand,
