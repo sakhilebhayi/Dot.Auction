@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Bid;
+use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -11,6 +12,12 @@ use Illuminate\Notifications\Notification;
  * automatically from App\Livewire\Auctions\BidPanel::placeBid() — this is
  * a real, live-triggered event (no settlement job or scheduler required),
  * unlike AuctionWonNotification / AuctionEndingSoonNotification below.
+ *
+ * Also broadcasts over Reverb so NotificationBell.php updates live instead
+ * of only on page load -- see routes/channels.php for the
+ * App.Models.User.{id} channel this uses. Distinct from BidPlaced, which
+ * broadcasts publicly on auction.{id} for the bid panel itself; this is
+ * the private, per-bidder "you've been outbid" alert.
  */
 class OutbidNotification extends Notification
 {
@@ -21,7 +28,12 @@ class OutbidNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'broadcast'];
+    }
+
+    public function toBroadcast(object $notifiable): BroadcastMessage
+    {
+        return new BroadcastMessage($this->toDatabase($notifiable));
     }
 
     /**

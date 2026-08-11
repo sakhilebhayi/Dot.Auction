@@ -57,7 +57,21 @@ class BidPanel extends Component
         return $diff->i.'m '.$diff->s.'s';
     }
 
-    #[On('echo-public:auction.{auction.id},BidPlaced')]
+    /**
+     * Two bugs fixed here (verified against vendor/livewire/livewire's own
+     * source): "echo-public:" isn't a Livewire channel-type prefix at all
+     * -- the only public-channel form is "echo:" (Livewire auto-splices in
+     * "channel" as the type when it sees exactly that prefix); anything
+     * else silently hits its "channel type not yet supported" fallback
+     * and never subscribes. And "BidPlaced" needs to be
+     * BidPlaced::broadcastAs()'s actual wire name ("bid.placed") with a
+     * leading "." -- without the dot, Echo's default EventFormatter
+     * prefixes it to "App.Events.bid.placed", which never matches. See
+     * docs/DOT_REALTIME_STANDARD.md (Dot.Mines) §5. "{auction.id}" itself
+     * was already correct -- Livewire's placeholder interpolation uses
+     * data_get(), which supports dot-notation into a nested property.
+     */
+    #[On('echo:auction.{auction.id},.bid.placed')]
     public function refreshBids(array $data): void
     {
         $this->auction->refresh();

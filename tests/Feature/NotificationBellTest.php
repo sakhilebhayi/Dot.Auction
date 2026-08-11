@@ -89,4 +89,47 @@ class NotificationBellTest extends TestCase
 
         $this->assertEquals(0, $bidder->fresh()->unreadNotifications()->count());
     }
+
+    /**
+     * refresh() is what #[On('echo-notification:App.Models.User.{userId},
+     * notification')] calls when a BroadcastNotificationCreated event
+     * arrives over the socket -- it never receives the notification data
+     * itself, it just needs to bust the cached computed properties so the
+     * next render re-queries the database. This proves that hook actually
+     * picks up a notification created after the component already mounted
+     * (and cached an empty/stale result), which is exactly the live-update
+     * scenario the WebSocket listener exists for.
+     */
+    public function test_refresh_picks_up_a_notification_created_after_mount(): void
+    {
+        $seller = User::factory()->create();
+        $bidder = User::factory()->withPersonalTeam()->create();
+        $auction = Auction::create([
+            'seller_id' => $seller->id,
+            'title' => 'Outbid Test Lot Three',
+            'starting_price' => 10,
+            'current_price' => 30,
+            'bid_increment' => 5,
+            'status' => 'active',
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addDay(),
+        ]);
+        $bid = Bid::create([
+            'auction_id' => $auction->id,
+            'bidder_id' => $bidder->id,
+            'amount' => 30,
+            'is_winning' => true,
+        ]);
+
+        $component = Livewire::actingAs($bidder)->test(NotificationBell::class);
+        $component->assertSet('unreadCount', 0);
+
+        $bidder->notify(new OutbidNotification($bid));
+
+        $component->call('refresh')
+            ->call('toggle')
+            ->assertSee("You've been outbid");
+
+        $this->assertEquals(1, $bidder->fresh()->unreadNotifications()->count());
+    }
 }
