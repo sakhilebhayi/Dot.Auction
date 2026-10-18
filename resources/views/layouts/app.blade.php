@@ -157,7 +157,10 @@
         .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 
         /* Controls that exist only for the small-screen shell. Hidden at and above 860px. */
-        .shell-menu-btn, .shell-close, .shell-backdrop, .shell-account, .shell-mobile-only { display:none; }
+        .shell-menu-btn, .shell-close, .shell-backdrop, .shell-mobile-only { display:none; }
+        /* The stock Jetstream bar sits under the fixed top bar at every width (its team switcher and
+           Log out were unreachable); the same links now live in the sidebar. */
+        .shell-legacy-nav { display:none; }
         .table-scroll { position:relative; overflow-x:auto; -webkit-overflow-scrolling:touch; }
         .table-scroll:focus-visible { outline:2px solid #fcd34d; outline-offset:-2px; }
         .dot-kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:1.25rem; margin-bottom:2rem; }
@@ -205,7 +208,6 @@
             body.shell-open { overflow:hidden; }
             body.shell-open .sidebar { transform:none; visibility:visible; transition:transform .22s ease, visibility 0s; }
             body.shell-open .shell-backdrop { opacity:1; pointer-events:auto; }
-            .shell-legacy-nav { display:none; }
 
             .dot-page { padding:1.25rem 1rem 2rem; }
             .dot-head { margin-bottom:1.25rem; }

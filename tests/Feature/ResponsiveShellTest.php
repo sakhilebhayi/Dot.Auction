@@ -73,7 +73,7 @@ class ResponsiveShellTest extends TestCase
         $this->assertSame(1, $xpath->query('//meta[@name="viewport"][contains(@content,"width=device-width")]')->length);
     }
 
-    public function test_the_phone_drawer_carries_the_team_switcher_and_log_out_that_the_legacy_bar_hides(): void
+    public function test_the_sidebar_carries_the_team_switcher_and_log_out_at_every_width_and_the_legacy_bar_is_always_hidden(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
 
@@ -82,8 +82,11 @@ class ResponsiveShellTest extends TestCase
 
         $this->assertSame(1, $xpath->query('//aside[@id="shell-drawer"]//div[contains(@class,"shell-account")]//a[@href="'.route('teams.show', $user->currentTeam->id).'"]')->length);
         $this->assertSame(1, $xpath->query('//aside[@id="shell-drawer"]//form[@action="'.route('logout').'"]//button[@type="submit"]')->length);
-        // The legacy Jetstream bar is wrapped so the phone layout can hide it.
+        // The legacy Jetstream bar sits under the fixed top bar at every width, so it is hidden outright
+        // (not only under 860px) and its links live in the sidebar instead.
         $this->assertSame(1, $xpath->query('//div[contains(@class,"shell-legacy-nav")]/nav')->length);
+        $this->assertMatchesRegularExpression('/\.shell-legacy-nav\s*\{\s*display:\s*none;\s*\}/', $html);
+        $this->assertDoesNotMatchRegularExpression('/\.shell-menu-btn[^{]*\.shell-account[^{]*\{\s*display:\s*none/', $html, 'The account section is not hidden on desktop');
     }
 
     public function test_the_drawer_lists_every_team_to_switch_to_when_the_user_has_several(): void
