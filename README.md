@@ -140,6 +140,61 @@ third try, since a late email is not worth a growing queue). Retries and double 
 idempotency key, `"{event}:{auction id}:{sha1(recipient email)}:{bid id | settlement id}"`, so Notify
 collapses them.
 
+## Daily metrics to Dot.Analytics
+
+Once a day this app posts aggregate numbers, server to server, to Dot.Analytics
+(`POST {ANALYTICS_INGEST_URL}`, the full URL ending `/api/ingest/snapshots`). The request is signed
+exactly like the Dot.Notify one: HMAC-SHA256 over `"{timestamp}.{raw body}"` with
+`ANALYTICS_INGEST_SECRET`, headers `X-InfoDot-Timestamp` (unix seconds) and `X-InfoDot-Signature`
+(`sha256=<hex>`), computed when the request is sent, so a retry carries a fresh timestamp. The body is
+
+```json
+{"platform": "auction", "company_uuid": "<uuid>", "taken_at": "2026-11-05T00:00:00Z", "period": "day", "metrics": {"active": 0, "ended_7d": 0, "gmv_7d_cents": 0, "bids_7d": 0, "currency": "ZAR"}}
+```
+
+`auction:publish-metrics` collects and queues one `SendAnalyticsSnapshot` job per company. It takes
+`--company=<uuid>` (one company only) and `--dry-run` (collect and print, queue and send nothing).
+
+**What is sent: these keys and nothing else** (Dot.Analytics' metrics contract, `config/metrics.php`):
+
+| Key | Meaning |
+|---|---|
+| `active` | the company's sellers' auctions that are open right now (status `active`, between start and close) |
+| `ended_7d` | auctions with status `ended` whose closing time fell in the last 7 whole UTC days. Not reserve-not-met auctions still awaiting the seller's decision, not cancelled ones |
+| `gmv_7d_cents` | winning amounts of the settlements recorded in those 7 days, integer cents, in `AUCTION_CURRENCY_CODE` only (settlements in any other currency are never mixed in) |
+| `bids_7d` | every bid row (automatic proxy bids included) placed in those 7 days on those auctions |
+| `currency` | the ISO 4217 code (`AUCTION_CURRENCY_CODE`) of `gmv_7d_cents`. If that setting is not a three-letter code, `gmv_7d_cents` and `currency` are left out |
+
+Aggregates only: no names, emails, titles, descriptions, reserve prices, bidder or winner identities
+and no row ever appears in the body. A company with no activity sends true zeros (zero is a real count).
+
+**Which company:** auctions belong to their seller, a user, and Dot.Analytics wants a company, so
+the company is the InfoDot team (`infodot_team_uuid`) the seller currently belongs to: their current
+team's uuid, or their personal team's if the current team has none (the same rule the Dot.Notify
+client uses). Sellers of the same team are summed together. A seller with no `infodot_team_uuid`
+(not provisioned from InfoDot) is in no company and is **never published**; sellers with only drafts
+are skipped. A seller who switches teams is reported under the new team from then on; history already
+sent stays with the old one. There is no platform-wide snapshot: every number belongs to a
+company's own sellers, and no `ANALYTICS_COMPANY_UUID` exists here.
+
+**Windows are UTC.** `taken_at` is the start of the UTC day the command runs on, and the three "7d"
+numbers cover the seven whole UTC days before it, so a re-run on the same day describes the same
+snapshot and Dot.Analytics keeps the first one (replays are idempotent per company, platform,
+`taken_at` and period). `active` is read at collection time, shortly after 00:15 UTC.
+
+**What it takes for anything to be sent:** nothing is collected, queued or sent until
+`ANALYTICS_INGEST_URL` **and** `ANALYTICS_INGEST_SECRET` are both set. The secret is this app's
+`ANALYTICS_INGEST_SECRET_AUCTION` value in Dot.Analytics' `.env` (same value; `ANALYTICS_PLATFORM_KEY`
+is `auction`), and the company must be connected there. The **scheduler cron is required**
+(`* * * * * php artisan schedule:run`; the command runs daily at 00:15 UTC) and so is a **queue
+worker** (`php artisan queue:work`); with `QUEUE_CONNECTION=sync` the send happens inside the command.
+
+**Safety:** a Dot.Analytics outage or misconfiguration cannot affect this app. The send is a queued
+job, never part of a request; it has a 5 second HTTP timeout, 3 tries with 30 s and 120 s backoff,
+never throws, logs without secrets or numbers, and a cache-based circuit breaker pauses calls for 60
+seconds after 5 consecutive failures (separate from the Dot.Notify breaker). A refusal (401, 404, 422)
+is not retried. A collection or queueing error is logged and only ends that run of the command.
+
 ## 🚢 Deployment
 
 ### Production Checklist

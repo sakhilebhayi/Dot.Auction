@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\NotifyEndingSoonWatchers;
+use App\Console\Commands\PublishMetrics;
 use App\Console\Commands\SettleEndedAuctions;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -22,5 +23,15 @@ Schedule::command(SettleEndedAuctions::class)
 // cadence only decides how late a notice can be, never how many go out.
 Schedule::command(NotifyEndingSoonWatchers::class)
     ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// One signed aggregate snapshot per company to Dot.Analytics, just after the UTC day turns over.
+// taken_at is the start of that UTC day, so a re-run the same day is the same snapshot upstream.
+// Does nothing until ANALYTICS_INGEST_URL and ANALYTICS_INGEST_SECRET are set; needs the host's
+// one-minute scheduler cron and a queue worker.
+Schedule::command(PublishMetrics::class)
+    ->dailyAt('00:15')
+    ->timezone('UTC')
     ->withoutOverlapping()
     ->onOneServer();
