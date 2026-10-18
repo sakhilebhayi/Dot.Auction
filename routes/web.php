@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Auctions\AuctionController;
+use App\Http\Controllers\Auctions\AuctionImageController;
 use App\Http\Controllers\Auth\EcosystemAuthController;
 use App\Http\Controllers\RealtimeHealthController;
+use App\Http\Controllers\Seller\ImageController;
 use App\Http\Controllers\Seller\ListingController;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
@@ -80,6 +82,9 @@ Route::middleware([
 
     Route::get('/auctions', [AuctionController::class, 'index'])->name('auctions.index');
     Route::get('/auctions/{auction}', [AuctionController::class, 'show'])->name('auctions.show');
+    // Listing photos sit on a private disk; this is the only way to read one.
+    Route::get('/auctions/{auction}/images/{image}', [AuctionImageController::class, 'show'])
+        ->name('auctions.images.show')->scopeBindings();
 
     // Seller listing management. Policy checks live in the controller and
     // SaveListingRequest; bid-dependent rules in App\Services\Auctions\ListingManager.
@@ -92,5 +97,7 @@ Route::middleware([
         Route::post('/{auction}/publish', [ListingController::class, 'publish'])->name('publish');
         Route::post('/{auction}/cancel', [ListingController::class, 'cancel'])->name('cancel');
         Route::delete('/{auction}', [ListingController::class, 'destroy'])->name('destroy');
+        Route::post('/{auction}/images', [ImageController::class, 'store'])->name('images.store');
+        Route::delete('/{auction}/images/{image}', [ImageController::class, 'destroy'])->name('images.destroy')->scopeBindings();
     });
 });

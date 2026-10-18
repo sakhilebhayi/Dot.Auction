@@ -33,7 +33,7 @@ class AuctionController extends Controller
 
         $auctions = Auction::query()
             ->browsable()
-            ->with('category')
+            ->with(['category', 'images'])
             ->when($search !== '', fn ($q) => $q->where('title', 'like', "%{$search}%"))
             ->when($category, fn ($q) => $q->where('category_id', $category))
             ->when($status, fn ($q) => $q->where('status', $status))
@@ -62,7 +62,7 @@ class AuctionController extends Controller
     {
         Gate::authorize('view', $auction);
 
-        $auction->load(['category', 'seller', 'items']);
+        $auction->load(['category', 'seller', 'items', 'images']);
 
         // HasUserScope already restricts this relation query to the
         // authenticated user's own watchlist rows.

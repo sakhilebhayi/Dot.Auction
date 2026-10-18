@@ -9,8 +9,8 @@
             @foreach($errors->messages() as $field => $messages)
                 @foreach($messages as $message)
                     <li>
-                        @if(in_array($field, ['title','description','category_id','starting_price','reserve_price','buy_now_price','bid_increment','starts_at','ends_at','images'], true))
-                            <a href="#{{ $field }}">{{ $message }}</a>
+                        @if(in_array($field, ['title','description','category_id','starting_price','reserve_price','buy_now_price','bid_increment','starts_at','ends_at'], true) || str_starts_with($field, 'images'))
+                            <a href="#{{ str_starts_with($field, 'images') ? 'images' : $field }}">{{ $message }}</a>
                         @else
                             {{ $message }}
                         @endif

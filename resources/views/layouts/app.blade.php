@@ -140,6 +140,7 @@
         .dot-actions { display:flex; gap:0.4rem; flex-wrap:wrap; }
         .dot-actions form { margin:0; }
         .dot-gallery-main { display:block; width:100%; max-height:420px; object-fit:contain; background:#0d0d10; border-radius:10px; border:1px solid rgba(255,255,255,0.07); }
+        .dot-cover { display:block; width:100%; aspect-ratio:16/10; object-fit:cover; border-radius:8px; margin-bottom:0.75rem; background:#0d0d10; }
         .dot-thumbs { display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.6rem; }
         .dot-thumbs a { display:block; border-radius:8px; border:1px solid rgba(255,255,255,0.1); overflow:hidden; }
         .dot-thumbs img { display:block; width:72px; height:72px; object-fit:cover; }

@@ -37,6 +37,9 @@
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.1rem;margin-bottom:2rem;">
         @foreach($auctions as $auction)
         <a href="{{ route('auctions.show', $auction) }}" class="dot-card" style="display:block;padding:1.25rem;text-decoration:none;transition:border-color .15s;">
+            @if($auction->images->isNotEmpty())
+            <img class="dot-cover" src="{{ $auction->images->first()->url() }}" alt="" loading="lazy">
+            @endif
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
                 @if($auction->category)
                 <span style="font-size:0.68rem;padding:0.2rem 0.55rem;border-radius:9999px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.2);color:#a5b4fc;font-weight:600;">

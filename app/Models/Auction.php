@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class Auction extends Model
 {
@@ -40,6 +42,30 @@ class Auction extends Model
      * $hidden only governs serialization, per Eloquent's documented behavior.
      */
     protected $hidden = ['reserve_price'];
+
+    /**
+     * Files to remove once a delete commits. The image rows go with the
+     * auction through the database cascade, which fires no model events, so
+     * the paths are captured just before the delete.
+     *
+     * @var array<int, string>
+     */
+    protected array $imagePathsToRemove = [];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Auction $auction): void {
+            $auction->imagePathsToRemove = $auction->images()->pluck('path')->all();
+        });
+
+        static::deleted(function (Auction $auction): void {
+            $paths = $auction->imagePathsToRemove;
+
+            if ($paths !== []) {
+                DB::afterCommit(fn () => Storage::disk(AuctionImage::DISK)->delete($paths));
+            }
+        });
+    }
 
     /**
      * @return BelongsTo<User, $this>
@@ -76,6 +102,16 @@ class Auction extends Model
     public function items(): HasMany
     {
         return $this->hasMany(AuctionItem::class);
+    }
+
+    /**
+     * Photos in display order; the first is the cover.
+     *
+     * @return HasMany<AuctionImage, $this>
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(AuctionImage::class)->orderBy('position')->orderBy('id');
     }
 
     public function watchlists(): HasMany

@@ -83,7 +83,7 @@ return [
         'max_kilobytes' => (int) env('AUCTION_IMAGE_MAX_KB', 4096),
         // Reject anything that would decode to more pixels than this, so a
         // tiny file cannot expand into a memory-exhausting bitmap.
-        'max_pixels' => (int) env('AUCTION_IMAGE_MAX_PIXELS', 40000000),
+        'max_pixels' => (int) env('AUCTION_IMAGE_MAX_PIXELS', 16000000),
     ],
 
 ];

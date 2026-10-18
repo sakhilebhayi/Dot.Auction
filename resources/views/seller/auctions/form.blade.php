@@ -112,6 +112,59 @@
         </div>
     </form>
 
+    <section class="dot-panel" style="margin-bottom:1.5rem;" aria-labelledby="photos-heading">
+        <div class="dot-panel-head">
+            <h2 class="dot-section-title" id="photos-heading">Photos</h2>
+            @if($editing)
+                <span class="dot-help" style="margin:0;">{{ $auction->images->count() }} of {{ $maxImages }}</span>
+            @endif
+        </div>
+        <div class="dot-panel-body">
+            @if(! $editing)
+                <p class="dot-help" style="margin:0;">You can add up to {{ $maxImages }} photos after you save the draft.</p>
+            @else
+                @if($auction->images->isNotEmpty())
+                    <ul class="dot-image-grid" style="list-style:none;margin:0 0 1.25rem;padding:0;">
+                        @foreach($auction->images as $image)
+                            <li class="dot-image-cell">
+                                <img src="{{ $image->url() }}" width="{{ $image->width }}" height="{{ $image->height }}" loading="lazy"
+                                     alt="{{ $auction->title }}, photo {{ $loop->iteration }} of {{ $loop->count }}">
+                                <form method="POST" action="{{ route('seller.auctions.images.destroy', [$auction, $image]) }}">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="dot-btn dot-btn-danger dot-btn-small" aria-label="Remove photo {{ $loop->iteration }}">Remove photo {{ $loop->iteration }}</button>
+                                </form>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                @if($auction->images->count() < $maxImages)
+                    <form method="POST" action="{{ route('seller.auctions.images.store', $auction) }}" enctype="multipart/form-data" novalidate>
+                        @csrf
+                        @php($imageProblem = $errors->has('images') || collect($errors->keys())->contains(fn ($key) => str_starts_with($key, 'images.')))
+                        <label for="images" class="dot-label">Add photos</label>
+                        <input id="images" name="images[]" type="file" multiple required
+                               accept="image/jpeg,image/png,image/webp" class="dot-input"
+                               @if($imageProblem) aria-invalid="true" aria-describedby="images-help images-error" @else aria-describedby="images-help" @endif>
+                        <p id="images-help" class="dot-help">
+                            JPG, PNG or WebP, up to {{ number_format(config('auction.images.max_kilobytes') / 1024, 0) }} MB each. You can add {{ $maxImages - $auction->images->count() }} more. The first photo is the cover.
+                        </p>
+                        @if($imageProblem)
+                            <div id="images-error">
+                                @foreach(collect($errors->messages())->filter(fn ($messages, $key) => $key === 'images' || str_starts_with($key, 'images.'))->flatten()->unique() as $message)
+                                    <p class="dot-error">{{ $message }}</p>
+                                @endforeach
+                            </div>
+                        @endif
+                        <div style="margin-top:1rem;"><button type="submit" class="dot-btn dot-btn-ghost">Upload</button></div>
+                    </form>
+                @else
+                    <p class="dot-help" style="margin:0;">This auction has the maximum of {{ $maxImages }} photos. Remove one to add another.</p>
+                @endif
+            @endif
+        </div>
+    </section>
+
     @if($editing)
         <div class="dot-panel" style="margin-bottom:1.5rem;">
             <div class="dot-panel-head"><h2 class="dot-section-title">Status</h2></div>

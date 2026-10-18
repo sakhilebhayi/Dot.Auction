@@ -119,8 +119,13 @@ class ListingController extends Controller
         $money = fn (?string $amount) => $amount === null ? '' : Auction::fromCents(Auction::toCents($amount));
         $moment = fn ($date) => $date?->format('Y-m-d\TH:i') ?? '';
 
+        if ($auction->exists) {
+            $auction->load('images');
+        }
+
         return view('seller.auctions.form', [
             'auction' => $auction,
+            'maxImages' => (int) config('auction.images.max_per_auction', 6),
             'termsLocked' => $auction->exists && $auction->hasBids(),
             'categories' => AuctionCategory::orderBy('name')->pluck('name', 'id')->all(),
             'values' => [

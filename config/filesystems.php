@@ -47,6 +47,19 @@ return [
             'report' => false,
         ],
 
+        // Auction listing photos. Private, outside the web root and not served
+        // by Laravel's storage route: the only way to read one is the
+        // policy-checked auctions.images.show route (same pattern as
+        // Dot.Ehail's driver-documents and Dot.Tutor's lesson-resources).
+        'auction-images' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/auction-images'),
+            'serve' => false,
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

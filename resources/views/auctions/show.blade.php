@@ -33,6 +33,26 @@
                 @endauth
             </div>
 
+            @if($auction->images->isNotEmpty())
+            @php($photoCount = $auction->images->count())
+            <div style="margin-bottom:1.25rem;">
+                <img class="dot-gallery-main" src="{{ $auction->images->first()->url() }}"
+                     width="{{ $auction->images->first()->width }}" height="{{ $auction->images->first()->height }}"
+                     alt="{{ $auction->title }}, photo 1 of {{ $photoCount }}">
+                @if($photoCount > 1)
+                <ul class="dot-thumbs" style="list-style:none;margin:0.6rem 0 0;padding:0;">
+                    @foreach($auction->images as $photo)
+                    <li>
+                        <a href="{{ $photo->url() }}" target="_blank" rel="noopener" aria-label="Open photo {{ $loop->iteration }} of {{ $photoCount }} in a new tab">
+                            <img src="{{ $photo->url() }}" alt="" loading="lazy" width="72" height="72">
+                        </a>
+                    </li>
+                    @endforeach
+                </ul>
+                @endif
+            </div>
+            @endif
+
             @if($auction->description)
             <div class="dot-card" style="padding:1.25rem 1.4rem;margin-bottom:1.25rem;">
                 <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#71717a;margin-bottom:0.5rem;">Description</div>
