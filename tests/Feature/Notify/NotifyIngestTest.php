@@ -589,6 +589,28 @@ class NotifyIngestTest extends TestCase
         $this->assertSame('240.00', $auction->fresh()->current_price);
     }
 
+    public function test_a_notification_raised_inside_a_rolled_back_transaction_queues_nothing(): void
+    {
+        $first = $this->member(self::BUYER_UUID);
+        $auction = $this->auction($this->member(self::SELLER_UUID, 'Seller'));
+        $bid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $first->id, 'amount' => 240, 'is_winning' => false]);
+        $newBid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $this->member(self::RIVAL_UUID)->id, 'amount' => 300, 'is_winning' => true]);
+        Queue::fake();
+        $this->fakeNotify();
+
+        try {
+            DB::transaction(function () use ($first, $newBid) {
+                $first->notify(new OutbidNotification($newBid));
+                Queue::assertNotPushed(SendNotifyEvent::class);
+                throw new \RuntimeException('rolled back');
+            });
+        } catch (\RuntimeException) {
+        }
+
+        Queue::assertNotPushed(SendNotifyEvent::class);
+        Http::assertNothingSent();
+    }
+
     public function test_the_event_is_queued_once_the_bid_commits_and_not_sent_in_the_request(): void
     {
         $seller = $this->member(self::SELLER_UUID, 'Seller');

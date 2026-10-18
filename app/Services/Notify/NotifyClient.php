@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -67,7 +68,16 @@ class NotifyClient
                 return;
             }
 
-            app(Dispatcher::class)->dispatch(new SendNotifyEvent($payload));
+            // Only once the surrounding transaction commits (at once when there is none), so a
+            // rolled-back action sends nothing. The callback runs after the commit, so it must
+            // not let anything escape into the caller either.
+            DB::afterCommit(function () use ($payload, $event) {
+                try {
+                    app(Dispatcher::class)->dispatch(new SendNotifyEvent($payload));
+                } catch (Throwable $e) {
+                    Log::warning('Could not queue a Notify event.', ['event' => $event, 'error' => class_basename($e)]);
+                }
+            });
         } catch (Throwable $e) {
             Log::warning('Could not queue a Notify event.', ['event' => $event, 'error' => class_basename($e)]);
         }
