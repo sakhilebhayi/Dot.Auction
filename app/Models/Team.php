@@ -24,6 +24,9 @@ class Team extends JetstreamTeam
         'personal_team',
     ];
 
+    // infodot_team_uuid is set only by the sign-in sync and infodot:link-team,
+    // never by mass assignment from a request.
+
     /**
      * The event map for the model.
      *
