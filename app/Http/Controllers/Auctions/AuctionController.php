@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auctions;
 use App\Http\Controllers\Controller;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
+use App\Models\AuctionSettlement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
@@ -32,7 +33,7 @@ class AuctionController extends Controller
 
         $auctions = Auction::query()
             ->browsable()
-            ->with('category')
+            ->with(['category', 'images'])
             ->when($search !== '', fn ($q) => $q->where('title', 'like', "%{$search}%"))
             ->when($category, fn ($q) => $q->where('category_id', $category))
             ->when($status, fn ($q) => $q->where('status', $status))
@@ -61,15 +62,22 @@ class AuctionController extends Controller
     {
         Gate::authorize('view', $auction);
 
-        $auction->load(['category', 'seller', 'items']);
+        $auction->load(['category', 'seller', 'items', 'images']);
 
         // HasUserScope already restricts this relation query to the
         // authenticated user's own watchlist rows.
         $isWatching = auth()->check() && $auction->watchlists()->exists();
 
+        // Payment hand-off status is only for the two parties to the sale.
+        $settlement = AuctionSettlement::query()
+            ->where('auction_id', $auction->id)
+            ->where(fn ($q) => $q->where('winner_id', auth()->id())->orWhere('seller_id', auth()->id()))
+            ->first();
+
         return view('auctions.show', [
             'auction' => $auction,
             'isWatching' => $isWatching,
+            'settlement' => $settlement,
         ]);
     }
 }

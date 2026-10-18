@@ -101,6 +101,45 @@ php artisan test
 Feature tests use an in-memory SQLite connection (see `phpunit.xml`) and Laravel's
 `RefreshDatabase` trait — no shared Postgres instance required to run them.
 
+## Email via Dot.Notify
+
+The in-app notifications this app already creates are also posted, server to server, to Dot.Notify
+(`POST {NOTIFY_INGEST_URL}`, signed with HMAC-SHA256 over `"{timestamp}.{raw body}"` using
+`NOTIFY_INGEST_SECRET`, headers `X-InfoDot-Timestamp` and `X-InfoDot-Signature`). Same trigger, same
+recipient as the in-app notification; nothing about who is notified in-app changes.
+
+| Event | Sent to | `data` keys |
+|---|---|---|
+| `auction.outbid` | the displaced bidder (also after Buy Now) | `auction_title`, `your_bid`, `current_price`, `currency`, `ends_at`, `url` |
+| `auction.won` | the winner (settlement, or the seller accepting a reserve-not-met bid) | `auction_title`, `final_price`, `currency`, `url` |
+| `auction.sold` | the seller, when the settlement is recorded | `auction_title`, `final_price`, `currency`, `status`, `url` |
+| `auction.ending_soon` | each watcher, once (`auction:notify-ending-soon`) | `auction_title`, `current_price`, `currency`, `ends_at`, `url` |
+
+Money is a string with two decimals and no separators (`"1234.50"`), the currency code
+(`AUCTION_CURRENCY_CODE`) is separate, `ends_at` is ISO 8601, `url` is an absolute `https` link to the
+auction page in this app. The email address is only ever in `recipient.email`; no other person's
+address, no bidder names, no payment details are sent. `auction.sold.status` is `sold` for a new
+settlement (awaiting payment).
+
+**What it takes for an email to go out:** nothing is sent until `NOTIFY_INGEST_URL` **and**
+`NOTIFY_INGEST_SECRET` are both set, **and** the recipient's company has enabled the event in Dot.Notify
+(otherwise Notify answers `no_rule` and sends nothing). A **queue worker is required**
+(`php artisan queue:work`): events are queued after the surrounding database transaction commits, so a
+bid or settlement that rolls back sends nothing, and nothing is ever posted inside the user's request.
+
+**Who is skipped:** Notify routes by company, so the recipient's company is their current team's
+`infodot_team_uuid`, or their personal team's if the current team has none. A recipient with no
+`infodot_team_uuid` (not provisioned from InfoDot) or no email is skipped, silently apart from an
+info log line (event name and user id, never an address). The in-app notification is unaffected.
+
+**Safety:** a Notify outage or misconfiguration cannot break or slow a bid, a settlement or the
+ending-soon sweep. The job has a 5 second HTTP timeout, 3 tries with backoff, never throws, logs without
+secrets or email addresses, and a small cache-based circuit breaker pauses calls for 60 seconds after
+5 consecutive failures (jobs wait and retry; if Notify stays down they are dropped after their
+third try, since a late email is not worth a growing queue). Retries and double dispatches share an
+idempotency key, `"{event}:{auction id}:{sha1(recipient email)}:{bid id | settlement id}"`, so Notify
+collapses them.
+
 ## 🚢 Deployment
 
 ### Production Checklist

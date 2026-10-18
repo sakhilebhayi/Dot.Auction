@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
@@ -68,6 +70,33 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Photo files of this user's auctions, to remove once the account delete
+     * commits. The auction and image rows go through the database cascade,
+     * which fires no model events, so nothing else would clean the files.
+     *
+     * @var array<int, string>
+     */
+    protected array $auctionImagePathsToRemove = [];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user): void {
+            $user->auctionImagePathsToRemove = AuctionImage::query()
+                ->whereHas('auction', fn ($auctions) => $auctions->where('seller_id', $user->id))
+                ->pluck('path')
+                ->all();
+        });
+
+        static::deleted(function (User $user): void {
+            $paths = $user->auctionImagePathsToRemove;
+
+            if ($paths !== []) {
+                DB::afterCommit(fn () => Storage::disk(AuctionImage::DISK)->delete($paths));
+            }
+        });
     }
 
     /**

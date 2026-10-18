@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
 /**
@@ -31,10 +32,19 @@ class RealtimeHealthController extends Controller
 
         $healthy = collect($checks)->every(fn (array $check) => $check['status'] === 'ok');
 
-        return response()->json([
-            'status' => $healthy ? 'ok' : 'degraded',
-            'checks' => $checks,
-        ], $healthy ? 200 : 503);
+        // This endpoint is unauthenticated, so the body is ok/degraded and
+        // nothing else: no Reverb host/port, env var names or exception
+        // text. Which link failed (and why) is logged server-side instead.
+        foreach ($checks as $name => $check) {
+            if ($check['status'] !== 'ok') {
+                Log::warning("Realtime health check failed: {$name}", ['detail' => $check['detail']]);
+            }
+        }
+
+        return response()->json(
+            ['status' => $healthy ? 'ok' : 'degraded'],
+            $healthy ? 200 : 503,
+        );
     }
 
     private function checkBroadcastingConfig(): array

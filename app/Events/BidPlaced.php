@@ -47,6 +47,9 @@ class BidPlaced implements ShouldBroadcast
             'amount' => $this->bid->amount,
             'bidder' => $this->bid->bidder->name,
             'current_price' => $this->bid->auction->current_price,
+            'ends_at' => $this->bid->auction->ends_at->toIso8601String(),
+            'snipe_extensions' => $this->bid->auction->snipe_extensions,
+            'status' => $this->bid->auction->status,
         ];
     }
 }

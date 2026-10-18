@@ -56,4 +56,34 @@ class AuctionPolicy
     {
         return $user->id !== $auction->seller_id;
     }
+
+    /**
+     * Any signed-in user may list an auction; they become its seller.
+     */
+    public function create(User $user): bool
+    {
+        return true;
+    }
+
+    /**
+     * Editing is for the auction's own seller while it is still a draft or
+     * live. Which fields may change (nothing but the description after the
+     * first bid) is enforced under a row lock in ListingManager, because it
+     * depends on bids that can land at any moment. There is no platform
+     * operator flag on users yet, so no operator override exists here.
+     */
+    public function update(User $user, Auction $auction): bool
+    {
+        return $this->manage($user, $auction) && in_array($auction->status, ['draft', 'active'], true);
+    }
+
+    /**
+     * Publish, cancel and delete: the seller only. Status rules are
+     * reported to the seller as readable errors by ListingManager rather
+     * than as a bare 403.
+     */
+    public function manage(User $user, Auction $auction): bool
+    {
+        return $user->id === $auction->seller_id;
+    }
 }

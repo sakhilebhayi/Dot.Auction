@@ -5,7 +5,7 @@
         <div>
             <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#71717a;margin-bottom:0.3rem;">Current Bid</div>
             <div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:#fcd34d;line-height:1;">
-                R{{ number_format($auction->current_price, 2) }}
+                {{ \App\Models\Auction::money($auction->current_price) }}
             </div>
             <div style="font-size:11px;margin-top:0.4rem;font-weight:600;color:{{ $auction->reserveMet() ? '#4ade80' : '#f59e0b' }};">
                 <span class="material-symbols-rounded" style="font-size:13px;vertical-align:-2px;">{{ $auction->reserveMet() ? 'verified' : 'info' }}</span>
@@ -17,17 +17,22 @@
             <div style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:600;color:{{ $auction->isActive() ? '#f4f4f5' : '#71717a' }};">
                 {{ $this->timeRemaining }}
             </div>
+            @if($auction->snipe_extensions > 0)
+            <div class="dot-help" style="margin-top:0.3rem;">
+                Closing time extended {{ $auction->snipe_extensions }} {{ \Illuminate\Support\Str::plural('time', $auction->snipe_extensions) }} by late bids.
+            </div>
+            @endif
         </div>
     </div>
 
     @if($success)
-    <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#4ade80;border-radius:8px;padding:0.65rem 0.9rem;font-size:12.5px;font-weight:600;margin-bottom:1rem;">
+    <div role="status" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#4ade80;border-radius:8px;padding:0.65rem 0.9rem;font-size:12.5px;font-weight:600;margin-bottom:1rem;">
         {{ $success }}
     </div>
     @endif
 
     @if($error)
-    <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#f87171;border-radius:8px;padding:0.65rem 0.9rem;font-size:12.5px;font-weight:600;margin-bottom:1rem;">
+    <div role="alert" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#f87171;border-radius:8px;padding:0.65rem 0.9rem;font-size:12.5px;font-weight:600;margin-bottom:1rem;">
         {{ $error }}
     </div>
     @endif
@@ -36,10 +41,11 @@
     @if($auction->isActive() && auth()->id() !== $auction->seller_id)
     <form wire:submit.prevent="placeBid" style="display:flex;gap:0.6rem;margin-bottom:1.5rem;">
         <div style="flex:1;position:relative;">
-            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#71717a;font-size:13px;">R</span>
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#71717a;font-size:13px;">{{ config('auction.currency_symbol') }}</span>
             <input
                 type="number"
                 step="0.01"
+                aria-label="Your bid amount"
                 wire:model="bidAmount"
                 class="dot-input"
                 style="padding-left:24px;"
@@ -52,10 +58,23 @@
         </button>
     </form>
     <div style="font-size:11px;color:#52525b;margin-top:-1rem;margin-bottom:1.25rem;">
-        Minimum bid: R{{ number_format($auction->minimumBid(), 2) }}
+        Minimum bid: {{ \App\Models\Auction::money($auction->minimumBid()) }}
     </div>
+    @if($auction->buyNowAvailable())
+    <button type="button"
+        wire:click="buyNow"
+        wire:confirm="Buy this auction now for {{ \App\Models\Auction::money($auction->buy_now_price) }}? This ends the auction immediately and you become the winner."
+        wire:loading.attr="disabled" wire:target="buyNow"
+        class="dot-btn dot-btn-ghost dot-btn-block" style="margin-bottom:1.5rem;">
+        Buy now for {{ \App\Models\Auction::money($auction->buy_now_price) }}
+    </button>
+    @endif
     @elseif(auth()->id() === $auction->seller_id)
     <div style="font-size:12px;color:#52525b;margin-bottom:1.5rem;">You can't bid on your own auction.</div>
+    @elseif($purchased)
+    <div style="font-size:12px;color:#a1a1aa;margin-bottom:1.5rem;">Purchased through Buy Now.</div>
+    @elseif($auction->isScheduled())
+    <div style="font-size:12px;color:#a1a1aa;margin-bottom:1.5rem;">Bidding opens {{ $auction->starts_at->format('M j, Y \a\t H:i') }}.</div>
     @else
     <div style="font-size:12px;color:#52525b;margin-bottom:1.5rem;">This auction has ended.</div>
     @endif
@@ -84,7 +103,7 @@
                     @endif
                 </span>
                 <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;color:#f4f4f5;">
-                    R{{ number_format($bid->amount, 2) }}
+                    {{ \App\Models\Auction::money($bid->amount) }}
                 </span>
             </div>
             @endforeach
