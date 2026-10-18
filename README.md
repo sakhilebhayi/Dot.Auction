@@ -140,6 +140,90 @@ third try, since a late email is not worth a growing queue). Retries and double 
 idempotency key, `"{event}:{auction id}:{sha1(recipient email)}:{bid id | settlement id}"`, so Notify
 collapses them.
 
+## Paying for a won auction (Paystack, test mode)
+
+A sold auction records a settlement (`auction_settlements`, amount in integer cents). With Paystack
+configured, the **winner** pays the winning amount from a "Pay now" button, and the sale becomes
+**paid** once Paystack confirms it. **TEST MODE ONLY**: use `sk_test_` keys. With no key set nothing
+changes: settlements stay "awaiting payment" with the original honest message, and nothing breaks.
+
+> **What this is not.** The winner pays **Dot.Auction's own Paystack account**; the money lands in the
+> platform's Paystack balance. **Seller payouts, commissions and fees, split payments, KYC, refunds
+> and cards on file are not built** (they need compliance and finance decisions). The seller is told,
+> everywhere, "payout is not available yet &mdash; payment received, settlement to seller is manual".
+> Nothing in the app implies a seller has been paid.
+
+### Setup
+
+1. In the Paystack dashboard switch to **Test mode** and copy the test secret and public keys.
+2. Set in `.env` (see the table below): `PAYSTACK_SECRET_KEY=sk_test_...`, `PAYSTACK_PUBLIC_KEY=pk_test_...`.
+3. In the dashboard (Settings, API Keys & Webhooks, Test Webhook URL) enter `https://<your host>/webhooks/paystack`.
+   The callback URL is sent per payment (`/settlements/{id}/payment/callback`) and needs no dashboard setting.
+4. Make sure the scheduler runs (`* * * * * php artisan schedule:run`): it runs the 15-minute payment-deadline job.
+5. One Paystack **test** webhook URL exists per Paystack business. If several Dot apps (Billing, Emall, Auction)
+   share one business, give each its own Paystack business, or put one relay in front: a charge for another app's
+   reference reaching this endpoint is stored as an `unmatched` record (reason "Unknown reference") and answered
+   200, never applied.
+
+### The TEST MODE guard
+
+| Key set | Result |
+|---|---|
+| none | Payment is off. Settlements stay awaiting payment, honest message, no Pay now button. |
+| `sk_test_...` | Works. Pay pages show a **TEST MODE** badge ("No real money moves in test mode"). |
+| `sk_live_...` | **Refused**: nothing is ever sent to Paystack, the refusal is logged without the key, no Pay now button. Works only if `PAYSTACK_ALLOW_LIVE=true` is **also** set on purpose (badge reads LIVE MODE). |
+| any other prefix, or a non-https `PAYSTACK_BASE_URL` | Refused the same way. |
+
+### Flows
+
+- **Pay now** (winner only; the seller gets 403, anyone else 404): inside a transaction with the settlement
+  row locked, the app reuses the live payment (one at a time, `PAYSTACK_ATTEMPT_TTL_MINUTES`) or initializes
+  a new one (`POST /transaction/initialize`: `email`, `amount` in cents, `currency` ZAR, our unique `reference`
+  `AUC-...`, `callback_url`, `metadata` with the settlement id) and redirects to Paystack. The amount and
+  currency come from the settlement row, never from the browser. If Paystack cannot be reached nothing is
+  stored and the winner can simply press Pay now again.
+- **Return from Paystack** (winner only): the app **verifies server-side**
+  (`GET /transaction/verify/{reference}`): status `success` AND amount, currency and reference must all match.
+  Query-string parameters are never read.
+- **Webhook** `POST /webhooks/paystack` (no CSRF, no session, throttled): `x-paystack-signature` must equal
+  the HMAC-SHA512 of the **raw body** keyed with the secret key (`hash_equals`), checked **before** the body is
+  parsed; otherwise a generic 401. Only `charge.success` acts; it applies the same rules as the return
+  and answers 200 fast (no outbound call). Invalid JSON is a 400. A payment that does not match (unknown
+  reference, wrong amount or currency, metadata for another sale, a transaction id already used, money for
+  a paid or cancelled sale) is stored as `unmatched` for an operator, never applied, and still answered 200.
+- **Exactly once**: the return and the webhook share one recorder. It locks the settlement row, then the
+  payment row; `unique(reference)` and `unique(provider, provider_transaction_id)` are the backstop. Replays,
+  a return racing a webhook and stale pages all pay once and notify once.
+- **Payment deadline**: `AUCTION_PAYMENT_WINDOW_HOURS` (default 72) from when the settlement is recorded.
+  `auction:mark-overdue-payments` (every 15 minutes, no overlap) marks unpaid sales past it **payment overdue**
+  and tells both sides in-app. **Nothing is relisted or cancelled automatically** (that is a human decision):
+  an overdue sale can still be paid; the **seller** may mark it **cancelled** (audited in `settlement_events`,
+  the winner is told, any open checkout is closed). A paid settlement is never changed. If payment is off, the
+  command does nothing, since a winner who cannot pay cannot be late. For sales recorded before payment was
+  switched on (no deadline yet), the clock starts when payment first opens and the winner is told.
+- **Operators**: `/operator/settlement-payments` lists every attempt and every unmatched event, those needing
+  a person first. Read-only; it never shows checkout links. Access: verified accounts whose email is in
+  `AUCTION_OPERATOR_EMAILS` (there is no operator flag on users yet).
+- **Notifications**: in-app only (paid, overdue, cancelled, payment opened). No new Dot.Notify events are
+  added; the existing catalogue is unchanged.
+
+### Environment
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `PAYSTACK_SECRET_KEY` | blank | `sk_test_...`. Blank = payment off. |
+| `PAYSTACK_PUBLIC_KEY` | blank | `pk_test_...` (kept for completeness; the redirect flow does not use it in the browser). |
+| `PAYSTACK_BASE_URL` | `https://api.paystack.co` | Must be https. |
+| `PAYSTACK_ALLOW_LIVE` | `false` | The second switch a `sk_live_` key needs. |
+| `PAYSTACK_ATTEMPT_TTL_MINUTES` | `30` | How long a started payment is reused. |
+| `PAYSTACK_WEBHOOK_PER_MINUTE` | `120` | Webhook throttle per IP. |
+| `AUCTION_PAYMENT_WINDOW_HOURS` | `72` | Time a winner has to pay. |
+| `AUCTION_OPERATOR_EMAILS` | blank | Comma-separated operator emails. |
+
+Migrating: `2026_10_19_000001_*` adds nullable payment columns and `settlement_events`;
+`2026_10_19_000002_*` creates `settlement_payments`. Both are additive and leave existing rows untouched
+(a legacy `awaiting_payment` row keeps a NULL deadline). Back up the database before running them in production.
+
 ## 🚢 Deployment
 
 ### Production Checklist

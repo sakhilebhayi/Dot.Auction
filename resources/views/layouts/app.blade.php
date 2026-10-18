@@ -132,6 +132,12 @@
         .dot-status-scheduled { background:rgba(251,191,36,0.12); border-color:rgba(251,191,36,0.3); color:#fcd34d; }
         .dot-status-ended { background:rgba(59,130,246,0.12); border-color:rgba(59,130,246,0.28); color:#93c5fd; }
         .dot-status-cancelled, .dot-status-pending_review { background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.28); color:#fca5a5; }
+        .dot-status-awaiting_payment, .dot-status-initiated { background:rgba(251,191,36,0.12); border-color:rgba(251,191,36,0.3); color:#fcd34d; }
+        .dot-status-paid { background:rgba(34,197,94,0.12); border-color:rgba(34,197,94,0.28); color:#86efac; }
+        .dot-status-payment_overdue, .dot-status-unmatched, .dot-status-failed { background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.28); color:#fca5a5; }
+        .dot-status-expired { background:rgba(161,161,170,0.12); border-color:rgba(161,161,170,0.3); color:#d4d4d8; }
+        .dot-mode { display:inline-flex; align-items:center; gap:5px; padding:2px 9px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:500; letter-spacing:0.08em; border:1px dashed rgba(251,191,36,0.6); color:#fcd34d; white-space:nowrap; }
+        .dot-mode-live { border-style:solid; border-color:rgba(239,68,68,0.6); color:#fca5a5; }
         .dot-table { width:100%; border-collapse:collapse; }
         .dot-table th { padding:0.8rem 1rem; text-align:left; font-size:11px; font-weight:700; color:#a1a1aa; text-transform:uppercase; letter-spacing:0.08em; white-space:nowrap; border-bottom:1px solid rgba(255,255,255,0.06); }
         .dot-table td { padding:0.9rem 1rem; border-bottom:1px solid rgba(255,255,255,0.05); vertical-align:top; font-size:13px; }
@@ -201,6 +207,16 @@
                 <span class="material-symbols-rounded nav-icon">sell</span>
                 My Auctions
             </a>
+            <a href="{{ route('settlements.index') }}" class="nav-item {{ request()->routeIs('settlements.*') ? 'active' : '' }}">
+                <span class="material-symbols-rounded nav-icon">receipt_long</span>
+                Payments
+            </a>
+            @can('view-settlement-payments')
+            <a href="{{ route('operator.settlement-payments.index') }}" class="nav-item {{ request()->routeIs('operator.*') ? 'active' : '' }}">
+                <span class="material-symbols-rounded nav-icon">account_balance</span>
+                Payment operations
+            </a>
+            @endcan
             <div class="sidebar-divider" style="margin:10px 0;"></div>
             <a href="{{ route('profile.show') }}" class="nav-item {{ request()->routeIs('profile.show') ? 'active' : '' }}">
                 <span class="material-symbols-rounded nav-icon">manage_accounts</span>

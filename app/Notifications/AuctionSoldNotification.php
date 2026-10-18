@@ -6,6 +6,7 @@ use App\Models\Auction;
 use App\Models\AuctionSettlement;
 use App\Notifications\Concerns\SendsNotifyEvent;
 use App\Services\Notify\NotifyClient;
+use App\Services\Paystack\PaystackConfig;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -58,12 +59,14 @@ class AuctionSoldNotification extends Notification
      */
     public function toDatabase(object $notifiable): array
     {
+        $payment = app(PaystackConfig::class)->canTakePayments()
+            ? 'The buyer can now pay Dot.Auction online. Payout is not available yet: when payment arrives, settlement to you is manual. You will be told when it does.'
+            : 'Payment is not yet available in Dot.Auction, so the sale is recorded as awaiting payment. You will be told when the payment step opens.';
+
         return [
             'type' => 'auction_sold',
             'title' => 'Auction sold',
-            'message' => "\"{$this->auction->title}\" sold for {$this->settlement->amount()}. "
-                .'Payment is not yet available in Dot.Auction, so the sale is recorded as awaiting payment. '
-                .'You will be told when the payment step opens.',
+            'message' => "\"{$this->auction->title}\" sold for {$this->settlement->amount()}. ".$payment,
             'auction_id' => $this->auction->id,
             'url' => route('auctions.show', $this->auction),
         ];

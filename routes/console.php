@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\MarkOverduePayments;
 use App\Console\Commands\NotifyEndingSoonWatchers;
 use App\Console\Commands\SettleEndedAuctions;
 use Illuminate\Foundation\Inspiring;
@@ -22,5 +23,12 @@ Schedule::command(SettleEndedAuctions::class)
 // cadence only decides how late a notice can be, never how many go out.
 Schedule::command(NotifyEndingSoonWatchers::class)
     ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Starts the payment clock for sales recorded before online payment was on, and marks unpaid sales
+// past their deadline as overdue. It never relists or cancels anything.
+Schedule::command(MarkOverduePayments::class)
+    ->everyFifteenMinutes()
     ->withoutOverlapping()
     ->onOneServer();
