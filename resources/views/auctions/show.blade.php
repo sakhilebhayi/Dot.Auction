@@ -1,6 +1,6 @@
 <x-app-layout>
 
-<div style="padding:2rem 2.5rem 3rem;max-width:1100px;">
+<div class="dot-page" style="max-width:1100px;">
 
     <div style="margin-bottom:1.5rem;">
         <a href="{{ route('auctions.index') }}" style="font-size:0.78rem;color:#71717a;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
@@ -60,7 +60,7 @@
             </div>
             @endif
 
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.85rem;margin-bottom:1.25rem;">
+            <div class="dot-stat-grid">
                 <div class="dot-card" style="padding:1rem 1.15rem;">
                     <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#52525b;margin-bottom:0.4rem;">Starting Price</div>
                     <div style="font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;color:#f4f4f5;">{{ \App\Models\Auction::money($auction->starting_price) }}</div>
@@ -82,7 +82,7 @@
                 <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#71717a;margin-bottom:0.75rem;">Items in this lot</div>
                 <div style="display:flex;flex-direction:column;gap:0.5rem;">
                     @foreach($auction->items as $item)
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.55rem 0.75rem;border-radius:8px;background:rgba(255,255,255,0.02);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.15rem 0.75rem;padding:0.55rem 0.75rem;border-radius:8px;background:rgba(255,255,255,0.02);">
                         <span style="font-size:0.82rem;color:#e4e4e7;font-weight:500;">{{ $item->name }}</span>
                         <span style="font-size:0.72rem;color:#71717a;">{{ ucfirst($item->condition) }}@if($item->location) · {{ $item->location }}@endif</span>
                     </div>

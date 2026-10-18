@@ -8,13 +8,13 @@
             from {{ $proposal->bid->bidder->name }},
             reserve {{ \App\Models\Auction::money($proposal->reserve_price) }}.
         </div>
-        <div style="display:flex;gap:0.5rem;margin-top:0.6rem;">
-            <button wire:click="accept"
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem;">
+            <button wire:click="accept" class="dot-pill-btn"
                 wire:confirm="Accept {{ \App\Models\Auction::money($proposal->bid->amount) }} from {{ $proposal->bid->bidder->name }}?"
                 style="font-size:0.72rem;font-weight:600;padding:0.35rem 0.85rem;border-radius:9999px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.35);color:#4ade80;cursor:pointer;">
                 Accept top bid
             </button>
-            <button wire:click="reject" wire:confirm="End this auction unsold?"
+            <button wire:click="reject" class="dot-pill-btn" wire:confirm="End this auction unsold?"
                 style="font-size:0.72rem;font-weight:600;padding:0.35rem 0.85rem;border-radius:9999px;background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.3);color:#fb7185;cursor:pointer;">
                 Reject
             </button>

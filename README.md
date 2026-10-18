@@ -62,6 +62,34 @@ kept-honest breakdown of what's actually implemented vs. still roadmap.
 - **Watchlist** — buyer-side interest tracker (`user_id` + `auction_id`)
 - **AuctionItem** — item-level detail attached to an auction (condition, location)
 
+## Responsive shell
+
+The app shell (`resources/views/layouts/app.blade.php`) works down to 360px wide. The breakpoint is
+**860px**: at and above it the 260px sidebar is fixed beside the content; below it the sidebar is an
+off-canvas drawer.
+
+| Hook | What it is |
+|------|------------|
+| `#shell-menu-button` | The labelled "Menu" button in `.topbar`; carries `aria-expanded` and `aria-controls="shell-drawer"`. Hidden at 860px and up. |
+| `#shell-drawer` | The existing `<aside class="sidebar">`. Closed on a phone it is `visibility:hidden`, so it is neither focusable nor read by assistive tech. |
+| `#shell-backdrop` | Dims the page; tapping it closes the drawer. |
+| `#shell-close` | A Close button inside the drawer. |
+| `.table-scroll` | Wrapper that lets a wide table scroll sideways inside its own box instead of the page. |
+
+The behaviour is a small plain script at the end of the layout (no Alpine, so it does not depend on
+Livewire having booted). While the drawer is open the rest of the page is `inert` and `<body>` is scroll
+locked; Escape, the backdrop, Close, following a nav link, and growing past 860px all close it, and focus
+returns to the Menu button. Motion is turned off under `prefers-reduced-motion`.
+
+The team switcher and Log out sit in the drawer (`.shell-account`, phone only). The legacy Jetstream bar
+rendered by `navigation-menu` is wrapped in `.shell-legacy-nav` and hidden below 860px.
+
+**Adding a wide table:** wrap it in `<div class="table-scroll" role="region" aria-label="..." tabindex="0">`
+(see `resources/views/seller/auctions/_table.blade.php`). Keep the page padding on `.dot-page` and use
+`.dot-kpi-grid`, `.dot-stat-grid`, `.dot-head`, or `.dot-two-col` for grids so they stack on a phone. Use
+`position:relative` on any scroll box that contains `.sr-only` text, or the hidden text widens the page.
+Markup hooks are pinned by `tests/Feature/ResponsiveShellTest.php`.
+
 ## Tech Stack
 
 | Layer | Technology |
