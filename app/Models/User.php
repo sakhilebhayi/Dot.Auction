@@ -15,6 +15,9 @@ use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * @property bool $is_platform_operator
+ */
 class User extends Authenticatable
 {
     use HasApiTokens;
@@ -69,7 +72,18 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_platform_operator' => 'boolean',
         ];
+    }
+
+    /**
+     * Platform operators run the Auction deployment itself (the payment-operations pages). This is
+     * deliberately unrelated to any team role or to who sells or bids. Not mass assignable: it is
+     * only ever set by `php artisan auction:operator`.
+     */
+    public function isPlatformOperator(): bool
+    {
+        return $this->is_platform_operator === true;
     }
 
     /**

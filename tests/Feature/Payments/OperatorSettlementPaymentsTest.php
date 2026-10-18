@@ -5,7 +5,6 @@ namespace Tests\Feature\Payments;
 use App\Models\SettlementPayment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Tests\Concerns\BuildsSettlements;
@@ -20,13 +19,12 @@ class OperatorSettlementPaymentsTest extends TestCase
     {
         parent::setUp();
         $this->enablePaystack();
-        config(['auction.operator_emails' => ['ops@example.test']]);
     }
 
     private function operator(): User
     {
         return User::firstWhere('email', 'ops@example.test')
-            ?? User::factory()->withPersonalTeam()->create(['email' => 'ops@example.test']);
+            ?? User::factory()->withPersonalTeam()->platformOperator()->create(['email' => 'ops@example.test']);
     }
 
     public function test_operators_see_every_payment_with_the_ones_needing_attention_called_out(): void
@@ -73,27 +71,6 @@ class OperatorSettlementPaymentsTest extends TestCase
         $writes = collect(Route::getRoutes()->getRoutes())
             ->filter(fn ($r) => str_starts_with((string) $r->getName(), 'operator.') && array_diff($r->methods(), ['GET', 'HEAD']));
         $this->assertCount(0, $writes);
-    }
-
-    public function test_nobody_is_an_operator_unless_listed_and_the_match_is_exact_but_case_blind(): void
-    {
-        config(['auction.operator_emails' => []]);
-        $this->actingAs($this->operator())->get(route('operator.settlement-payments.index'))->assertForbidden();
-
-        config(['auction.operator_emails' => ['OPS@Example.Test']]);
-        $this->actingAs($this->operator())->get(route('operator.settlement-payments.index'))->assertOk();
-
-        config(['auction.operator_emails' => ['ops@example.test']]);
-        $impostor = User::factory()->withPersonalTeam()->create(['email' => 'ops@example.test.evil.test']);
-        $this->actingAs($impostor)->get(route('operator.settlement-payments.index'))->assertForbidden();
-    }
-
-    public function test_an_unverified_account_with_an_operator_email_is_not_an_operator(): void
-    {
-        $user = User::factory()->withPersonalTeam()->unverified()->create(['email' => 'ops@example.test']);
-
-        $this->actingAs($user)->get(route('operator.settlement-payments.index'))->assertForbidden();
-        $this->assertFalse(Gate::forUser($user)->allows('view-settlement-payments'));
     }
 
     public function test_the_page_never_prints_checkout_links_or_secrets(): void

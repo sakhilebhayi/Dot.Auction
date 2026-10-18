@@ -230,8 +230,21 @@ changes: settlements stay "awaiting payment" with the original honest message, a
   command does nothing, since a winner who cannot pay cannot be late. For sales recorded before payment was
   switched on (no deadline yet), the clock starts when payment first opens and the winner is told.
 - **Operators**: `/operator/settlement-payments` lists every attempt and every unmatched event, those needing
-  a person first. Read-only; it never shows checkout links. Access: verified accounts whose email is in
-  `AUCTION_OPERATOR_EMAILS` (there is no operator flag on users yet).
+  a person first. Read-only; it never shows checkout links. Access: the `users.is_platform_operator` flag behind
+  the `operator` route middleware, as on the other Dot platforms (a signed-out visitor is sent to sign in,
+  anyone else without the flag gets 403). The flag is not mass assignable and is never read from the InfoDot
+  sign-in payload; it is set only from the shell:
+
+  ```
+  php artisan auction:operator you@example.com            # grant (the account must exist and be verified)
+  php artisan auction:operator you@example.com --revoke   # remove
+  php artisan auction:operator --import-env               # one time: grant the emails still in AUCTION_OPERATOR_EMAILS
+  ```
+
+  Each grant and revoke is written to the log (user id only; no secrets). `AUCTION_OPERATOR_EMAILS` is
+  **deprecated and ignored for access**: setting it alone grants nobody anything. It is read only by
+  `--import-env`, which grants the flag to the listed users who exist and are verified (it lists any it
+  skipped); remove the variable afterwards.
 - **Notifications**: in-app only (paid, overdue, cancelled, payment opened). No new Dot.Notify events are
   added; the existing catalogue is unchanged.
 
@@ -246,10 +259,11 @@ changes: settlements stay "awaiting payment" with the original honest message, a
 | `PAYSTACK_ATTEMPT_TTL_MINUTES` | `30` | How long a started payment is reused. |
 | `PAYSTACK_WEBHOOK_PER_MINUTE` | `120` | Webhook throttle per IP. |
 | `AUCTION_PAYMENT_WINDOW_HOURS` | `72` | Time a winner has to pay. |
-| `AUCTION_OPERATOR_EMAILS` | blank | Comma-separated operator emails. |
+| `AUCTION_OPERATOR_EMAILS` | blank | **Deprecated, ignored for access.** Read only by `php artisan auction:operator --import-env`. |
 
 Migrating: `2026_10_19_000001_*` adds nullable payment columns and `settlement_events`;
-`2026_10_19_000002_*` creates `settlement_payments`. Both are additive and leave existing rows untouched
+`2026_10_19_000002_*` creates `settlement_payments`; `2026_10_19_000003_*` adds `users.is_platform_operator`
+(boolean, default false, every existing user gets false). All three are additive and leave existing rows untouched
 (a legacy `awaiting_payment` row keeps a NULL deadline). Back up the database before running them in production.
 ## Daily metrics to Dot.Analytics
 

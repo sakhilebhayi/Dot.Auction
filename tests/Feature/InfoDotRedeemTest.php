@@ -84,6 +84,51 @@ class InfoDotRedeemTest extends TestCase
         $this->assertSame($user->ownedTeams->first()->id, $user->current_team_id);
     }
 
+    public function test_sign_in_never_grants_platform_operator_even_if_the_payload_claims_it(): void
+    {
+        $claims = $this->identity(['is_platform_operator' => true, 'platform_operator' => true, 'operator' => true, 'role' => 'operator'], [
+            'is_platform_operator' => true,
+            'operator' => true,
+        ]);
+        Http::fake([self::URL => Http::response($claims)]);
+
+        $this->get(route('ecosystem.auth', ['token' => 'one-time-token']))->assertRedirect(route('dashboard'));
+
+        $created = User::where('email', 'amara@example.test')->firstOrFail();
+        $this->assertAuthenticatedAs($created);
+        $this->assertFalse($created->fresh()->isPlatformOperator());
+        $this->get('/operator/settlement-payments')->assertForbidden();
+    }
+
+    public function test_sign_in_of_an_existing_account_never_grants_platform_operator_either(): void
+    {
+        $existing = User::factory()->withPersonalTeam()->create(['email' => 'amara@example.test']);
+        $unverified = User::factory()->unverified()->create(['email' => 'bongani@example.test']);
+        Http::fake([self::URL => Http::sequence()
+            ->push($this->identity(['is_platform_operator' => true], ['is_platform_operator' => true]))
+            ->push($this->identity(['email' => 'bongani@example.test', 'is_platform_operator' => true], ['is_platform_operator' => true]))]);
+
+        $this->get(route('ecosystem.auth', ['token' => 't1']));
+        $this->assertAuthenticatedAs($existing);
+        $this->assertFalse($existing->fresh()->isPlatformOperator());
+
+        auth()->logout();
+        $this->get(route('ecosystem.auth', ['token' => 't2']));
+        $this->assertAuthenticatedAs($unverified);
+        $this->assertFalse($unverified->fresh()->isPlatformOperator());
+    }
+
+    public function test_sign_in_does_not_read_or_strip_the_flag_of_an_existing_operator(): void
+    {
+        $operator = User::factory()->withPersonalTeam()->platformOperator()->create(['email' => 'amara@example.test']);
+        Http::fake([self::URL => Http::response($this->identity(['is_platform_operator' => false], ['is_platform_operator' => false]))]);
+
+        $this->get(route('ecosystem.auth', ['token' => 't']));
+
+        $this->assertAuthenticatedAs($operator);
+        $this->assertTrue($operator->fresh()->isPlatformOperator());
+    }
+
     public function test_the_provisioned_password_is_random_and_unusable(): void
     {
         Http::fake([self::URL => Http::response($this->identity())]);
