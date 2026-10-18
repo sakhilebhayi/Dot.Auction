@@ -117,7 +117,7 @@
             <div class="dot-panel-head"><h2 class="dot-section-title">Status</h2></div>
             <div class="dot-panel-body">
                 @if($auction->status === 'draft')
-                    <p style="margin-top:0;">This draft is private. Publishing makes it visible to buyers and opens bidding at the opening time (right away if none is set). Check the details above are saved first.</p>
+                    <p style="margin:0 0 1rem;">This draft is private. Publishing makes it visible to buyers and opens bidding at the opening time (right away if none is set). Check the details above are saved first.</p>
                     <div class="dot-actions">
                         <form method="POST" action="{{ route('seller.auctions.publish', $auction) }}">
                             @csrf
@@ -129,7 +129,7 @@
                         </form>
                     </div>
                 @else
-                    <p style="margin-top:0;">
+                    <p style="margin:0 0 1rem;">
                         This auction is {{ $status === 'scheduled' ? 'scheduled to open '.$auction->starts_at->format('M j, Y H:i') : 'live' }}.
                         <a class="dot-link" href="{{ route('auctions.show', $auction) }}">View the public page</a>.
                     </p>

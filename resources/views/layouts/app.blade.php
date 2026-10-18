@@ -114,7 +114,7 @@
         .dot-alert-error { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; }
         .dot-alert-ok { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.28); color:#86efac; }
         .dot-alert-info { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:#d4d4d8; }
-        .dot-alert ul { margin:0.35rem 0 0 1.1rem; padding:0; }
+        .dot-alert ul { margin:0.35rem 0 0 1.1rem; padding:0; list-style:disc; }
         .dot-alert a { color:inherit; text-decoration:underline; }
         .dot-btn-danger { background:rgba(244,63,94,0.1); color:#fda4af; border:1px solid rgba(244,63,94,0.35); }
         .dot-btn-danger:hover { background:rgba(244,63,94,0.18); color:#fff1f2; }
@@ -160,6 +160,9 @@
         }
         @media (max-width: 640px) {
             .dot-form-grid { grid-template-columns:minmax(0,1fr); }
+        }
+        @media (max-width: 860px) {
+            .dot-two-col { grid-template-columns:minmax(0,1fr) !important; }
         }
     </style>
     @livewireStyles

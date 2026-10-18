@@ -20,3 +20,6 @@
         </ul>
     </div>
 @endif
+@if($errors->any())
+    <script>document.getElementById('error-summary')?.focus();</script>
+@endif

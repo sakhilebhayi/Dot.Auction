@@ -9,7 +9,7 @@
         </a>
     </div>
 
-    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:1.5rem;align-items:start;">
+    <div class="dot-two-col" style="display:grid;grid-template-columns:1.4fr 1fr;gap:1.5rem;align-items:start;">
 
         {{-- Left column: auction details --}}
         <div>

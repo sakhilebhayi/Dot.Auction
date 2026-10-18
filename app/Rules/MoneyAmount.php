@@ -45,7 +45,7 @@ class MoneyAmount implements ValidationRule
     {
         if (self::toCents($value) === null) {
             $max = number_format((int) config('auction.listing.max_price', 100000000));
-            $fail("The :attribute must be an amount above 0 and up to {$max}, with at most 2 decimal places (for example 1250.50), and no commas or symbols.");
+            $fail("Enter the :attribute as an amount above 0 and up to {$max}, with at most 2 decimals and no commas or symbols, for example 1250.50.");
         }
     }
 }
