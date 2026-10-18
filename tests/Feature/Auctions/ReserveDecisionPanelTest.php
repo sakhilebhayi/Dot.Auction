@@ -92,4 +92,63 @@ class ReserveDecisionPanelTest extends TestCase
 
         $this->assertSame('pending', $proposal->fresh()->status);
     }
+
+    public function test_accepting_a_proposal_that_was_already_rejected_does_nothing(): void
+    {
+        Notification::fake();
+        ['seller' => $seller, 'auction' => $auction, 'proposal' => $proposal] = $this->makeProposal();
+
+        $panel = Livewire::actingAs($seller)
+            ->test(ReserveDecisionPanel::class, ['proposal' => $proposal]);
+
+        // Decided elsewhere (second tab / double submit) after this component hydrated.
+        $proposal->update(['status' => 'rejected', 'decided_at' => now()]);
+        $auction->update(['status' => 'ended']);
+
+        $panel->call('accept');
+
+        $this->assertSame('rejected', $proposal->fresh()->status);
+        Notification::assertNothingSent();
+    }
+
+    public function test_accept_twice_notifies_the_winner_once(): void
+    {
+        Notification::fake();
+        ['seller' => $seller, 'bidder' => $bidder, 'proposal' => $proposal] = $this->makeProposal();
+
+        $panel = Livewire::actingAs($seller)
+            ->test(ReserveDecisionPanel::class, ['proposal' => $proposal]);
+        $panel->call('accept');
+        $panel->call('accept');
+
+        $this->assertSame('accepted', $proposal->fresh()->status);
+        Notification::assertSentToTimes($bidder, AuctionWonNotification::class, 1);
+    }
+
+    public function test_a_decided_proposal_cannot_be_flipped_by_the_opposite_action(): void
+    {
+        Notification::fake();
+        ['seller' => $seller, 'proposal' => $proposal] = $this->makeProposal();
+
+        $panel = Livewire::actingAs($seller)
+            ->test(ReserveDecisionPanel::class, ['proposal' => $proposal]);
+        $panel->call('accept');
+        $panel->call('reject');
+
+        $this->assertSame('accepted', $proposal->fresh()->status);
+    }
+
+    public function test_rejecting_a_proposal_that_was_already_accepted_does_nothing(): void
+    {
+        ['seller' => $seller, 'auction' => $auction, 'proposal' => $proposal] = $this->makeProposal();
+
+        $panel = Livewire::actingAs($seller)
+            ->test(ReserveDecisionPanel::class, ['proposal' => $proposal]);
+        $proposal->update(['status' => 'accepted', 'decided_at' => now()]);
+
+        $panel->call('reject');
+
+        $this->assertSame('accepted', $proposal->fresh()->status);
+        $this->assertSame('pending_review', $auction->fresh()->status);
+    }
 }

@@ -37,6 +37,9 @@
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.1rem;margin-bottom:2rem;">
         @foreach($auctions as $auction)
         <a href="{{ route('auctions.show', $auction) }}" class="dot-card" style="display:block;padding:1.25rem;text-decoration:none;transition:border-color .15s;">
+            @if($auction->images->isNotEmpty())
+            <img class="dot-cover" src="{{ $auction->images->first()->url() }}" alt="" loading="lazy">
+            @endif
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
                 @if($auction->category)
                 <span style="font-size:0.68rem;padding:0.2rem 0.55rem;border-radius:9999px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.2);color:#a5b4fc;font-weight:600;">
@@ -46,7 +49,9 @@
                 <span></span>
                 @endif
 
-                @if($auction->status === 'active')
+                @if($auction->isScheduled())
+                <span class="dot-status dot-status-scheduled">Opens {{ $auction->starts_at->format('M j') }}</span>
+                @elseif($auction->status === 'active')
                 <span style="display:inline-flex;align-items:center;gap:0.3rem;font-size:0.65rem;padding:0.2rem 0.55rem;border-radius:9999px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);color:#4ade80;font-weight:600;">
                     <span style="width:5px;height:5px;border-radius:9999px;background:#22c55e;"></span> Live
                 </span>
@@ -64,7 +69,7 @@
             <div style="display:flex;align-items:flex-end;justify-content:space-between;">
                 <div>
                     <div style="font-size:10px;color:#52525b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.15rem;">Current bid</div>
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.15rem;font-weight:700;color:#fcd34d;">R{{ number_format($auction->current_price, 2) }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.15rem;font-weight:700;color:#fcd34d;">{{ \App\Models\Auction::money($auction->current_price) }}</div>
                 </div>
                 @if($auction->isActive())
                 <div style="text-align:right;font-size:11px;color:#71717a;">

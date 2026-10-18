@@ -3,18 +3,20 @@
 namespace App\Notifications;
 
 use App\Models\Auction;
+use App\Notifications\Concerns\SendsNotifyEvent;
+use App\Services\Notify\NotifyClient;
 use Illuminate\Notifications\Notification;
 
 /**
  * In-app (database channel only) notification for watchers of an auction
- * that is about to close. Not yet wired to any automatic trigger — no
- * scheduled sweep exists to find auctions within N hours of ends_at and
- * fan this out to watchers (see wiki.md §6/§7 roadmap). Dispatch manually
- * via `$user->notify(new AuctionEndingSoonNotification($auction))` until a
- * scheduled command exists.
+ * that is about to close. Sent by `auction:notify-ending-soon`, which
+ * records on the watchlist row that it has told that watcher, so each
+ * watcher hears once per auction.
  */
 class AuctionEndingSoonNotification extends Notification
 {
+    use SendsNotifyEvent;
+
     public function __construct(public Auction $auction) {}
 
     /**
@@ -22,7 +24,31 @@ class AuctionEndingSoonNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', ...$this->notifyChannel()];
+    }
+
+    /**
+     * The email-worthy copy of this notice for Dot.Notify (auction.ending_soon). Once per watcher
+     * per auction, which the command already guarantees, so the bucket is fixed.
+     *
+     * @return array{event: string, subject: int, bucket: string, data: array<string, string>}
+     */
+    public function toNotifyEvent(object $notifiable): array
+    {
+        $notify = app(NotifyClient::class);
+
+        return [
+            'event' => 'auction.ending_soon',
+            'subject' => $this->auction->id,
+            'bucket' => 'ending-soon',
+            'data' => [
+                'auction_title' => (string) $this->auction->title,
+                'current_price' => $notify->money($this->auction->current_price),
+                'currency' => (string) config('auction.currency_code', 'ZAR'),
+                'ends_at' => $this->auction->ends_at->toIso8601String(),
+                'url' => $notify->pageUrl('auctions.show', $this->auction),
+            ],
+        ];
     }
 
     /**

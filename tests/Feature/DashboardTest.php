@@ -101,4 +101,40 @@ class DashboardTest extends TestCase
         $response->assertSee('Closing Soon Lot');
         $response->assertDontSee('Far Future Lot');
     }
+
+    public function test_dashboard_has_no_dead_placeholder_links(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('href="#"', $html);
+        // Seller listing management shipped: the control is a real link now,
+        // not an aria-disabled stand-in.
+        $this->assertStringNotContainsString('aria-disabled="true"', $html);
+        $this->assertStringContainsString('href="'.route('seller.auctions.create').'"', $html);
+    }
+
+    public function test_dashboard_uses_the_same_currency_symbol_as_the_bid_panel(): void
+    {
+        $user = User::factory()->withPersonalTeam()->create();
+        Auction::create([
+            'seller_id' => $user->id,
+            'title' => 'Priced Lot',
+            'starting_price' => 1234.5,
+            'current_price' => 1500,
+            'buy_now_price' => 2000,
+            'bid_increment' => 5,
+            'status' => 'active',
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addHours(3),
+        ]);
+
+        $response = $this->actingAs($user)->get('/dashboard')->assertOk();
+
+        $response->assertSee('R1,234.50', false)
+            ->assertSee('R1,500.00', false)
+            ->assertSee('R2,000.00', false);
+        $this->assertStringNotContainsString('$1,', $response->getContent());
+    }
 }

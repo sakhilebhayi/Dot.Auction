@@ -16,11 +16,17 @@ class ReserveNotMetProposal extends Model
         'decided_at' => 'datetime',
     ];
 
+    /**
+     * @return BelongsTo<Auction, $this>
+     */
     public function auction(): BelongsTo
     {
         return $this->belongsTo(Auction::class);
     }
 
+    /**
+     * @return BelongsTo<Bid, $this>
+     */
     public function bid(): BelongsTo
     {
         return $this->belongsTo(Bid::class);

@@ -25,6 +25,8 @@ class Watchlist extends Model
 
     protected $fillable = ['user_id', 'auction_id'];
 
+    protected $casts = ['ending_soon_notified_at' => 'datetime'];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

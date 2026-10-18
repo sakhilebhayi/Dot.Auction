@@ -1,7 +1,11 @@
 <?php
 
 use App\Http\Controllers\Auctions\AuctionController;
+use App\Http\Controllers\Auctions\AuctionImageController;
 use App\Http\Controllers\Auth\EcosystemAuthController;
+use App\Http\Controllers\RealtimeHealthController;
+use App\Http\Controllers\Seller\ImageController;
+use App\Http\Controllers\Seller\ListingController;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
 use App\Models\Bid;
@@ -15,6 +19,11 @@ Route::get('/auth/ecosystem', [EcosystemAuthController::class, 'handle'])->name(
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Real-time infrastructure health check -- unauthenticated like Laravel's
+// own /up (bootstrap/app.php), for uptime monitors/load balancers.
+Route::get('/up/realtime', [RealtimeHealthController::class, 'check'])
+    ->name('health.realtime');
 
 // Cookie Policy — Jetstream's termsAndPrivacyPolicy feature covers terms.show/policy.show
 // natively. There's no Jetstream equivalent for a Cookie Policy, so this one is wired by hand,
@@ -43,11 +52,12 @@ Route::middleware([
         }
 
         $userId = auth()->id();
-        $activeAuctions = Auction::where('seller_id', $userId)->where('status', 'active')->count();
+        $activeAuctions = Auction::where('seller_id', $userId)->where('status', 'active')
+            ->where('starts_at', '<=', now())->where('ends_at', '>', now())->count();
         $totalAuctions = Auction::where('seller_id', $userId)->count();
         $totalBids = Bid::whereHas('auction', fn ($q) => $q->where('seller_id', $userId))->count();
         $recentAuctions = Auction::where('seller_id', $userId)
-            ->with('category')->latest()->limit(8)->get();
+            ->with('category')->withCount('bids')->latest('id')->limit(8)->get();
         $categories = AuctionCategory::withCount([
             'auctions' => fn ($q) => $q->where('seller_id', $userId),
         ])->get();
@@ -72,4 +82,22 @@ Route::middleware([
 
     Route::get('/auctions', [AuctionController::class, 'index'])->name('auctions.index');
     Route::get('/auctions/{auction}', [AuctionController::class, 'show'])->name('auctions.show');
+    // Listing photos sit on a private disk; this is the only way to read one.
+    Route::get('/auctions/{auction}/images/{image}', [AuctionImageController::class, 'show'])
+        ->name('auctions.images.show')->scopeBindings();
+
+    // Seller listing management. Policy checks live in the controller and
+    // SaveListingRequest; bid-dependent rules in App\Services\Auctions\ListingManager.
+    Route::prefix('seller/auctions')->name('seller.auctions.')->group(function () {
+        Route::get('/', [ListingController::class, 'index'])->name('index');
+        Route::get('/create', [ListingController::class, 'create'])->name('create');
+        Route::post('/', [ListingController::class, 'store'])->name('store');
+        Route::get('/{auction}/edit', [ListingController::class, 'edit'])->name('edit');
+        Route::put('/{auction}', [ListingController::class, 'update'])->name('update');
+        Route::post('/{auction}/publish', [ListingController::class, 'publish'])->name('publish');
+        Route::post('/{auction}/cancel', [ListingController::class, 'cancel'])->name('cancel');
+        Route::delete('/{auction}', [ListingController::class, 'destroy'])->name('destroy');
+        Route::post('/{auction}/images', [ImageController::class, 'store'])->name('images.store');
+        Route::delete('/{auction}/images/{image}', [ImageController::class, 'destroy'])->name('images.destroy')->scopeBindings();
+    });
 });

@@ -9,7 +9,7 @@
         </a>
     </div>
 
-    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:1.5rem;align-items:start;">
+    <div class="dot-two-col" style="display:grid;grid-template-columns:1.4fr 1fr;gap:1.5rem;align-items:start;">
 
         {{-- Left column: auction details --}}
         <div>
@@ -33,6 +33,26 @@
                 @endauth
             </div>
 
+            @if($auction->images->isNotEmpty())
+            @php($photoCount = $auction->images->count())
+            <div style="margin-bottom:1.25rem;">
+                <img class="dot-gallery-main" src="{{ $auction->images->first()->url() }}"
+                     width="{{ $auction->images->first()->width }}" height="{{ $auction->images->first()->height }}"
+                     alt="{{ $auction->title }}, photo 1 of {{ $photoCount }}">
+                @if($photoCount > 1)
+                <ul class="dot-thumbs" style="list-style:none;margin:0.6rem 0 0;padding:0;">
+                    @foreach($auction->images as $photo)
+                    <li>
+                        <a href="{{ $photo->url() }}" target="_blank" rel="noopener" aria-label="Open photo {{ $loop->iteration }} of {{ $photoCount }} in a new tab">
+                            <img src="{{ $photo->url() }}" alt="" loading="lazy" width="72" height="72">
+                        </a>
+                    </li>
+                    @endforeach
+                </ul>
+                @endif
+            </div>
+            @endif
+
             @if($auction->description)
             <div class="dot-card" style="padding:1.25rem 1.4rem;margin-bottom:1.25rem;">
                 <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#71717a;margin-bottom:0.5rem;">Description</div>
@@ -43,11 +63,11 @@
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.85rem;margin-bottom:1.25rem;">
                 <div class="dot-card" style="padding:1rem 1.15rem;">
                     <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#52525b;margin-bottom:0.4rem;">Starting Price</div>
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;color:#f4f4f5;">R{{ number_format($auction->starting_price, 2) }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;color:#f4f4f5;">{{ \App\Models\Auction::money($auction->starting_price) }}</div>
                 </div>
                 <div class="dot-card" style="padding:1rem 1.15rem;">
                     <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#52525b;margin-bottom:0.4rem;">Bid Increment</div>
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;color:#f4f4f5;">R{{ number_format($auction->bid_increment, 2) }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;color:#f4f4f5;">{{ \App\Models\Auction::money($auction->bid_increment) }}</div>
                 </div>
                 <div class="dot-card" style="padding:1rem 1.15rem;">
                     <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#52525b;margin-bottom:0.4rem;">Buy Now</div>
@@ -76,6 +96,24 @@
         <div>
             @auth
                 <livewire:auctions.bid-panel :auction="$auction" :key="'bid-'.$auction->id" />
+                @if($settlement)
+                <div class="dot-panel" style="margin-top:1rem;">
+                    <div class="dot-panel-body">
+                        <h2 class="dot-section-title">Payment pending</h2>
+                        @if($settlement->winner_id === auth()->id())
+                            <p class="dot-help" style="font-size:13px;">
+                                You won this auction at {{ $settlement->amount() }}. Dot.Auction has not opened payment yet, so nothing is due now.
+                                You will be told when the payment step opens.
+                            </p>
+                        @else
+                            <p class="dot-help" style="font-size:13px;">
+                                Sold for {{ $settlement->amount() }}. The sale is recorded as awaiting payment; Dot.Auction does not collect payment yet.
+                                You will be told when the payment step opens.
+                            </p>
+                        @endif
+                    </div>
+                </div>
+                @endif
             @else
                 <div class="dot-card" style="padding:1.5rem;text-align:center;">
                     <span class="material-symbols-rounded" style="font-size:28px;color:#52525b;display:block;margin-bottom:0.6rem;">lock</span>
