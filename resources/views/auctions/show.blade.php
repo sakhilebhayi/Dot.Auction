@@ -43,11 +43,11 @@
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.85rem;margin-bottom:1.25rem;">
                 <div class="dot-card" style="padding:1rem 1.15rem;">
                     <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#52525b;margin-bottom:0.4rem;">Starting Price</div>
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;color:#f4f4f5;">R{{ number_format($auction->starting_price, 2) }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;color:#f4f4f5;">{{ \App\Models\Auction::money($auction->starting_price) }}</div>
                 </div>
                 <div class="dot-card" style="padding:1rem 1.15rem;">
                     <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#52525b;margin-bottom:0.4rem;">Bid Increment</div>
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;color:#f4f4f5;">R{{ number_format($auction->bid_increment, 2) }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;color:#f4f4f5;">{{ \App\Models\Auction::money($auction->bid_increment) }}</div>
                 </div>
                 <div class="dot-card" style="padding:1rem 1.15rem;">
                     <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#52525b;margin-bottom:0.4rem;">Buy Now</div>

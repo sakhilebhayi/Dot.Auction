@@ -6,8 +6,10 @@ use App\Events\AuctionSettled;
 use App\Events\ReserveNotMet;
 use App\Models\Auction;
 use App\Models\Bid;
+use App\Models\ReserveNotMetProposal;
 use App\Models\User;
 use App\Notifications\AuctionWonNotification;
+use App\Services\Auctions\AuctionSettler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
@@ -116,5 +118,61 @@ class SettleEndedAuctionsCommandTest extends TestCase
         $this->artisan('auction:settle-ended')->assertSuccessful();
 
         $this->assertSame('active', $auction->fresh()->status);
+    }
+
+    public function test_settling_a_stale_copy_of_an_already_settled_auction_is_a_no_op(): void
+    {
+        Notification::fake();
+        Event::fake([AuctionSettled::class]);
+        $auction = $this->makeEndedAuction(['current_price' => 200]);
+        $bidder = User::factory()->create();
+        Bid::create(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 200, 'is_winning' => true]);
+
+        $stale = Auction::find($auction->id); // still says "active"
+        $this->artisan('auction:settle-ended')->assertSuccessful();
+
+        $this->assertFalse(app(AuctionSettler::class)->settle($stale));
+
+        Notification::assertSentToTimes($bidder, AuctionWonNotification::class, 1);
+        Event::assertDispatchedTimes(AuctionSettled::class, 1);
+    }
+
+    public function test_settling_twice_never_creates_a_second_reserve_proposal(): void
+    {
+        Notification::fake();
+        $auction = $this->makeEndedAuction(['reserve_price' => 500, 'current_price' => 300]);
+        $bidder = User::factory()->create();
+        Bid::create(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 300, 'is_winning' => true]);
+
+        $stale = Auction::find($auction->id);
+        $this->artisan('auction:settle-ended')->assertSuccessful();
+        $this->assertFalse(app(AuctionSettler::class)->settle($stale));
+        $this->artisan('auction:settle-ended')->assertSuccessful();
+
+        $this->assertSame(1, ReserveNotMetProposal::where('auction_id', $auction->id)->count());
+        $this->assertSame('pending_review', $auction->fresh()->status);
+    }
+
+    public function test_the_settler_refuses_an_auction_whose_window_reopened(): void
+    {
+        // e.g. the seller/admin extended ends_at after the command selected it.
+        $auction = $this->makeEndedAuction();
+        $stale = Auction::find($auction->id);
+        $auction->update(['ends_at' => now()->addDay()]);
+
+        $this->assertFalse(app(AuctionSettler::class)->settle($stale));
+        $this->assertSame('active', $auction->fresh()->status);
+    }
+
+    public function test_reserve_met_comparison_is_exact_to_the_cent(): void
+    {
+        Notification::fake();
+        $auction = $this->makeEndedAuction(['reserve_price' => '0.30', 'current_price' => '0.30']);
+        $bidder = User::factory()->create();
+        Bid::create(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => '0.30', 'is_winning' => true]);
+
+        $this->artisan('auction:settle-ended')->assertSuccessful();
+
+        $this->assertSame('ended', $auction->fresh()->status);
     }
 }

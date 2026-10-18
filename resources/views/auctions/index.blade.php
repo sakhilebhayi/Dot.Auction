@@ -64,7 +64,7 @@
             <div style="display:flex;align-items:flex-end;justify-content:space-between;">
                 <div>
                     <div style="font-size:10px;color:#52525b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.15rem;">Current bid</div>
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.15rem;font-weight:700;color:#fcd34d;">R{{ number_format($auction->current_price, 2) }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.15rem;font-weight:700;color:#fcd34d;">{{ \App\Models\Auction::money($auction->current_price) }}</div>
                 </div>
                 @if($auction->isActive())
                 <div style="text-align:right;font-size:11px;color:#71717a;">

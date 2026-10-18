@@ -71,9 +71,42 @@ class Auction extends Model
             && now()->between($this->starts_at, $this->ends_at);
     }
 
+    /**
+     * Convert a money value to integer cents without float rounding drift.
+     * Strings (what the decimal:2 casts return) are parsed digit by digit;
+     * floats/ints (user input) are rounded to the nearest cent.
+     */
+    public static function toCents(string|int|float|null $amount): int
+    {
+        if ($amount === null) {
+            return 0;
+        }
+
+        if (is_string($amount) && preg_match('/^(-?)(\d+)(?:\.(\d+))?$/', trim($amount), $m)) {
+            $cents = ((int) $m[2]) * 100 + (int) str_pad(substr($m[3] ?? '', 0, 2), 2, '0');
+
+            return $m[1] === '-' ? -$cents : $cents;
+        }
+
+        return (int) round(((float) $amount) * 100);
+    }
+
+    /**
+     * Format an amount with the app's single configured currency symbol.
+     */
+    public static function money(string|int|float|null $amount): string
+    {
+        return config('auction.currency_symbol', 'R').number_format(self::toCents($amount) / 100, 2);
+    }
+
+    public function minimumBidCents(): int
+    {
+        return self::toCents($this->current_price) + self::toCents($this->bid_increment);
+    }
+
     public function minimumBid(): float
     {
-        return (float) $this->current_price + (float) $this->bid_increment;
+        return $this->minimumBidCents() / 100;
     }
 
     /**
@@ -88,7 +121,7 @@ class Auction extends Model
             return true;
         }
 
-        return (float) $this->current_price >= (float) $this->reserve_price;
+        return self::toCents($this->current_price) >= self::toCents($this->reserve_price);
     }
 
     /**

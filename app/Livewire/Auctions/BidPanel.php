@@ -2,11 +2,12 @@
 
 namespace App\Livewire\Auctions;
 
-use App\Events\BidPlaced;
 use App\Models\Auction;
-use App\Models\Bid;
-use App\Notifications\OutbidNotification;
+use App\Services\Auctions\BidPlacer;
+use App\Services\Auctions\BidRejected;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -17,8 +18,15 @@ class BidPanel extends Component
 {
     public Auction $auction;
 
-    #[Validate('required|numeric')]
+    #[Validate('required|numeric|min:0.01')]
     public float $bidAmount = 0;
+
+    /**
+     * Client token for idempotency: a double-click or replayed request
+     * carries the same token and is rejected by BidPlacer; it rotates after
+     * every accepted bid.
+     */
+    public string $submissionToken = '';
 
     public bool $placing = false;
 
@@ -30,6 +38,7 @@ class BidPanel extends Component
     {
         $this->auction = $auction;
         $this->bidAmount = $auction->minimumBid();
+        $this->submissionToken = Str::uuid()->toString();
     }
 
     #[Computed]
@@ -79,59 +88,55 @@ class BidPanel extends Component
         unset($this->recentBids);
     }
 
+    /**
+     * All rules (window, minimum, seller, duplicates) are enforced inside
+     * BidPlacer under a row lock against freshly re-read data -- this
+     * component's hydrated $auction is only ever used for display, never
+     * to decide whether a bid is legal.
+     */
     public function placeBid(): void
     {
         $this->validate();
         $this->error = null;
         $this->success = null;
 
-        if (! $this->auction->isActive()) {
-            $this->error = 'This auction is no longer active.';
+        $limit = config('auction.bid_rate_limit');
+        $rateKey = 'bid:'.auth()->id();
+
+        if (RateLimiter::tooManyAttempts($rateKey, $limit['max_attempts'])) {
+            $this->error = 'Too many bids. Try again in '.RateLimiter::availableIn($rateKey).' seconds.';
 
             return;
         }
-
-        if (auth()->id() === $this->auction->seller_id) {
-            $this->error = 'You cannot bid on your own auction.';
-
-            return;
-        }
-
-        $minimum = $this->auction->minimumBid();
-        if ($this->bidAmount < $minimum) {
-            $this->error = 'Minimum bid is R'.number_format($minimum, 2);
-
-            return;
-        }
+        RateLimiter::hit($rateKey, $limit['decay_seconds']);
 
         $this->placing = true;
 
-        // Capture the previous leader before we overwrite is_winning, so we
-        // can notify them that they've been outbid.
-        $previousWinner = $this->auction->bids()->where('is_winning', true)->first();
+        try {
+            app(BidPlacer::class)->place(
+                $this->auction,
+                auth()->user(),
+                $this->bidAmount,
+                $this->submissionToken,
+            );
+        } catch (BidRejected $e) {
+            $this->error = $e->getMessage();
+            $this->placing = false;
+            $this->syncFromDatabase();
 
-        // Mark previous winning bid as not winning
-        $this->auction->bids()->where('is_winning', true)->update(['is_winning' => false]);
-
-        $bid = Bid::create([
-            'auction_id' => $this->auction->id,
-            'bidder_id' => auth()->id(),
-            'amount' => $this->bidAmount,
-            'is_winning' => true,
-        ]);
-
-        $this->auction->update(['current_price' => $this->bidAmount]);
-        $this->auction->refresh();
-        $this->bidAmount = $this->auction->minimumBid();
-
-        event(new BidPlaced($bid));
-
-        if ($previousWinner && $previousWinner->bidder_id !== $bid->bidder_id) {
-            $previousWinner->bidder?->notify(new OutbidNotification($bid));
+            return;
         }
 
+        $this->submissionToken = Str::uuid()->toString();
+        $this->syncFromDatabase();
         $this->success = 'Bid placed successfully!';
         $this->placing = false;
+    }
+
+    private function syncFromDatabase(): void
+    {
+        $this->auction->refresh();
+        $this->bidAmount = $this->auction->minimumBid();
         unset($this->recentBids);
     }
 

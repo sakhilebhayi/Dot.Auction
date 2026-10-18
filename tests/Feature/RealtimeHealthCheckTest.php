@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
@@ -38,10 +39,8 @@ class RealtimeHealthCheckTest extends TestCase
         fclose($server);
 
         $response->assertOk()
-            ->assertJsonPath('status', 'ok')
-            ->assertJsonPath('checks.broadcasting_config.status', 'ok')
-            ->assertJsonPath('checks.queue_connection.status', 'ok')
-            ->assertJsonPath('checks.reverb_process.status', 'ok');
+            ->assertExactJson(['status' => 'ok']);
+        $this->assertStringNotContainsString((string) $port, $response->getContent());
     }
 
     public function test_reports_degraded_when_broadcast_driver_is_not_reverb(): void
@@ -50,8 +49,7 @@ class RealtimeHealthCheckTest extends TestCase
 
         $this->getJson('/up/realtime')
             ->assertStatus(503)
-            ->assertJsonPath('status', 'degraded')
-            ->assertJsonPath('checks.broadcasting_config.status', 'fail');
+            ->assertExactJson(['status' => 'degraded']);
     }
 
     public function test_reports_degraded_when_reverb_credentials_are_missing(): void
@@ -66,7 +64,7 @@ class RealtimeHealthCheckTest extends TestCase
 
         $this->getJson('/up/realtime')
             ->assertStatus(503)
-            ->assertJsonPath('checks.broadcasting_config.status', 'fail');
+            ->assertExactJson(['status' => 'degraded']);
     }
 
     public function test_reports_degraded_when_reverb_process_is_unreachable(): void
@@ -81,7 +79,39 @@ class RealtimeHealthCheckTest extends TestCase
 
         $this->getJson('/up/realtime')
             ->assertStatus(503)
-            ->assertJsonPath('status', 'degraded')
-            ->assertJsonPath('checks.reverb_process.status', 'fail');
+            ->assertExactJson(['status' => 'degraded']);
+    }
+
+    public function test_the_response_never_leaks_the_reverb_host_or_port(): void
+    {
+        $this->configureHealthyBroadcasting();
+        config([
+            'queue.default' => 'database',
+            'reverb.servers.reverb.host' => '10.9.8.7',
+            'reverb.servers.reverb.port' => 18080,
+        ]);
+
+        $response = $this->getJson('/up/realtime');
+
+        $response->assertStatus(503)->assertExactJson(['status' => 'degraded']);
+        $this->assertStringNotContainsString('10.9.8.7', $response->getContent());
+        $this->assertStringNotContainsString('18080', $response->getContent());
+    }
+
+    public function test_the_failing_link_is_logged_server_side_instead(): void
+    {
+        $this->configureHealthyBroadcasting();
+        config([
+            'queue.default' => 'database',
+            'reverb.servers.reverb.host' => '127.0.0.1',
+            'reverb.servers.reverb.port' => 1,
+        ]);
+        Log::spy();
+
+        $this->getJson('/up/realtime')->assertStatus(503);
+
+        Log::shouldHaveReceived('warning')->withArgs(
+            fn ($message, $context = []) => str_contains($message, 'reverb_process')
+        )->once();
     }
 }

@@ -17,10 +17,10 @@
                 <span class="material-symbols-rounded" style="font-size:18px;">storefront</span>
                 Browse Auctions
             </a>
-            <a href="#" title="Seller listing management — coming soon" style="display:inline-flex;align-items:center;gap:0.5rem;border-radius:9999px;background:linear-gradient(135deg,#d97706,#92400e);padding:0.7rem 1.4rem;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:#fff;text-decoration:none;box-shadow:0 8px 24px rgba(217,119,6,0.35);transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+            <span aria-disabled="true" title="Seller listing management is coming soon" style="display:inline-flex;align-items:center;gap:0.5rem;border-radius:9999px;background:rgba(255,255,255,0.04);border:1px dashed rgba(255,255,255,0.14);padding:0.7rem 1.4rem;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:#71717a;cursor:not-allowed;">
                 <span class="material-symbols-rounded" style="font-size:18px;">add_circle</span>
-                List Auction
-            </a>
+                List Auction &middot; coming soon
+            </span>
         </div>
     </div>
 
@@ -149,7 +149,7 @@
                     <div style="font-size:0.82rem;font-weight:600;color:#f4f4f5;font-family:'Syne',sans-serif;">{{ $lot->title }}</div>
                     <div style="font-size:0.7rem;color:#71717a;margin-top:0.15rem;">{{ $lot->category->name ?? 'Uncategorized' }} · ends {{ $lot->ends_at->diffForHumans() }}</div>
                 </div>
-                <div style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:700;color:#fcd34d;">R{{ number_format($lot->current_price, 2) }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:700;color:#fcd34d;">{{ \App\Models\Auction::money($lot->current_price) }}</div>
             </a>
             @endforeach
         </div>
@@ -204,7 +204,7 @@
                             </div>
                             @if($auction->buy_now_price)
                             <div style="font-size:0.65rem;color:#d97706;margin-top:0.2rem;font-weight:600;">
-                                Buy Now: ${{ number_format($auction->buy_now_price, 2) }}
+                                Buy Now: {{ \App\Models\Auction::money($auction->buy_now_price) }}
                             </div>
                             @endif
                         </td>
@@ -245,14 +245,14 @@
                         {{-- Starting Price --}}
                         <td style="padding:1rem;text-align:right;">
                             <span style="font-size:0.8rem;font-weight:600;color:#a1a1aa;font-family:'Syne',sans-serif;">
-                                ${{ number_format($auction->starting_price, 2) }}
+                                {{ \App\Models\Auction::money($auction->starting_price) }}
                             </span>
                         </td>
 
                         {{-- Current Price --}}
                         <td style="padding:1rem;text-align:right;">
                             <span style="font-size:0.8rem;font-weight:700;color:#fcd34d;font-family:'Syne',sans-serif;">
-                                ${{ number_format($auction->current_price, 2) }}
+                                {{ \App\Models\Auction::money($auction->current_price) }}
                             </span>
                         </td>
 
@@ -274,11 +274,11 @@
         @else
         <div style="padding:3rem 1.6rem;text-align:center;">
             <span class="material-symbols-rounded" style="font-size:40px;color:#374151;display:block;margin-bottom:0.75rem;">gavel</span>
-            <div style="font-size:0.85rem;color:#555e7a;font-weight:500;">No auctions yet. List your first auction to get started.</div>
-            <a href="#" style="display:inline-flex;align-items:center;gap:0.4rem;margin-top:1rem;font-size:0.78rem;font-weight:600;color:#d97706;text-decoration:none;">
+            <div style="font-size:0.85rem;color:#555e7a;font-weight:500;">No auctions yet. Seller listing tools are coming soon.</div>
+            <div aria-disabled="true" style="display:inline-flex;align-items:center;gap:0.4rem;margin-top:1rem;font-size:0.78rem;font-weight:600;color:#71717a;cursor:not-allowed;">
                 <span class="material-symbols-rounded" style="font-size:16px;">add_circle</span>
-                List Auction
-            </a>
+                Listing tools coming soon
+            </div>
         </div>
         @endif
     </div>
