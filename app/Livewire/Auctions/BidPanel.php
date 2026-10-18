@@ -5,6 +5,7 @@ namespace App\Livewire\Auctions;
 use App\Models\Auction;
 use App\Services\Auctions\BidPlacer;
 use App\Services\Auctions\BidRejected;
+use App\Services\Auctions\BuyNowPurchaser;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -34,6 +35,12 @@ class BidPanel extends Component
 
     public ?string $success = null;
 
+    /**
+     * True once this component's user has taken Buy Now, so the panel can
+     * say so instead of the generic "ended" line.
+     */
+    public bool $purchased = false;
+
     public function mount(Auction $auction): void
     {
         $this->auction = $auction;
@@ -50,6 +57,10 @@ class BidPanel extends Component
     #[Computed]
     public function timeRemaining(): string
     {
+        if ($this->auction->isScheduled()) {
+            return 'Not open yet';
+        }
+
         if (! $this->auction->isActive()) {
             return 'Ended';
         }
@@ -111,6 +122,7 @@ class BidPanel extends Component
         RateLimiter::hit($rateKey, $limit['decay_seconds']);
 
         $this->placing = true;
+        $closedAtBefore = $this->auction->fresh()?->ends_at;
 
         try {
             app(BidPlacer::class)->place(
@@ -130,7 +142,45 @@ class BidPanel extends Component
         $this->submissionToken = Str::uuid()->toString();
         $this->syncFromDatabase();
         $this->success = 'Bid placed successfully!';
+
+        if ($closedAtBefore !== null && $this->auction->ends_at->greaterThan($closedAtBefore)) {
+            $this->success .= ' Closing time extended to '.$this->auction->ends_at->format('H:i:s').' because the bid came in the final minutes.';
+        }
+
         $this->placing = false;
+    }
+
+    /**
+     * Take the Buy Now option. Every rule is enforced by BuyNowPurchaser
+     * under a row lock against fresh data; this only relays the outcome.
+     */
+    public function buyNow(): void
+    {
+        $this->error = null;
+        $this->success = null;
+
+        $limit = config('auction.bid_rate_limit');
+        $rateKey = 'bid:'.auth()->id();
+
+        if (RateLimiter::tooManyAttempts($rateKey, $limit['max_attempts'])) {
+            $this->error = 'Too many attempts. Try again in '.RateLimiter::availableIn($rateKey).' seconds.';
+
+            return;
+        }
+        RateLimiter::hit($rateKey, $limit['decay_seconds']);
+
+        try {
+            app(BuyNowPurchaser::class)->buy($this->auction, auth()->user());
+        } catch (BidRejected $e) {
+            $this->error = $e->getMessage();
+            $this->syncFromDatabase();
+
+            return;
+        }
+
+        $this->purchased = true;
+        $this->syncFromDatabase();
+        $this->success = 'You bought this auction for '.Auction::money($this->auction->current_price).'. Payment is not open yet, so nothing is due now.';
     }
 
     private function syncFromDatabase(): void

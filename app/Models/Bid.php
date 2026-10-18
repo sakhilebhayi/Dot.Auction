@@ -15,11 +15,17 @@ class Bid extends Model
         'amount' => 'decimal:2',
     ];
 
+    /**
+     * @return BelongsTo<Auction, $this>
+     */
     public function auction(): BelongsTo
     {
         return $this->belongsTo(Auction::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function bidder(): BelongsTo
     {
         return $this->belongsTo(User::class, 'bidder_id');

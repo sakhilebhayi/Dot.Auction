@@ -7,6 +7,7 @@ use App\Models\Auction;
 use App\Models\Bid;
 use App\Models\User;
 use App\Notifications\OutbidNotification;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -22,6 +23,9 @@ use Illuminate\Support\Facades\DB;
  * its own hydrated copy. A partial unique index on bids(auction_id) WHERE
  * is_winning is the database-level backstop: even a code path that skips
  * this lock cannot persist two winners.
+ *
+ * A bid in the closing minutes also moves ends_at (anti-snipe) inside that
+ * same transaction -- see snipeExtension().
  *
  * BidPlaced and the outbid notification are dispatched only after commit,
  * so listeners and Reverb clients never observe a bid that later rolls back.
@@ -96,7 +100,13 @@ class BidPlacer
                     'is_winning' => true,
                 ]);
 
-                $locked->update(['current_price' => $this->decimal($amountCents)]);
+                // Anti-snipe: decided from the LOCKED row, and written in the
+                // same UPDATE as the new price, so the bid and the moved
+                // close commit (or roll back) together.
+                $locked->update(array_merge(
+                    ['current_price' => $this->decimal($amountCents)],
+                    $this->snipeExtension($locked),
+                ));
                 $bid->setRelation('auction', $locked);
 
                 $previousBidderId = $previousWinner?->bidder_id;
@@ -119,6 +129,34 @@ class BidPlacer
 
             throw $e;
         }
+    }
+
+    /**
+     * The ends_at / snipe_extensions change a bid placed right now earns,
+     * or [] when none applies. A bid inside the final `snipe_window_minutes`
+     * (the exact boundary counts) pushes the close out by
+     * `snipe_extension_minutes`, until `snipe_max_extensions` is used up.
+     *
+     * @return array{ends_at?: CarbonInterface, snipe_extensions?: int}
+     */
+    private function snipeExtension(Auction $locked): array
+    {
+        $window = (int) config('auction.snipe_window_minutes', 5);
+        $extension = (int) config('auction.snipe_extension_minutes', 5);
+        $max = (int) config('auction.snipe_max_extensions', 6);
+
+        if ($window <= 0 || $extension <= 0 || $locked->snipe_extensions >= $max) {
+            return [];
+        }
+
+        if ($locked->ends_at->greaterThan(now()->addMinutes($window))) {
+            return [];
+        }
+
+        return [
+            'ends_at' => $locked->ends_at->copy()->addMinutes($extension),
+            'snipe_extensions' => $locked->snipe_extensions + 1,
+        ];
     }
 
     /**
@@ -146,6 +184,6 @@ class BidPlacer
 
     private function decimal(int $cents): string
     {
-        return intdiv($cents, 100).'.'.str_pad((string) ($cents % 100), 2, '0', STR_PAD_LEFT);
+        return Auction::fromCents($cents);
     }
 }

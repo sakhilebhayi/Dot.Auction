@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auctions;
 
+use App\Events\AuctionSettled;
 use App\Models\Auction;
 use App\Models\ReserveNotMetProposal;
 use App\Notifications\AuctionWonNotification;
@@ -24,7 +25,12 @@ class ReserveDecisionPanel extends Component
         Gate::authorize('review', $this->proposal);
 
         $this->decide('accepted', function (Auction $auction, ReserveNotMetProposal $proposal) {
-            DB::afterCommit(fn () => $proposal->bid->bidder->notify(new AuctionWonNotification($auction)));
+            DB::afterCommit(function () use ($auction, $proposal) {
+                $proposal->bid->bidder->notify(new AuctionWonNotification($auction));
+                // The sale is now settled just like a reserve-met one, so the
+                // payment hand-off listener must hear about it too.
+                event(new AuctionSettled($auction, $proposal->bid));
+            });
         });
     }
 

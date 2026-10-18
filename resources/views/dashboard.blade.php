@@ -17,10 +17,10 @@
                 <span class="material-symbols-rounded" style="font-size:18px;">storefront</span>
                 Browse Auctions
             </a>
-            <span aria-disabled="true" title="Seller listing management is coming soon" style="display:inline-flex;align-items:center;gap:0.5rem;border-radius:9999px;background:rgba(255,255,255,0.04);border:1px dashed rgba(255,255,255,0.14);padding:0.7rem 1.4rem;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:#71717a;cursor:not-allowed;">
+            <a href="{{ route('seller.auctions.create') }}" class="dot-btn dot-btn-primary" style="border-radius:9999px;padding:0.7rem 1.4rem;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;">
                 <span class="material-symbols-rounded" style="font-size:18px;">add_circle</span>
-                List Auction &middot; coming soon
-            </span>
+                List an auction
+            </a>
         </div>
     </div>
 
@@ -173,114 +173,16 @@
     </div>
     @endif
 
-    {{-- ────────────────────────── RECENT AUCTIONS TABLE ────────────────────────── --}}
-    <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;margin-bottom:2rem;overflow:hidden;">
-        <div style="padding:1.4rem 1.6rem;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">
-            <div style="font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:700;color:#f4f4f5;">Recent Auctions</div>
-            <a href="{{ route('auctions.index') }}" style="font-size:0.72rem;font-weight:600;color:#d97706;text-decoration:none;">View all</a>
-        </div>
-
-        @if($recentAuctions->count())
-        <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;">
-                <thead>
-                    <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                        <th style="padding:0.85rem 1.6rem;text-align:left;font-size:0.68rem;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">Title</th>
-                        <th style="padding:0.85rem 1rem;text-align:left;font-size:0.68rem;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">Category</th>
-                        <th style="padding:0.85rem 1rem;text-align:left;font-size:0.68rem;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">Status</th>
-                        <th style="padding:0.85rem 1rem;text-align:right;font-size:0.68rem;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">Starting</th>
-                        <th style="padding:0.85rem 1rem;text-align:right;font-size:0.68rem;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">Current</th>
-                        <th style="padding:0.85rem 1.6rem 0.85rem 1rem;text-align:left;font-size:0.68rem;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">Ends At</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($recentAuctions as $auction)
-                    <tr style="border-bottom:1px solid rgba(67,70,86,0.1);transition:background 0.15s;" onmouseover="this.style.background='rgba(217,119,6,0.04)'" onmouseout="this.style.background='transparent'">
-
-                        {{-- Title --}}
-                        <td style="padding:1rem 1.6rem;">
-                            <div style="font-size:0.82rem;font-weight:600;color:#f4f4f5;font-family:'Syne',sans-serif;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                                {{ $auction->title }}
-                            </div>
-                            @if($auction->buy_now_price)
-                            <div style="font-size:0.65rem;color:#d97706;margin-top:0.2rem;font-weight:600;">
-                                Buy Now: {{ \App\Models\Auction::money($auction->buy_now_price) }}
-                            </div>
-                            @endif
-                        </td>
-
-                        {{-- Category --}}
-                        <td style="padding:1rem;">
-                            @if($auction->category)
-                            <span style="font-size:0.7rem;padding:0.25rem 0.6rem;border-radius:9999px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.2);color:#a5b4fc;font-weight:600;">
-                                {{ $auction->category->name }}
-                            </span>
-                            @else
-                            <span style="font-size:0.7rem;color:#555e7a;">—</span>
-                            @endif
-                        </td>
-
-                        {{-- Status --}}
-                        <td style="padding:1rem;">
-                            @if($auction->status === 'active')
-                            <span style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.7rem;padding:0.25rem 0.65rem;border-radius:9999px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);color:#4ade80;font-weight:600;">
-                                <span style="width:5px;height:5px;border-radius:9999px;background:#22c55e;animation:pulse 2s infinite;flex-shrink:0;"></span>
-                                Active
-                            </span>
-                            @elseif($auction->status === 'draft')
-                            <span style="font-size:0.7rem;padding:0.25rem 0.65rem;border-radius:9999px;background:rgba(107,114,128,0.15);border:1px solid rgba(107,114,128,0.25);color:#9ca3af;font-weight:600;">
-                                Draft
-                            </span>
-                            @elseif($auction->status === 'ended')
-                            <span style="font-size:0.7rem;padding:0.25rem 0.65rem;border-radius:9999px;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);color:#93c5fd;font-weight:600;">
-                                Ended
-                            </span>
-                            @elseif($auction->status === 'cancelled')
-                            <span style="font-size:0.7rem;padding:0.25rem 0.65rem;border-radius:9999px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;font-weight:600;">
-                                Cancelled
-                            </span>
-                            @endif
-                        </td>
-
-                        {{-- Starting Price --}}
-                        <td style="padding:1rem;text-align:right;">
-                            <span style="font-size:0.8rem;font-weight:600;color:#a1a1aa;font-family:'Syne',sans-serif;">
-                                {{ \App\Models\Auction::money($auction->starting_price) }}
-                            </span>
-                        </td>
-
-                        {{-- Current Price --}}
-                        <td style="padding:1rem;text-align:right;">
-                            <span style="font-size:0.8rem;font-weight:700;color:#fcd34d;font-family:'Syne',sans-serif;">
-                                {{ \App\Models\Auction::money($auction->current_price) }}
-                            </span>
-                        </td>
-
-                        {{-- Ends At --}}
-                        <td style="padding:1rem 1.6rem 1rem 1rem;">
-                            <span style="font-size:0.75rem;color:#71717a;">
-                                {{ $auction->ends_at->format('M j, Y') }}
-                            </span>
-                            <div style="font-size:0.65rem;color:#555e7a;margin-top:0.1rem;">
-                                {{ $auction->ends_at->format('g:i A') }}
-                            </div>
-                        </td>
-
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        @else
-        <div style="padding:3rem 1.6rem;text-align:center;">
-            <span class="material-symbols-rounded" style="font-size:40px;color:#374151;display:block;margin-bottom:0.75rem;">gavel</span>
-            <div style="font-size:0.85rem;color:#555e7a;font-weight:500;">No auctions yet. Seller listing tools are coming soon.</div>
-            <div aria-disabled="true" style="display:inline-flex;align-items:center;gap:0.4rem;margin-top:1rem;font-size:0.78rem;font-weight:600;color:#71717a;cursor:not-allowed;">
-                <span class="material-symbols-rounded" style="font-size:16px;">add_circle</span>
-                Listing tools coming soon
+    {{-- ────────────────────────── MY AUCTIONS ────────────────────────── --}}
+    <div class="dot-panel" style="margin-bottom:2rem;overflow:hidden;">
+        <div class="dot-panel-head">
+            <h2 class="dot-section-title">My Auctions</h2>
+            <div class="dot-row">
+                <a href="{{ route('seller.auctions.index') }}" class="dot-link" style="font-size:0.78rem;">Manage all</a>
+                <a href="{{ route('seller.auctions.create') }}" class="dot-btn dot-btn-ghost dot-btn-small">List an auction</a>
             </div>
         </div>
-        @endif
+        @include('seller.auctions._table', ['auctions' => $recentAuctions])
     </div>
 
     {{-- ────────────────────────── AGRITECH MODULES ────────────────────────── --}}

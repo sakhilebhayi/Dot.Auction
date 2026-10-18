@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auctions;
 use App\Http\Controllers\Controller;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
+use App\Models\AuctionSettlement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
@@ -67,9 +68,16 @@ class AuctionController extends Controller
         // authenticated user's own watchlist rows.
         $isWatching = auth()->check() && $auction->watchlists()->exists();
 
+        // Payment hand-off status is only for the two parties to the sale.
+        $settlement = AuctionSettlement::query()
+            ->where('auction_id', $auction->id)
+            ->where(fn ($q) => $q->where('winner_id', auth()->id())->orWhere('seller_id', auth()->id()))
+            ->first();
+
         return view('auctions.show', [
             'auction' => $auction,
             'isWatching' => $isWatching,
+            'settlement' => $settlement,
         ]);
     }
 }

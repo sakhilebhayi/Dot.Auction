@@ -7,11 +7,9 @@ use Illuminate\Notifications\Notification;
 
 /**
  * In-app (database channel only) notification for watchers of an auction
- * that is about to close. Not yet wired to any automatic trigger — no
- * scheduled sweep exists to find auctions within N hours of ends_at and
- * fan this out to watchers (see wiki.md §6/§7 roadmap). Dispatch manually
- * via `$user->notify(new AuctionEndingSoonNotification($auction))` until a
- * scheduled command exists.
+ * that is about to close. Sent by `auction:notify-ending-soon`, which
+ * records on the watchlist row that it has told that watcher, so each
+ * watcher hears once per auction.
  */
 class AuctionEndingSoonNotification extends Notification
 {

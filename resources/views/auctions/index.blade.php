@@ -46,7 +46,9 @@
                 <span></span>
                 @endif
 
-                @if($auction->status === 'active')
+                @if($auction->isScheduled())
+                <span class="dot-status dot-status-scheduled">Opens {{ $auction->starts_at->format('M j') }}</span>
+                @elseif($auction->status === 'active')
                 <span style="display:inline-flex;align-items:center;gap:0.3rem;font-size:0.65rem;padding:0.2rem 0.55rem;border-radius:9999px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);color:#4ade80;font-weight:600;">
                     <span style="width:5px;height:5px;border-radius:9999px;background:#22c55e;"></span> Live
                 </span>

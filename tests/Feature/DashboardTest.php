@@ -109,8 +109,10 @@ class DashboardTest extends TestCase
         $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
 
         $this->assertStringNotContainsString('href="#"', $html);
-        $this->assertStringContainsString('aria-disabled="true"', $html);
-        $this->assertStringContainsString('coming soon', strtolower($html));
+        // Seller listing management shipped: the control is a real link now,
+        // not an aria-disabled stand-in.
+        $this->assertStringNotContainsString('aria-disabled="true"', $html);
+        $this->assertStringContainsString('href="'.route('seller.auctions.create').'"', $html);
     }
 
     public function test_dashboard_uses_the_same_currency_symbol_as_the_bid_panel(): void

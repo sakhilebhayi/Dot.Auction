@@ -76,6 +76,24 @@
         <div>
             @auth
                 <livewire:auctions.bid-panel :auction="$auction" :key="'bid-'.$auction->id" />
+                @if($settlement)
+                <div class="dot-panel" style="margin-top:1rem;">
+                    <div class="dot-panel-body">
+                        <h2 class="dot-section-title">Payment pending</h2>
+                        @if($settlement->winner_id === auth()->id())
+                            <p class="dot-help" style="font-size:13px;">
+                                You won this auction at {{ $settlement->amount() }}. Dot.Auction has not opened payment yet, so nothing is due now.
+                                You will be told when the payment step opens.
+                            </p>
+                        @else
+                            <p class="dot-help" style="font-size:13px;">
+                                Sold for {{ $settlement->amount() }}. The sale is recorded as awaiting payment; Dot.Auction does not collect payment yet.
+                                You will be told when the payment step opens.
+                            </p>
+                        @endif
+                    </div>
+                </div>
+                @endif
             @else
                 <div class="dot-card" style="padding:1.5rem;text-align:center;">
                     <span class="material-symbols-rounded" style="font-size:28px;color:#52525b;display:block;margin-bottom:0.6rem;">lock</span>
