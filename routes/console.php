@@ -2,6 +2,7 @@
 
 use App\Console\Commands\MarkOverduePayments;
 use App\Console\Commands\NotifyEndingSoonWatchers;
+use App\Console\Commands\PublishMetrics;
 use App\Console\Commands\SettleEndedAuctions;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -30,5 +31,15 @@ Schedule::command(NotifyEndingSoonWatchers::class)
 // past their deadline as overdue. It never relists or cancels anything.
 Schedule::command(MarkOverduePayments::class)
     ->everyFifteenMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// One signed aggregate snapshot per company to Dot.Analytics, just after the UTC day turns over.
+// taken_at is the start of that UTC day, so a re-run the same day is the same snapshot upstream.
+// Does nothing until ANALYTICS_INGEST_URL and ANALYTICS_INGEST_SECRET are set; needs the host's
+// one-minute scheduler cron and a queue worker.
+Schedule::command(PublishMetrics::class)
+    ->dailyAt('00:15')
+    ->timezone('UTC')
     ->withoutOverlapping()
     ->onOneServer();
