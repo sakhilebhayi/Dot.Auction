@@ -51,7 +51,7 @@ class AuctionSettler
             if ($locked->reserveMet()) {
                 $locked->update(['status' => 'ended']);
                 DB::afterCommit(function () use ($locked, $topBid) {
-                    $topBid->bidder->notify(new AuctionWonNotification($locked));
+                    $topBid->bidder->notify(new AuctionWonNotification($locked, $topBid));
                     event(new AuctionSettled($locked, $topBid));
                 });
 

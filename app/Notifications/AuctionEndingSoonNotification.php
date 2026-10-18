@@ -3,6 +3,8 @@
 namespace App\Notifications;
 
 use App\Models\Auction;
+use App\Notifications\Concerns\SendsNotifyEvent;
+use App\Services\Notify\NotifyClient;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -13,6 +15,8 @@ use Illuminate\Notifications\Notification;
  */
 class AuctionEndingSoonNotification extends Notification
 {
+    use SendsNotifyEvent;
+
     public function __construct(public Auction $auction) {}
 
     /**
@@ -20,7 +24,31 @@ class AuctionEndingSoonNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', ...$this->notifyChannel()];
+    }
+
+    /**
+     * The email-worthy copy of this notice for Dot.Notify (auction.ending_soon). Once per watcher
+     * per auction, which the command already guarantees, so the bucket is fixed.
+     *
+     * @return array{event: string, subject: int, bucket: string, data: array<string, string>}
+     */
+    public function toNotifyEvent(object $notifiable): array
+    {
+        $notify = app(NotifyClient::class);
+
+        return [
+            'event' => 'auction.ending_soon',
+            'subject' => $this->auction->id,
+            'bucket' => 'ending-soon',
+            'data' => [
+                'auction_title' => (string) $this->auction->title,
+                'current_price' => $notify->money($this->auction->current_price),
+                'currency' => (string) config('auction.currency_code', 'ZAR'),
+                'ends_at' => $this->auction->ends_at->toIso8601String(),
+                'url' => $notify->pageUrl('auctions.show', $this->auction),
+            ],
+        ];
     }
 
     /**

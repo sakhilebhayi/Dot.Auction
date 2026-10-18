@@ -3,6 +3,9 @@
 namespace App\Notifications;
 
 use App\Models\Auction;
+use App\Models\Bid;
+use App\Notifications\Concerns\SendsNotifyEvent;
+use App\Services\Notify\NotifyClient;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -13,14 +16,40 @@ use Illuminate\Notifications\Notification;
  */
 class AuctionWonNotification extends Notification
 {
-    public function __construct(public Auction $auction) {}
+    use SendsNotifyEvent;
+
+    /** @param  Bid|null  $winningBid  names the occurrence for Dot.Notify's de-duplication; looked up when omitted */
+    public function __construct(public Auction $auction, public ?Bid $winningBid = null) {}
 
     /**
      * @return array<int, string>
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', ...$this->notifyChannel()];
+    }
+
+    /**
+     * The email-worthy copy of this notice for Dot.Notify (auction.won). The winning bid id is the
+     * bucket: an auction has one winning bid, so a replay collapses.
+     *
+     * @return array{event: string, subject: int, bucket: string|int, data: array<string, string>}
+     */
+    public function toNotifyEvent(object $notifiable): array
+    {
+        $notify = app(NotifyClient::class);
+
+        return [
+            'event' => 'auction.won',
+            'subject' => $this->auction->id,
+            'bucket' => $this->winningBid->id ?? $this->auction->winningBid()->value('id') ?? 'won',
+            'data' => [
+                'auction_title' => (string) $this->auction->title,
+                'final_price' => $notify->money($this->auction->current_price),
+                'currency' => (string) config('auction.currency_code', 'ZAR'),
+                'url' => $notify->pageUrl('auctions.show', $this->auction),
+            ],
+        ];
     }
 
     /**

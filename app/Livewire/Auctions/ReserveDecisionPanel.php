@@ -26,7 +26,7 @@ class ReserveDecisionPanel extends Component
 
         $this->decide('accepted', function (Auction $auction, ReserveNotMetProposal $proposal) {
             DB::afterCommit(function () use ($auction, $proposal) {
-                $proposal->bid->bidder->notify(new AuctionWonNotification($auction));
+                $proposal->bid->bidder->notify(new AuctionWonNotification($auction, $proposal->bid));
                 // The sale is now settled just like a reserve-met one, so the
                 // payment hand-off listener must hear about it too.
                 event(new AuctionSettled($auction, $proposal->bid));
