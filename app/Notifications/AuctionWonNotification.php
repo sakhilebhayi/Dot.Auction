@@ -6,6 +6,7 @@ use App\Models\Auction;
 use App\Models\Bid;
 use App\Notifications\Concerns\SendsNotifyEvent;
 use App\Services\Notify\NotifyClient;
+use App\Services\Paystack\PaystackConfig;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -57,11 +58,18 @@ class AuctionWonNotification extends Notification
      */
     public function toDatabase(object $notifiable): array
     {
+        $payments = app(PaystackConfig::class);
+
+        // With online payment on, say what is due and by when; with it off, the original honest notice.
+        $payment = $payments->canTakePayments()
+            ? "Pay within {$payments->paymentWindowHours()} hours from the auction page."
+                .($payments->isTestMode() ? ' Payments are in test mode: no real money moves.' : '')
+            : 'Payment is not yet available in Dot.Auction, so nothing is due now. You will be told when the payment step opens.';
+
         return [
             'type' => 'auction_won',
             'title' => 'Auction won',
-            'message' => "You won \"{$this->auction->title}\" for ".Auction::money($this->auction->current_price).'. '
-                .'Payment is not yet available in Dot.Auction, so nothing is due now. You will be told when the payment step opens.',
+            'message' => "You won \"{$this->auction->title}\" for ".Auction::money($this->auction->current_price).'. '.$payment,
             'auction_id' => $this->auction->id,
             'url' => route('auctions.show', $this->auction),
         ];

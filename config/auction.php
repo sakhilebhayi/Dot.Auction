@@ -86,4 +86,24 @@ return [
         'max_pixels' => (int) env('AUCTION_IMAGE_MAX_PIXELS', 16000000),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Settlement payment
+    |--------------------------------------------------------------------------
+    | `payment_window_hours`: how long a winner has to pay, counted from when
+    | the settlement is recorded (or, for sales recorded before online payment
+    | was switched on, from when it was). Past it the settlement becomes
+    | "payment overdue" and both sides are told. Nothing is relisted or
+    | cancelled automatically; the seller decides.
+    |
+    | `operator_emails`: who may open the read-only operator list of payments
+    | (comma separated). There is no operator flag on users yet. Matching is
+    | exact, ignores case, and the account must be email-verified.
+    */
+    'payment_window_hours' => (int) env('AUCTION_PAYMENT_WINDOW_HOURS', 72),
+    'operator_emails' => array_values(array_filter(array_map(
+        fn ($e) => strtolower(trim($e)),
+        explode(',', (string) env('AUCTION_OPERATOR_EMAILS', ''))
+    ))),
+
 ];

@@ -3,16 +3,24 @@
 use App\Http\Controllers\Auctions\AuctionController;
 use App\Http\Controllers\Auctions\AuctionImageController;
 use App\Http\Controllers\Auth\EcosystemAuthController;
+use App\Http\Controllers\Operator\SettlementPaymentController;
+use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\RealtimeHealthController;
 use App\Http\Controllers\Seller\ImageController;
 use App\Http\Controllers\Seller\ListingController;
+use App\Http\Controllers\Settlements\SettlementController;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
 use App\Models\Bid;
 use App\Models\ReserveNotMetProposal;
 use App\Models\Watchlist;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Laravel\Jetstream\Jetstream;
 
 Route::get('/auth/ecosystem', [EcosystemAuthController::class, 'handle'])->name('ecosystem.auth');
@@ -33,6 +41,20 @@ Route::get('/cookies', function () {
         'cookies' => Str::markdown(file_get_contents(Jetstream::localizedMarkdownPath('cookies.md'))),
     ]);
 })->name('cookies');
+
+// Paystack's server-to-server notification. No session, no cookies, no CSRF token (there is no browser
+// and no user): the HMAC signature of the raw body is the authentication. See
+// App\Http\Controllers\PaystackWebhookController.
+Route::post('/webhooks/paystack', PaystackWebhookController::class)
+    ->middleware('throttle:paystack-webhook')
+    ->withoutMiddleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+    ])
+    ->name('webhooks.paystack');
 
 Route::middleware([
     'auth:sanctum',
@@ -100,4 +122,19 @@ Route::middleware([
         Route::post('/{auction}/images', [ImageController::class, 'store'])->name('images.store');
         Route::delete('/{auction}/images/{image}', [ImageController::class, 'destroy'])->name('images.destroy')->scopeBindings();
     });
+
+    // Paying for a won auction. Both parties see the page; only the winner pays; only the seller
+    // cancels (once overdue). Policy checks live in the controller.
+    Route::get('/settlements', [SettlementController::class, 'index'])->name('settlements.index');
+    Route::get('/settlements/{settlement}', [SettlementController::class, 'show'])->name('settlements.show');
+    Route::post('/settlements/{settlement}/pay', [SettlementController::class, 'pay'])
+        ->middleware('throttle:12,1')->name('settlements.pay');
+    Route::get('/settlements/{settlement}/payment/callback', [SettlementController::class, 'callback'])
+        ->middleware('throttle:30,1')->name('settlements.payment.callback');
+    Route::post('/settlements/{settlement}/cancel', [SettlementController::class, 'cancel'])
+        ->middleware('throttle:12,1')->name('settlements.cancel');
+
+    // Read-only operator list of payments (money that needs a person is listed first).
+    Route::get('/operator/settlement-payments', [SettlementPaymentController::class, 'index'])
+        ->name('operator.settlement-payments.index');
 });
