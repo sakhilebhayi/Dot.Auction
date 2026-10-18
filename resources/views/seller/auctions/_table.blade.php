@@ -1,6 +1,6 @@
 {{-- Seller's own auctions. $auctions carries bids_count (withCount). --}}
 @if($auctions->count())
-<div style="overflow-x:auto;">
+<div class="table-scroll" role="region" aria-label="Your auctions, scrolls sideways on small screens" tabindex="0">
     <table class="dot-table">
         <caption class="sr-only">Your auctions</caption>
         <thead>

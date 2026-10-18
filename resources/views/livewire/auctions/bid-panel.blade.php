@@ -40,7 +40,7 @@
     {{-- Bid form --}}
     @if($auction->isActive() && auth()->id() !== $auction->seller_id)
     <form wire:submit.prevent="placeBid" style="display:flex;gap:0.6rem;margin-bottom:1.5rem;">
-        <div style="flex:1;position:relative;">
+        <div style="flex:1;min-width:0;position:relative;">
             <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#71717a;font-size:13px;">{{ config('auction.currency_symbol') }}</span>
             <input
                 type="number"

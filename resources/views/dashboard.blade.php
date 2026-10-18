@@ -1,9 +1,9 @@
 <x-app-layout>
 
-<div style="padding:2rem 2.5rem 3rem;">
+<div class="dot-page">
 
     {{-- ────────────────────────── PAGE HEADER ────────────────────────── --}}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;">
+    <div class="dot-head">
         <div>
             <div style="font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:#f4f4f5;letter-spacing:-0.02em;">
                 Auction Dashboard
@@ -12,7 +12,7 @@
                 {{ now()->format('l, F j Y') }} &nbsp;·&nbsp; Your auction activity at a glance
             </div>
         </div>
-        <div style="display:flex;gap:0.75rem;">
+        <div class="dot-head-actions">
             <a href="{{ route('auctions.index') }}" style="display:inline-flex;align-items:center;gap:0.5rem;border-radius:9999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);padding:0.7rem 1.4rem;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:#f4f4f5;text-decoration:none;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
                 <span class="material-symbols-rounded" style="font-size:18px;">storefront</span>
                 Browse Auctions
@@ -25,10 +25,10 @@
     </div>
 
     {{-- ────────────────────────── KPI ROW ────────────────────────── --}}
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1.25rem;margin-bottom:2rem;">
+    <div class="dot-kpi-grid">
 
         {{-- Active Auctions --}}
-        <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;">
+        <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;" class="dot-kpi">
             <div style="position:absolute;top:0;right:0;width:80px;height:80px;border-radius:0 1rem 0 80px;background:rgba(217,119,6,0.08);"></div>
             <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.9rem;">
                 <div style="width:36px;height:36px;border-radius:0.6rem;background:rgba(217,119,6,0.15);display:flex;align-items:center;justify-content:center;">
@@ -46,7 +46,7 @@
         </div>
 
         {{-- Total Auctions --}}
-        <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;">
+        <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;" class="dot-kpi">
             <div style="position:absolute;top:0;right:0;width:80px;height:80px;border-radius:0 1rem 0 80px;background:rgba(99,102,241,0.08);"></div>
             <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.9rem;">
                 <div style="width:36px;height:36px;border-radius:0.6rem;background:rgba(99,102,241,0.15);display:flex;align-items:center;justify-content:center;">
@@ -63,7 +63,7 @@
         </div>
 
         {{-- Total Bids --}}
-        <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;">
+        <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;" class="dot-kpi">
             <div style="position:absolute;top:0;right:0;width:80px;height:80px;border-radius:0 1rem 0 80px;background:rgba(168,85,247,0.08);"></div>
             <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.9rem;">
                 <div style="width:36px;height:36px;border-radius:0.6rem;background:rgba(168,85,247,0.15);display:flex;align-items:center;justify-content:center;">
@@ -80,7 +80,7 @@
         </div>
 
         {{-- Categories --}}
-        <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;">
+        <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;" class="dot-kpi">
             <div style="position:absolute;top:0;right:0;width:80px;height:80px;border-radius:0 1rem 0 80px;background:rgba(34,197,94,0.08);"></div>
             <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.9rem;">
                 <div style="width:36px;height:36px;border-radius:0.6rem;background:rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center;">
@@ -97,7 +97,7 @@
         </div>
 
         {{-- Watchlist --}}
-        <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;">
+        <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:1.4rem 1.6rem;position:relative;overflow:hidden;" class="dot-kpi">
             <div style="position:absolute;top:0;right:0;width:80px;height:80px;border-radius:0 1rem 0 80px;background:rgba(56,189,248,0.08);"></div>
             <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.9rem;">
                 <div style="width:36px;height:36px;border-radius:0.6rem;background:rgba(56,189,248,0.15);display:flex;align-items:center;justify-content:center;">
@@ -144,7 +144,7 @@
         </div>
         <div style="display:flex;flex-direction:column;">
             @foreach($endingSoon as $lot)
-            <a href="{{ route('auctions.show', $lot) }}" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1.6rem;text-decoration:none;border-bottom:1px solid rgba(67,70,86,0.1);transition:background 0.15s;" onmouseover="this.style.background='rgba(217,119,6,0.04)'" onmouseout="this.style.background='transparent'">
+            <a href="{{ route('auctions.show', $lot) }}" class="dot-lot-row" onmouseover="this.style.background='rgba(217,119,6,0.04)'" onmouseout="this.style.background='transparent'">
                 <div>
                     <div style="font-size:0.82rem;font-weight:600;color:#f4f4f5;font-family:'Syne',sans-serif;">{{ $lot->title }}</div>
                     <div style="font-size:0.7rem;color:#71717a;margin-top:0.15rem;">{{ $lot->category->name ?? 'Uncategorized' }} · ends {{ $lot->ends_at->diffForHumans() }}</div>
@@ -187,14 +187,14 @@
 
     {{-- ────────────────────────── AGRITECH MODULES ────────────────────────── --}}
     <div style="background:#141416;border:1px solid rgba(255,255,255,0.07);border-radius:1rem;overflow:hidden;">
-        <div style="padding:1.4rem 1.6rem;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">
+        <div style="padding:1.4rem 1.6rem;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;">
             <div>
                 <div style="font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:700;color:#f4f4f5;">AgriTech Intelligence Suite</div>
                 <div style="font-size:0.7rem;color:#71717a;margin-top:0.15rem;">9 smart farming modules — full integration roadmap</div>
             </div>
             <span style="font-size:0.65rem;padding:0.3rem 0.75rem;border-radius:9999px;background:rgba(217,119,6,0.1);border:1px solid rgba(217,119,6,0.3);color:#d97706;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">Coming Soon</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(67,70,86,0.15);">
+        <div class="dot-module-grid">
 
             @php
             $agriModules = [

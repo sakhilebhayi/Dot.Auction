@@ -1,6 +1,6 @@
 <x-app-layout>
 
-<div style="padding:2rem 2.5rem 3rem;">
+<div class="dot-page">
 
     <div style="margin-bottom:1.75rem;">
         <div style="font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:#f4f4f5;letter-spacing:-0.02em;">
@@ -12,18 +12,18 @@
     </div>
 
     {{-- Search + filters --}}
-    <form method="GET" action="{{ route('auctions.index') }}" style="display:flex;gap:0.75rem;margin-bottom:1.75rem;flex-wrap:wrap;">
+    <form method="GET" action="{{ route('auctions.index') }}" class="dot-filter-form">
         <div style="flex:1;min-width:220px;position:relative;">
             <span class="material-symbols-rounded" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:17px;color:#52525b;">search</span>
-            <input type="text" name="q" value="{{ $search }}" placeholder="Search auctions by title…" class="dot-input" style="padding-left:36px;">
+            <input type="text" name="q" value="{{ $search }}" placeholder="Search auctions by title…" aria-label="Search auctions by title" class="dot-input" style="padding-left:36px;">
         </div>
-        <select name="category" class="dot-input" style="max-width:200px;" onchange="this.form.submit()">
+        <select name="category" aria-label="Category" class="dot-input" style="max-width:200px;" onchange="this.form.submit()">
             <option value="">All categories</option>
             @foreach($categories as $cat)
                 <option value="{{ $cat->id }}" @selected((string) $category === (string) $cat->id)>{{ $cat->name }} ({{ $cat->auctions_count }})</option>
             @endforeach
         </select>
-        <select name="status" class="dot-input" style="max-width:160px;" onchange="this.form.submit()">
+        <select name="status" aria-label="Status" class="dot-input" style="max-width:160px;" onchange="this.form.submit()">
             <option value="">Any status</option>
             <option value="active" @selected($status === 'active')>Active</option>
             <option value="ended" @selected($status === 'ended')>Ended</option>

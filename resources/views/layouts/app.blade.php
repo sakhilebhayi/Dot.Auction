@@ -28,7 +28,8 @@
         })();
     </script>
     <style>
-        :root { --accent: #ef4444; --accent-rgb: 239,68,68; }
+        :root { --accent: #ef4444; --accent-rgb: 239,68,68; --topbar-h: 54px; --drawer-w: min(86vw, 320px); }
+        html { scroll-padding-top: calc(var(--topbar-h) + 12px); }
         *, *::before, *::after { box-sizing: border-box; }
         body { margin:0; background:#09090b; color:#f4f4f5; font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.5; }
         .material-symbols-rounded { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; line-height:1; user-select:none; }
@@ -63,7 +64,7 @@
         .user-team { font-size:10px; color:#52525b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
         /* Topbar */
-        .topbar { position:fixed; top:0; left:260px; right:0; height:54px; background:rgba(9,9,11,0.85); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; padding:0 22px; z-index:30; gap:12px; }
+        .topbar { position:fixed; top:0; left:260px; right:0; height:var(--topbar-h); background:rgba(9,9,11,0.85); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; padding:0 22px; z-index:30; gap:12px; }
         .topbar-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#f4f4f5; flex:1; }
         .topbar-team { font-size:11px; color:#52525b; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.07); border-radius:6px; padding:3px 8px; font-weight:500; white-space:nowrap; }
         .topbar-btn { width:30px; height:30px; border-radius:7px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center; color:#71717a; cursor:pointer; transition:background .13s,color .13s; text-decoration:none; flex-shrink:0; }
@@ -71,7 +72,7 @@
         .topbar-btn .material-symbols-rounded { font-size:17px; }
 
         /* Content */
-        .content-wrap { margin-left:260px; padding-top:54px; min-height:100vh; }
+        .content-wrap { margin-left:260px; padding-top:var(--topbar-h); min-height:100vh; }
 
         /* Shared UI tokens */
         .dot-card { background:#141416; border:1px solid rgba(255,255,255,0.07); border-radius:12px; }
@@ -155,21 +156,85 @@
         .dot-image-cell { display:flex; flex-direction:column; gap:0.5rem; }
         .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 
-        /* The shell is a fixed 260px sidebar; below this width it stacks on top instead of covering the page. */
-        @media (max-width: 860px) {
-            .sidebar { position:static; width:auto; height:auto; border-right:0; border-bottom:1px solid rgba(255,255,255,0.06); overflow:visible; }
+        /* Controls that exist only for the small-screen shell. Hidden at and above 860px. */
+        .shell-menu-btn, .shell-close, .shell-backdrop, .shell-account, .shell-mobile-only { display:none; }
+        .table-scroll { position:relative; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        .table-scroll:focus-visible { outline:2px solid #fcd34d; outline-offset:-2px; }
+        .dot-kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:1.25rem; margin-bottom:2rem; }
+        .dot-stat-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:0.85rem; margin-bottom:1.25rem; }
+        .dot-module-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:1px; background:rgba(67,70,86,0.15); }
+        .dot-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-bottom:2rem; }
+        .dot-head-actions { display:flex; gap:0.75rem; flex-wrap:wrap; }
+        .dot-lot-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.9rem 1.6rem; text-decoration:none; border-bottom:1px solid rgba(67,70,86,0.1); transition:background 0.15s; }
+        .dot-lot-row > div:first-child { min-width:0; overflow-wrap:anywhere; }
+        .dot-lot-row > div:last-child { flex-shrink:0; }
+        .dot-filter-form { display:flex; gap:0.75rem; margin-bottom:1.75rem; flex-wrap:wrap; }
+        .shell-menu-btn:focus-visible, .shell-close:focus-visible, .topbar-btn:focus-visible, .dot-pill-btn:focus-visible { outline:2px solid #fcd34d; outline-offset:2px; }
+
+        /* Between the shell breakpoint and a laptop width the two-column auction page is too tight; stack it earlier. */
+        @media (max-width: 1019.98px) {
+            .dot-two-col { grid-template-columns:minmax(0,1fr) !important; }
+        }
+
+        /*
+         * Responsive shell. Below 860px the fixed 260px sidebar becomes an off-canvas drawer
+         * (#shell-drawer) opened from the labelled Menu button (#shell-menu-button) in the top bar.
+         * The behaviour lives in the small script at the end of <body>; this is only the layout.
+         */
+        @media (max-width: 859.98px) {
+            .shell-menu-btn { display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 14px 0 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#e4e4e7; font:600 13px/1 'Inter',system-ui,sans-serif; cursor:pointer; flex-shrink:0; }
+            .shell-menu-btn .material-symbols-rounded { font-size:20px; }
+            .shell-close { display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; margin-left:auto; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#d4d4d8; cursor:pointer; flex-shrink:0; }
+            .shell-account, .shell-mobile-only { display:block; }
+
+            .topbar { left:0; padding:0 12px; gap:8px; }
+            .topbar-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            .topbar-team, .topbar-profile { display:none; }
+            .topbar-btn { width:44px; height:44px; border-radius:8px; }
+            .topbar-btn .material-symbols-rounded { font-size:20px; }
+            .content-wrap { margin-left:0; }
+
+            .sidebar { width:var(--drawer-w); height:100vh; height:100dvh; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; z-index:60; box-shadow:12px 0 32px rgba(0,0,0,0.5); transform:translateX(-100%); visibility:hidden; transition:transform .22s ease, visibility 0s linear .22s; }
             .sidebar::before { display:none; }
-            .sidebar-nav { display:flex; flex-wrap:wrap; gap:2px 6px; padding:0 10px 10px; overflow:visible; }
-            .sidebar-nav .sidebar-divider, .nav-section-label, .sidebar-footer { display:none; }
-            .topbar { position:static; left:0; flex-wrap:wrap; height:auto; min-height:54px; padding:8px 16px; }
-            .content-wrap { margin-left:0; padding-top:0; }
+            .sidebar-brand { padding-right:12px; }
+            .sidebar-nav { flex:1 0 auto; overflow:visible; }
+            .nav-item { min-height:44px; padding:0 12px; font-size:14px; width:100%; background:none; border:0; text-align:left; font-family:inherit; cursor:pointer; }
+            .nav-item:hover { transform:none; }
+            .sidebar-footer { padding-bottom:max(14px, env(safe-area-inset-bottom)); }
+            .shell-backdrop { display:block; position:fixed; inset:0; z-index:50; background:rgba(0,0,0,0.6); opacity:0; pointer-events:none; transition:opacity .22s ease; }
+            body.shell-open { overflow:hidden; }
+            body.shell-open .sidebar { transform:none; visibility:visible; transition:transform .22s ease, visibility 0s; }
+            body.shell-open .shell-backdrop { opacity:1; pointer-events:auto; }
+            .shell-legacy-nav { display:none; }
+
             .dot-page { padding:1.25rem 1rem 2rem; }
+            .dot-head { margin-bottom:1.25rem; }
+            .dot-kpi-grid { grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:0.75rem; margin-bottom:1.25rem; }
+            .dot-kpi { padding:1rem !important; }
+            .dot-lot-row { padding:0.9rem 1rem; }
+            .dot-stat-grid { grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); }
+            .dot-module-grid { grid-template-columns:minmax(0,1fr); }
+            .dot-filter-form > * { flex:1 1 100% !important; max-width:none !important; min-width:0 !important; }
+            .dot-filter-form > select { flex:1 1 calc(50% - 0.4rem) !important; }
+            .dot-btn, .dot-pill-btn { min-height:44px; }
+            .dot-btn-small { padding:5px 12px; }
+            .dot-input { min-height:44px; font-size:16px; }
+            .table-scroll .dot-table { min-width:680px; }
+            .table-scroll .dot-table td:first-child { min-width:200px; }
+            .table-scroll .dot-actions { flex-wrap:nowrap; }
+            .dot-panel-head, .dot-panel-body { padding-left:1rem; padding-right:1rem; }
+            /* The notification list is a popover anchored to the bell; on a phone anchor it to the viewport instead. */
+            .bell-panel { position:fixed !important; top:calc(var(--topbar-h) + 8px) !important; left:12px !important; right:12px !important; width:auto !important; max-height:calc(100vh - var(--topbar-h) - 24px) !important; max-height:calc(100dvh - var(--topbar-h) - 24px) !important; }
         }
         @media (max-width: 640px) {
             .dot-form-grid { grid-template-columns:minmax(0,1fr); }
         }
-        @media (max-width: 860px) {
-            .dot-two-col { grid-template-columns:minmax(0,1fr) !important; }
+        @media (max-width: 479.98px) {
+            .dot-kpi-grid > :last-child:nth-child(odd) { grid-column:1 / -1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .live-dot { animation:none; }
+            .sidebar, .shell-backdrop, .nav-item, .dot-btn, .dot-lot-row { transition:none !important; }
         }
     </style>
     @livewireStyles
@@ -178,7 +243,7 @@
 <body>
     <x-banner />
 
-    <aside class="sidebar">
+    <aside class="sidebar" id="shell-drawer" aria-label="Sidebar">
         <div class="sidebar-brand">
             <div class="brand-icon">
                 <span class="material-symbols-rounded">gavel</span>
@@ -190,11 +255,14 @@
                     <span class="brand-subtitle">Auction Platform</span>
                 </div>
             </div>
+            <button type="button" id="shell-close" class="shell-close" aria-label="Close menu">
+                <span class="material-symbols-rounded" aria-hidden="true">close</span>
+            </button>
         </div>
 
         <div class="sidebar-divider"></div>
 
-        <nav class="sidebar-nav">
+        <nav class="sidebar-nav" aria-label="Main">
             <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <span class="material-symbols-rounded nav-icon">dashboard</span>
                 Dashboard
@@ -222,6 +290,49 @@
                 <span class="material-symbols-rounded nav-icon">manage_accounts</span>
                 Profile & Settings
             </a>
+
+            {{-- Phone drawer only: the team switcher and sign-out that the legacy navigation-menu holds
+                 (that bar sits under the fixed top bar and cannot be reached). Hidden at 860px and up. --}}
+            @auth
+            <div class="shell-account">
+                <div class="sidebar-divider" style="margin:10px 0;"></div>
+                @if (Laravel\Jetstream\Jetstream::hasTeamFeatures() && Auth::user()->currentTeam)
+                    <div class="nav-section-label">Team: {{ Auth::user()->currentTeam->name }}</div>
+                    <a href="{{ route('teams.show', Auth::user()->currentTeam->id) }}" class="nav-item {{ request()->routeIs('teams.show') ? 'active' : '' }}">
+                        <span class="material-symbols-rounded nav-icon" aria-hidden="true">groups</span>
+                        Team settings
+                    </a>
+                    @can('create', Laravel\Jetstream\Jetstream::newTeamModel())
+                    <a href="{{ route('teams.create') }}" class="nav-item {{ request()->routeIs('teams.create') ? 'active' : '' }}">
+                        <span class="material-symbols-rounded nav-icon" aria-hidden="true">group_add</span>
+                        Create new team
+                    </a>
+                    @endcan
+                    @if (Auth::user()->allTeams()->count() > 1)
+                        <div class="nav-section-label">Switch team</div>
+                        @foreach (Auth::user()->allTeams() as $switchTeam)
+                        <form method="POST" action="{{ route('current-team.update') }}">
+                            @method('PUT')
+                            @csrf
+                            <input type="hidden" name="team_id" value="{{ $switchTeam->id }}">
+                            <button type="submit" class="nav-item" @if (Auth::user()->isCurrentTeam($switchTeam)) aria-current="true" @endif>
+                                <span class="material-symbols-rounded nav-icon" aria-hidden="true">{{ Auth::user()->isCurrentTeam($switchTeam) ? 'check_circle' : 'swap_horiz' }}</span>
+                                {{ $switchTeam->name }}
+                            </button>
+                        </form>
+                        @endforeach
+                    @endif
+                @endif
+                <div class="sidebar-divider" style="margin:10px 0;"></div>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="nav-item">
+                        <span class="material-symbols-rounded nav-icon" aria-hidden="true">logout</span>
+                        Log out
+                    </button>
+                </form>
+            </div>
+            @endauth
         </nav>
 
         @auth
@@ -237,7 +348,13 @@
         @endauth
     </aside>
 
+    <div class="shell-backdrop" id="shell-backdrop" aria-hidden="true"></div>
+
     <header class="topbar">
+        <button type="button" id="shell-menu-button" class="shell-menu-btn" aria-expanded="false" aria-controls="shell-drawer">
+            <span class="material-symbols-rounded" aria-hidden="true">menu</span>
+            Menu
+        </button>
         <div class="topbar-title">
             @isset($header){{ $header }}@else Dot.Auction
             @endisset
@@ -251,15 +368,21 @@
             onclick="document.documentElement.classList.toggle('dark'); localStorage.setItem('dot-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');"
             class="topbar-btn"
             title="Toggle dark mode"
+            aria-label="Toggle dark mode"
         >
             <span class="material-symbols-rounded">dark_mode</span>
         </button>
-        <a href="{{ route('profile.show') }}" class="topbar-btn" title="Profile">
+        <a href="{{ route('profile.show') }}" class="topbar-btn topbar-profile" title="Profile" aria-label="Profile">
             <span class="material-symbols-rounded">account_circle</span>
         </a>
     </header>
 
-    @livewire('navigation-menu')
+    {{-- Legacy Jetstream bar. At 860px and up it sits under the fixed top bar (left as it was);
+         on a phone it would render as a stray in-flow bar, so it is hidden there. Its team switcher
+         and Log out are in the drawer instead. --}}
+    <div class="shell-legacy-nav">
+        @livewire('navigation-menu')
+    </div>
 
     <div class="content-wrap">
         <main>{{ $slot }}</main>
@@ -267,5 +390,54 @@
 
     @stack('modals')
     @livewireScripts
+    <script>
+        // Off-canvas drawer for the phone shell (below 860px). Plain JS on purpose: it must not depend on
+        // Alpine/Livewire having booted. The page behind the drawer is made inert while it is open, which
+        // keeps keyboard focus and assistive tech inside the drawer; Escape, the backdrop, the Close button,
+        // following a nav link, and growing past the breakpoint all close it, and focus goes back to the button.
+        (function () {
+            var button = document.getElementById('shell-menu-button');
+            var drawer = document.getElementById('shell-drawer');
+            var backdrop = document.getElementById('shell-backdrop');
+            var closeButton = document.getElementById('shell-close');
+            if (!button || !drawer || !backdrop) { return; }
+            var wide = window.matchMedia('(min-width: 860px)');
+            var isOpen = false;
+            var inerted = [];
+
+            function setOpen(next, returnFocus) {
+                if (next === isOpen) { return; }
+                isOpen = next;
+                button.setAttribute('aria-expanded', next ? 'true' : 'false');
+                document.body.classList.toggle('shell-open', next);
+                if (next) {
+                    inerted = Array.prototype.filter.call(document.body.children, function (el) {
+                        return el !== drawer && el !== backdrop && !el.inert && !/^(SCRIPT|STYLE|LINK|TEMPLATE|NOSCRIPT)$/.test(el.tagName);
+                    });
+                    inerted.forEach(function (el) { el.inert = true; });
+                    (closeButton || drawer).focus();
+                } else {
+                    inerted.forEach(function (el) { el.inert = false; });
+                    inerted = [];
+                    if (returnFocus) { button.focus(); }
+                }
+            }
+
+            button.addEventListener('click', function () { setOpen(!isOpen, true); });
+            if (closeButton) { closeButton.addEventListener('click', function () { setOpen(false, true); }); }
+            backdrop.addEventListener('click', function () { setOpen(false, true); });
+            drawer.addEventListener('click', function (event) {
+                if (event.target.closest && event.target.closest('a[href]')) { setOpen(false, false); }
+            });
+            document.addEventListener('keydown', function (event) {
+                if (isOpen && (event.key === 'Escape' || event.key === 'Esc')) {
+                    event.preventDefault();
+                    setOpen(false, true);
+                }
+            });
+            var onChange = function () { if (wide.matches) { setOpen(false, false); } };
+            if (wide.addEventListener) { wide.addEventListener('change', onChange); } else if (wide.addListener) { wide.addListener(onChange); }
+        })();
+    </script>
 </body>
 </html>
