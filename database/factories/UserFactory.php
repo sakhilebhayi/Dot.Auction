@@ -50,6 +50,16 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the user is a platform operator (the factory writes the guarded flag directly).
+     */
+    public function platformOperator(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_platform_operator' => true,
+        ]);
+    }
+
+    /**
      * Indicate that the user should have a personal team.
      */
     public function withPersonalTeam(?callable $callback = null): static

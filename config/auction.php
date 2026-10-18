@@ -96,9 +96,11 @@ return [
     | "payment overdue" and both sides are told. Nothing is relisted or
     | cancelled automatically; the seller decides.
     |
-    | `operator_emails`: who may open the read-only operator list of payments
-    | (comma separated). There is no operator flag on users yet. Matching is
-    | exact, ignores case, and the account must be email-verified.
+    | `operator_emails`: DEPRECATED and IGNORED for authorisation. Operator access is
+    | the `users.is_platform_operator` flag (php artisan auction:operator {email}
+    | [--revoke]). The key is read only by the one-time
+    | `php artisan auction:operator --import-env`, which grants the flag to the
+    | verified users it lists. Remove AUCTION_OPERATOR_EMAILS afterwards.
     */
     'payment_window_hours' => (int) env('AUCTION_PAYMENT_WINDOW_HOURS', 72),
     'operator_emails' => array_values(array_filter(array_map(

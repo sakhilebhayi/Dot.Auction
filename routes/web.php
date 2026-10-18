@@ -136,5 +136,6 @@ Route::middleware([
 
     // Read-only operator list of payments (money that needs a person is listed first).
     Route::get('/operator/settlement-payments', [SettlementPaymentController::class, 'index'])
+        ->middleware('operator')
         ->name('operator.settlement-payments.index');
 });

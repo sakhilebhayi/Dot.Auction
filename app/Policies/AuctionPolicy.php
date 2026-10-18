@@ -69,8 +69,8 @@ class AuctionPolicy
      * Editing is for the auction's own seller while it is still a draft or
      * live. Which fields may change (nothing but the description after the
      * first bid) is enforced under a row lock in ListingManager, because it
-     * depends on bids that can land at any moment. There is no platform
-     * operator flag on users yet, so no operator override exists here.
+     * depends on bids that can land at any moment. Platform operators get
+     * no override here: the operator flag opens the payment-operations pages only.
      */
     public function update(User $user, Auction $auction): bool
     {
