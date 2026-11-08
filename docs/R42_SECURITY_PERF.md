@@ -13,7 +13,7 @@ outside the repo) against `php artisan serve` with six workers and the demo worl
 312,493 bids (one lot has 100,000), 2,000 users, 48,059 watch rows, 150,000 notifications (one user has 25,075) and 1,250 sales,
 plus 500 auctions due to close. Throwaway databases (`r42_sp_test`, `r42_sp_demo`, `r42_sp_perf`) were dropped at the end.
 
-Suite: **932 tests on SQLite (912 pass, 20 skipped) and 932 on PostgreSQL (925 pass, 7 skipped)**; trunk baseline was 840 / 13.
+Suite: **949 tests on SQLite (929 pass, 20 skipped) and 949 on PostgreSQL (942 pass, 7 skipped)**; trunk baseline was 840 / 13.
 The skips are the Jetstream template tests for disabled features, the parallel-process tests (PostgreSQL only) and the bid
 ledger's delete guard (a PostgreSQL trigger).
 
