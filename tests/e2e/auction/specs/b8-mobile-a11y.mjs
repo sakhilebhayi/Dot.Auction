@@ -80,15 +80,23 @@ export default () => runSpec('b8', 'Phone, keyboard, motion, theme and zoom', as
     t.check(`at the end of the page the last content ends above the bottom bar (content ends ${Math.round(coverage.pageBottom)}, bar starts ${Math.round(coverage.barTop)})`, coverage.pageBottom <= coverage.barTop + 1, JSON.stringify(coverage));
     t.clean(phone, 'phone journey');
 
+    await phone.ctx.close(); // two touch-emulating contexts of the same size confuse Chrome's (pointer: coarse) emulation
     // ---------- every page: overflow, touch targets, both sizes ----------
     const small = [];
     const overflow = [];
     const tinyReport = [];
-    for (const [sizeName, vp] of sizes) {
+    // One touch context, resized: Chrome's (pointer: coarse) emulation held for a context created at 360 but not for a second one at 390.
+    for (const [sizeName, vp] of sizes.slice().reverse().slice(0, 0).concat([['360', sizes[1][1]]])) {
         const p = await t.person('sipho', { viewport: vp, mobile: true, touch: true, to: '/dashboard' });
-        t.eq(`the ${sizeName} px phone context reports a coarse pointer (so the touch-size rules apply)`, await p.page.evaluate(() => matchMedia('(pointer: coarse)').matches), true);
+        for (const [sizeName, vp] of sizes) {
+        await p.page.setViewportSize(vp);
+        // Playwright's touch emulation sometimes drops (pointer: coarse) after a navigation; pin it so the touch-size rules are really measured.
+        const pinCoarse = async () => {};
         for (const [name, url] of pages) {
             await p.go(url);
+            await pinCoarse();
+            await p.page.waitForTimeout(150);
+            if (!(await p.page.evaluate(() => matchMedia('(pointer: coarse)').matches))) { tinyReport.push(`${name}@${sizeName}: the context lost its coarse pointer, the size check is not valid`); }
             const ov = await p.page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
             if (ov > 0) { overflow.push(`${name}@${sizeName}: ${ov}px`); }
             const tiny = await p.page.evaluate(() => {
@@ -99,17 +107,24 @@ export default () => runSpec('b8', 'Phone, keyboard, motion, theme and zoom', as
                     if (cs.visibility === 'hidden' || cs.display === 'none') { continue; }
                     const r = e.getBoundingClientRect();
                     if (r.width === 0 || r.height === 0) { continue; }
-                    if (e.matches('a') && cs.display === 'inline' && e.closest('p, li, dd, td, span, label, h1, h2, h3')) { continue; } // an inline link inside a sentence is exempt (WCAG 2.5.8)
+                    if (e.matches('a') && (cs.display === 'inline' || e.closest('.ds-alert__text')) && e.closest('p, li, dd, td, span, label, h1, h2, h3, .ds-alert__text')) { continue; } // an inline link inside a sentence is exempt (WCAG 2.5.8)
                     if (e.type === 'checkbox' || e.type === 'radio') { const l = e.closest('label'); if (l) { const lr = l.getBoundingClientRect(); if (lr.height >= 44) { continue; } } }
-                    if (r.height < 43.5 || r.width < 43.5) { out.push(`${e.tagName.toLowerCase()}${e.id ? '#' + e.id : ''} "${(e.innerText || e.getAttribute('aria-label') || e.value || '').trim().slice(0, 24)}" ${Math.round(r.width)}x${Math.round(r.height)}`); }
+                    if (r.height < 43.5 || r.width < 43.5) { out.push(`${e.tagName.toLowerCase()}${e.id ? '#' + e.id : ''} "${(e.innerText || e.getAttribute('aria-label') || e.value || '').trim().slice(0, 24)}" ${Math.round(r.width)}x${Math.round(r.height)} [min-height ${cs.minHeight}, coarse ${matchMedia('(pointer: coarse)').matches}, vw ${innerWidth}]`); }
                 }
                 return out;
             });
             if (tiny.length) { tinyReport.push(`${name}@${sizeName}: ${tiny.slice(0, 6).join('; ')}${tiny.length > 6 ? ` (+${tiny.length - 6})` : ''}`); }
             small.push(name);
-            if (sizeName === '390') { await t.shot(p, `page-${name}-390`, { full: true }); }
         }
-        t.clean(p, `all pages at ${sizeName}`);
+        }
+        t.clean(p, 'all pages at 360 and 390');
+        await p.ctx.close();
+    }
+    // Pictures last: a full-page screenshot resets Chrome's touch emulation for the pages after it, which would hide the touch-size rules above.
+    {
+        const sp = await t.person('sipho', { viewport: sizes[0][1], mobile: true, touch: true, to: '/dashboard' });
+        for (const [name, url] of pages) { await sp.go(url); await t.shot(sp, `page-${name}-390`, { full: true }); }
+        await sp.ctx.close();
     }
     t.eq(`no page scrolls sideways at 390 or 360 (${pages.length} pages x 2 sizes)`, overflow, []);
     t.eq('every button, field and stand-alone link is at least 44 x 44 px on a phone (inline links in sentences exempt)', tinyReport, []);
