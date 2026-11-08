@@ -41,7 +41,7 @@ class ListingController extends Controller
                 ->where('seller_id', $user->id)
                 // Everything a row shows is loaded here, so the page costs the same number of queries for 1 lot or 15:
                 // the category, the cover photo, the winning bid (for the Sold or Not sold word) and the bid count.
-                ->with(['category', 'images', 'winningBid'])
+                ->with(['category', 'images', 'winningBid', 'reserveProposal'])
                 ->withCount('bids'),
             $state,
             $now,

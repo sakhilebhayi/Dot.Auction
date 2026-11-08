@@ -102,7 +102,10 @@ export class Spec {
   }
 
   /** Sign in through the local-only dev route. */
-  async login(p, who, to = '/dashboard') {
+  async login(p, who, to = '/dashboard', opts = {}) {
+    // A second dev sign-in in a browser that is already signed in as someone else is logged out by AuthenticateSession (the
+    // stored password hash is the first person's), so leave first. (The real InfoDot hand-off has the same trap: see S5.)
+    if (!opts.keep) await p.goto(`${this.app.base}/dev/logout`, { waitUntil: 'load' });
     const target = typeof who === 'string' && who.includes('@') ? who : this.app.userByKey(who).email;
     const r = await p.goto(`${this.app.base}/dev/login/${encodeURIComponent(target)}?to=${encodeURIComponent(to)}`, { waitUntil: 'load' });
     return r;
