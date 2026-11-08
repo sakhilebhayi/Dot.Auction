@@ -18,6 +18,13 @@ return [
     'default' => env('CACHE_STORE', 'database'),
 
     /*
+    | The store that keeps rate-limit counters (login attempts, bids, Livewire calls). Unset means the default store. Every
+    | counted request costs about six queries on the database store; 'file' is a few file operations and is the right choice
+    | on a single host (set CACHE_LIMITER_STORE=file). Counters are then per host, which is what a single cPanel host is.
+    */
+    'limiter' => env('CACHE_LIMITER_STORE') ?: null,
+
+    /*
     |--------------------------------------------------------------------------
     | Cache Stores
     |--------------------------------------------------------------------------
