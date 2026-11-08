@@ -39,16 +39,31 @@ class SecurityHeadersTest extends TestCase
         $this->assertStringContainsString("object-src 'none'", $policy);
         $this->assertStringContainsString("base-uri 'self'", $policy);
         $this->assertStringContainsString('connect-src', $policy);
-        $this->assertStringContainsString('https://cdn.tailwindcss.com', $policy, 'the Tailwind CDN the app layout loads');
-        $this->assertStringContainsString('https://fonts.googleapis.com', $policy);
-        $this->assertStringContainsString('https://fonts.gstatic.com', $policy);
-        $this->assertStringContainsString('https://unpkg.com', $policy, 'Alpine on the welcome page');
+        // Everything is self-hosted now: no CDN, Google Fonts or avatar service is allowed, and inline code needs the request's nonce.
+        foreach (['cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'unpkg.com', 'ui-avatars.com', 'images.unsplash.com'] as $gone) {
+            $this->assertStringNotContainsString($gone, $policy, "$gone is no longer used by any page");
+        }
+        $this->assertMatchesRegularExpression("/script-src 'self' 'nonce-[A-Za-z0-9+\/=]{20,}' 'unsafe-eval'/", $policy);
+        $this->assertMatchesRegularExpression("/style-src 'self' 'nonce-[A-Za-z0-9+\/=]{20,}'/", $policy);
+        $this->assertStringContainsString("style-src-attr 'unsafe-inline'", $policy);
+        $this->assertStringContainsString("font-src 'self'", $policy);
         $this->assertStringNotContainsString('paystack', $policy, 'Paystack is a redirect to its hosted page, so no script or frame allowance is needed');
         // The switch turns the same policy into an enforced one, with no deploy.
         config(['security.csp_report_only' => false]);
         $enforced = $this->get('/');
         $this->assertStringContainsString("default-src 'self'", (string) $enforced->headers->get('Content-Security-Policy'));
         $this->assertFalse($enforced->headers->has('Content-Security-Policy-Report-Only'));
+    }
+
+    public function test_the_nonce_in_the_policy_is_the_one_the_page_uses_and_changes_every_request(): void
+    {
+        $first = $this->get('/');
+        preg_match("/'nonce-([^']+)'/", (string) $first->headers->get('Content-Security-Policy-Report-Only'), $m1);
+        $first->assertSee('nonce="'.$m1[1].'"', false);
+
+        $second = $this->get('/');
+        preg_match("/'nonce-([^']+)'/", (string) $second->headers->get('Content-Security-Policy-Report-Only'), $m2);
+        $this->assertNotSame($m1[1], $m2[1]);
     }
 
     public function test_hsts_is_sent_on_https_only_and_can_be_switched_off(): void

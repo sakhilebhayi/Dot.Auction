@@ -1,1 +1,1 @@
-<img src="{{ asset('images/logo.png') }}" alt="Dot.Auction" {{ $attributes }}>
+<x-ds.brand {{ $attributes }} />

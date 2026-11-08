@@ -1,17 +1,17 @@
 @php($zone = config('app.timezone'))
-<x-app-layout>
+<x-app-layout :title="'Payment for '.$settlement->auction->title" :title-visible="false">
 <div class="dot-page dot-page-narrow">
 
     <div style="margin-bottom:1.25rem;">
-        <a href="{{ route('settlements.index') }}" class="dot-link" style="font-size:0.78rem;color:#71717a;font-weight:500;display:inline-flex;align-items:center;gap:4px;">
-            <span class="material-symbols-rounded" style="font-size:16px;" aria-hidden="true">arrow_back</span>
+        <a href="{{ route('settlements.index') }}" class="dot-link" style="font-size:0.78rem;color:var(--c-ink-3);font-weight:500;display:inline-flex;align-items:center;gap:4px;">
+            <x-ds.icon name="arrow-left" :size="16" />
             All payments
         </a>
     </div>
 
     <div class="dot-row dot-row-between" style="margin-bottom:1.5rem;align-items:flex-start;">
         <div>
-            <h1 class="dot-title">Payment for {{ $settlement->auction->title }}</h1>
+            <p class="dot-title" aria-hidden="true">Payment for {{ $settlement->auction->title }}</p>
             <div class="dot-subtitle">
                 {{ $isWinner ? 'You won this auction.' : 'You sold this auction.' }}
                 <a class="dot-link" href="{{ route('auctions.show', $settlement->auction) }}">View the auction</a>
@@ -38,20 +38,20 @@
 
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1.25rem;margin-bottom:1.25rem;">
                 <div>
-                    <div class="dot-label" style="color:#a1a1aa;">{{ $isWinner ? 'You owe' : 'Sold for' }}</div>
-                    <div class="dot-mono" style="font-size:1.5rem;font-weight:700;color:#f4f4f5;">{{ $settlement->amount() }}</div>
+                    <div class="dot-label" style="color:var(--c-ink-2);">{{ $isWinner ? 'You owe' : 'Sold for' }}</div>
+                    <div class="dot-mono" style="font-size:1.5rem;font-weight:700;color:var(--c-ink);">{{ $settlement->amount() }}</div>
                     <div class="dot-help">{{ $settlement->currency }}, as agreed when the auction closed</div>
                 </div>
                 @if($settlement->status === 'paid' && $settlement->paid_at)
                     <div>
-                        <div class="dot-label" style="color:#a1a1aa;">Paid</div>
-                        <div class="dot-mono" style="color:#f4f4f5;">{{ $settlement->paid_at->format('j M Y, H:i') }} {{ $zone }}</div>
+                        <div class="dot-label" style="color:var(--c-ink-2);">Paid</div>
+                        <div class="dot-mono" style="color:var(--c-ink);">{{ $settlement->paid_at->format('j M Y, H:i') }} {{ $zone }}</div>
                         @if($receipt)<div class="dot-help">Reference <span class="dot-mono">{{ $receipt->reference }}</span></div>@endif
                     </div>
                 @elseif($settlement->isPayable() && $settlement->payment_due_at)
                     <div>
-                        <div class="dot-label" style="color:#a1a1aa;">{{ $settlement->status === 'payment_overdue' ? 'Was due' : 'Pay by' }}</div>
-                        <div class="dot-mono" style="color:#f4f4f5;">{{ $settlement->payment_due_at->format('j M Y, H:i') }} {{ $zone }}</div>
+                        <div class="dot-label" style="color:var(--c-ink-2);">{{ $settlement->status === 'payment_overdue' ? 'Was due' : 'Pay by' }}</div>
+                        <div class="dot-mono" style="color:var(--c-ink);">{{ $settlement->payment_due_at->format('j M Y, H:i') }} {{ $zone }}</div>
                         <div class="dot-help">{{ $settlement->payment_due_at->diffForHumans() }}</div>
                     </div>
                 @endif

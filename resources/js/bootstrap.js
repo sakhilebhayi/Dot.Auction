@@ -24,6 +24,5 @@ if (reverbKey) {
             },
         },
     });
-} else {
-    console.warn('No Reverb credentials configured (VITE_REVERB_APP_KEY missing). Real-time updates disabled.');
 }
+// No Reverb credentials: real-time updates are off (the host cannot run Reverb) and pages poll instead. Nothing is logged to the console.

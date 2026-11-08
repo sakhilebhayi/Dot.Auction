@@ -1,1 +1,2 @@
-<input type="checkbox" {!! $attributes->merge(['class' => 'rounded border-[var(--line)] bg-[var(--ink)] text-[var(--gold)] shadow-sm focus:ring-[var(--gold)] focus:ring-offset-[var(--ink-soft)]']) !!}>
+{{-- Jetstream's x-checkbox: a native checkbox drawn with the design system's box (the wrapping <label> supplies the words). --}}
+<input type="checkbox" {!! $attributes->merge(['class' => 'ds-checkbox']) !!}>

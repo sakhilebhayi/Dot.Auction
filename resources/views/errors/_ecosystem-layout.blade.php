@@ -1,157 +1,69 @@
+{{--
+  Standalone error layout (403, 404, 419, 429, 500, 503). It must work when the database, the session and the cache are down, so:
+  no @auth (the session may not be readable), no Livewire, no query. The signed-in links are chosen by trying the session once inside rescue().
+  Styles come from resources/css/errors.css when the build manifest lists it; the inline fallback keeps the page legible without it.
+  Sections: icon (an icon name), title, message, actions. $code is the HTTP status.
+--}}
+@php
+    $manifest = public_path('build/manifest.json');
+    $built = file_exists($manifest) ? (json_decode((string) file_get_contents($manifest), true) ?: []) : [];
+    $entries = array_values(array_filter(['resources/css/errors.css', 'resources/js/ds.js'], fn ($e) => isset($built[$e])));
+
+    $discover = collect(config('ecosystem.platforms', []))
+        ->reject(fn ($p) => ($p['name'] ?? null) === 'Dot.Auction')
+        ->reject(fn ($p) => ($p['active'] ?? true) === false)
+        ->reject(fn ($p, $k) => ($p['internal'] ?? false) === true || in_array($k, ['memory', 'brain', 'dopemine'], true))
+        ->values()->all();
+@endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{{ $code }} — @yield('title') · Dot.Auction</title>
-        <meta name="robots" content="noindex">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <meta name="robots" content="noindex">
+    <title>{{ $code }} @yield('title') | Dot.Auction</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
+    <link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/archivo-var-latin.woff2') }}" crossorigin>
+    <style>body{margin:0;font-family:system-ui,sans-serif;line-height:1.5}main{max-width:40rem;padding:2rem 1rem}a{color:inherit}</style>
+    <script>
+        (function () { try { var s = localStorage.getItem('dot-theme'); var m = (s === 'dark' || s === 'light') ? s : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); document.documentElement.dataset.theme = m; document.documentElement.classList.toggle('dark', m === 'dark'); } catch (e) {} })();
+    </script>
+    @foreach ($entries as $entry)
+        @if (str_ends_with($entry, '.css'))<link rel="stylesheet" href="{{ asset('build/'.$built[$entry]['file']) }}">@else<script type="module" src="{{ asset('build/'.$built[$entry]['file']) }}"></script>@endif
+    @endforeach
+</head>
+<body class="er-body">
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <header class="er-top">
+        <x-ds.brand :href="url('/')" :width="104" />
+        <x-ds.theme-toggle />
+    </header>
 
-        @php
-            $faviconPath = null;
-            foreach (['favicon.ico', 'favicon-32x32.png', 'favicon-16x16.png'] as $faviconCandidate) {
-                if (file_exists(public_path($faviconCandidate))) {
-                    $faviconPath = $faviconCandidate;
-                    break;
-                }
-            }
-        @endphp
-        @if ($faviconPath)
-            <link rel="icon" href="{{ asset($faviconPath) }}">
+    <main id="main" class="er-main" tabindex="-1">
+        <p class="er-code"><span class="sr-only">Error </span>{{ $code }}</p>
+        <x-ds.icon :name="trim($__env->yieldContent('icon', 'alert'))" :size="32" class="er-icon" />
+        <h1 class="er-title">@yield('title')</h1>
+        <p class="er-message">@yield('message')</p>
+        <div class="er-actions">
+            @yield('actions')
+        </div>
+
+        @if (! empty($discover))
+            <section class="er-discover" aria-labelledby="er-discover">
+                <h2 id="er-discover">While you are here, the rest of the Dot Ecosystem</h2>
+                <ul>
+                    @foreach ($discover as $platform)
+                        <li><a href="{{ $platform['url'] }}">{{ $platform['name'] }}</a></li>
+                    @endforeach
+                </ul>
+            </section>
         @endif
+    </main>
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-
-        @php
-            $viteManifestPath = public_path('build/manifest.json');
-            $viteEntries = [];
-            if (file_exists($viteManifestPath)) {
-                $viteManifest = json_decode(file_get_contents($viteManifestPath), true) ?? [];
-                foreach (['resources/css/app.css', 'resources/js/app.js'] as $entry) {
-                    if (isset($viteManifest[$entry])) {
-                        $viteEntries[] = $entry;
-                    }
-                }
-            }
-
-            // Every Dot platform, pulled from the shared ecosystem registry
-            // (config/ecosystem.php, identical across all platforms) rather
-            // than a fixed hand-picked subset -- add a platform to the
-            // registry once and it shows up here automatically everywhere.
-            // Self-exclusion uses this generator-verified literal name
-            // rather than config('app.name'), since not every platform's
-            // .env reliably has APP_NAME set correctly.
-            $currentPlatformName = 'Dot.Auction';
-            $discover = collect(config('ecosystem.platforms', []))
-                ->reject(fn ($p) => ($p['name'] ?? null) === $currentPlatformName)
-                ->reject(fn ($p) => ($p['active'] ?? true) === false)
-                ->reject(fn ($p, $k) => ($p['internal'] ?? false) === true || in_array($k, ['memory', 'brain', 'dopemine'], true))
-                ->values()
-                ->all();
-
-            $logoLightPath = null;
-            foreach (['images/logo-light.png', null] as $logoLightCandidate) {
-                if ($logoLightCandidate && file_exists(public_path($logoLightCandidate))) {
-                    $logoLightPath = $logoLightCandidate;
-                    break;
-                }
-            }
-        @endphp
-        @if (!empty($viteEntries))
-            @vite($viteEntries)
-        @endif
-
-        <style>
-            :root {
-                --paper: #17110f;
-                --ink: #f4ece0;
-                --ink-soft: #c7b39c;
-                --chrome: #221a17;
-                --chrome-soft: #221a17;
-                --accent: #f1c62e;
-                --accent-deep: #f8da68;
-                --line: rgba(255,255,255,0.12);
-                --font-display: 'Fraunces', Georgia, serif;
-                --font-body: 'Work Sans', system-ui, sans-serif;
-                --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-                --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-            }
-            * { box-sizing: border-box; }
-            html { background: var(--paper); }
-            body { margin: 0; font-family: var(--font-body); background: var(--paper); color: #c7b39c; min-height: 100dvh; display: flex; flex-direction: column; }
-            .font-display { font-family: var(--font-display); }
-            .font-mono { font-family: var(--font-mono); }
-            a { color: inherit; }
-            .press { transition: transform 160ms var(--ease-out); }
-            .press:active { transform: scale(0.97); }
-            .link-underline { background-image: linear-gradient(currentColor, currentColor); background-position: 0 100%; background-repeat: no-repeat; background-size: 0% 1px; transition: background-size 200ms var(--ease-out); }
-            @media (hover: hover) and (pointer: fine) {
-                .link-underline:hover { background-size: 100% 1px; }
-            }
-        </style>
-    </head>
-    <body>
-        <header style="background: var(--chrome);">
-            <nav style="max-width: 1400px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;">
-                <a href="/" class="press" style="display: flex; align-items: center; gap: 10px;">
-                    {{-- The header sits on --chrome, which is always a dark
-                         surface in this template regardless of whether the
-                         platform's overall theme is light or dark -- so the
-                         logo's ink-colored wordmark needs the dark-safe
-                         white-ink variant here, not the default asset. --}}
-                    <img src="{{ asset($logoLightPath ?? 'images/logo.png') }}" alt="Dot.Auction" style="height: 40px; width: auto;">
-                </a>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    @auth
-                        <a href="{{ route('dashboard') }}" class="press" style="padding: 10px 20px; background: var(--accent); color: #17110f; font-family: var(--font-display); font-weight: 600; font-size: 14px; border-radius: 999px; text-decoration: none;">Dashboard</a>
-                    @else
-                        @if (Route::has('login'))
-                            <a href="{{ route('login') }}" class="link-underline" style="color: rgba(255,255,255,0.85); font-size: 14px; text-decoration: none; padding-bottom: 1px;">Sign in</a>
-                        @endif
-                    @endauth
-                </div>
-            </nav>
-        </header>
-
-        <main style="flex: 1; display: flex; align-items: center; padding: 48px 20px;">
-            <div style="max-width: 640px; margin: 0 auto; width: 100%; text-align: center;">
-                <div style="display: inline-flex; align-items: center; justify-content: center; width: 88px; height: 88px; border-radius: 24px; background: rgba(255,255,255,0.06); margin-bottom: 28px;" aria-hidden="true">
-                    @yield('icon')
-                </div>
-
-                <p class="font-mono" style="font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 10px;">Error {{ $code }}</p>
-                <h1 class="font-display" style="font-size: clamp(26px, 4vw, 34px); font-weight: 700; line-height: 1.2; margin: 0 0 14px; color: var(--ink);">@yield('title')</h1>
-                <p style="font-size: 16px; line-height: 1.6; color: var(--ink-soft); margin: 0 0 32px;">@yield('message')</p>
-
-                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; margin-bottom: 56px;">
-                    @yield('actions')
-                </div>
-
-                @if (!empty($discover))
-                    <div style="border-top: 1px solid var(--line); padding-top: 28px; text-align: left;">
-                        <p class="font-mono" style="font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 14px; text-align: center;">While you're here — the rest of the Dot Ecosystem ({{ count($discover) }})</p>
-                        <div style="display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;">
-                            @foreach ($discover as $platform)
-                                <a href="{{ $platform['url'] }}" class="press" style="flex: 0 0 auto; scroll-snap-align: start; display: flex; align-items: center; gap: 8px; padding: 7px 14px 7px 7px; background: #221a17; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; white-space: nowrap;">
-                                    <span class="material-symbols-rounded" aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: {{ $platform['accent'] ?? 'var(--accent)' }}; color: #ffffff; font-size: 16px; flex-shrink: 0;">{{ $platform['icon'] ?? 'apps' }}</span>
-                                    <span class="font-display" style="font-weight: 600; font-size: 13px; color: var(--ink);">{{ $platform['name'] }}</span>
-                                </a>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
-            </div>
-        </main>
-
-        <footer style="background: var(--chrome-soft); padding: 24px 20px;">
-            <div style="max-width: 1400px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 16px;">
-                <p class="font-mono" style="font-size: 12px; color: rgba(255,255,255,0.6); margin: 0;">&copy; {{ date('Y') }} Dot.Auction.</p>
-                @if (Route::has('contact'))
-                    <a href="{{ route('contact') }}" class="link-underline font-mono" style="font-size: 12px; color: rgba(255,255,255,0.6); text-decoration: none; padding-bottom: 1px;">Contact support</a>
-                @endif
-            </div>
-        </footer>
-    </body>
+    <footer class="gx-foot er-foot">
+        <p>Dot.Auction is part of the Dot ecosystem.</p>
+        @if (Route::has('contact'))<a href="{{ route('contact') }}">Contact support</a>@endif
+    </footer>
+</body>
 </html>

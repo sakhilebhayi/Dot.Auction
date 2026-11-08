@@ -1,9 +1,9 @@
-<x-app-layout>
+<x-app-layout title="Payment operations" :title-visible="false">
 <div class="dot-page">
 
     <div class="dot-row dot-row-between" style="margin-bottom:1.5rem;">
         <div>
-            <h1 class="dot-title">Settlement payments</h1>
+            <p class="dot-title" aria-hidden="true">Settlement payments</p>
             <div class="dot-subtitle">Every Paystack payment attempt and every payment event that matched nothing. Read-only.</div>
         </div>
         @include('settlements._mode', ['payments' => $config])
@@ -49,7 +49,7 @@
                         <td class="dot-mono" style="overflow-wrap:anywhere;max-width:240px;">{{ $payment->reference }}</td>
                         <td>
                             <span class="dot-status dot-status-{{ $payment->status }}">{{ ucfirst($payment->status === 'unmatched' ? 'needs an operator' : $payment->status) }}</span>
-                            @if($payment->reason)<div style="margin-top:4px;font-weight:600;color:#fca5a5;">{{ $payment->reasonLabel() }}</div>@endif
+                            @if($payment->reason)<div style="margin-top:4px;font-weight:600;color:var(--c-urgent);">{{ $payment->reasonLabel() }}</div>@endif
                             @if($payment->summary)<div class="dot-help" style="max-width:320px;">{{ $payment->summary }}</div>@endif
                         </td>
                         <td class="num dot-mono">{{ $payment->amount_cents === null ? '—' : \App\Models\Auction::money($payment->amount_cents / 100) }}</td>
@@ -69,7 +69,7 @@
         </div>
         @else
         <div style="padding:2.5rem 1.4rem;text-align:center;">
-            <p style="margin:0;font-family:'Syne',sans-serif;font-weight:700;color:#f4f4f5;">{{ $attentionOnly ? 'Nothing needs attention.' : 'No payments have been recorded yet.' }}</p>
+            <p style="margin:0;font-family:'Syne',sans-serif;font-weight:700;color:var(--c-ink);">{{ $attentionOnly ? 'Nothing needs attention.' : 'No payments have been recorded yet.' }}</p>
         </div>
         @endif
     </div>
