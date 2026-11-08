@@ -1,94 +1,110 @@
-<x-app-layout title="Browse lots" :title-visible="false">
+{{--
+  Browse. State (live, closing soon, scheduled, awaiting decision, sold, not sold, cancelled), category, search, sort and page all live in the URL.
+  Every control changes the list; every chip is a link. See App\Services\Auctions\LotBrowser for what each state means.
+--}}
+@php
+    use App\Services\Auctions\LotBrowser;
+    use App\Support\Display;
+    use App\Support\ViewerCue;
 
-<div class="dot-page">
+    $base = array_filter([
+        'q' => $search !== '' ? $search : null,
+        'category' => $category,
+        'state' => $state,
+        'sort' => $sort !== LotBrowser::DEFAULT_SORT ? $sort : null,
+    ], fn ($v) => $v !== null);
+    $link = fn (array $change = []) => route('auctions.index', array_filter(array_merge($base, $change), fn ($v) => $v !== null && $v !== ''));
+    $filtered = $search !== '' || $category !== null || $state !== null;
 
-    <div style="margin-bottom:1.75rem;">
-        <div style="font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:var(--c-ink);letter-spacing:-0.02em;">
-            Browse Auctions
-        </div>
-        <div style="font-size:0.78rem;color:var(--c-ink-3);margin-top:0.25rem;">
-            {{ $auctions->total() }} listing{{ $auctions->total() === 1 ? '' : 's' }} · search, filter, and bid in real time
-        </div>
-    </div>
+    $tabs = [['label' => 'All lots', 'href' => $link(['state' => null]), 'current' => $state === null, 'count' => $counts['all']]];
+    foreach (LotBrowser::STATES as $key => $word) {
+        $tabs[] = ['label' => $word, 'href' => $link(['state' => $key]), 'current' => $state === $key, 'count' => $counts[$key]];
+    }
 
-    {{-- Search + filters --}}
-    <form method="GET" action="{{ route('auctions.index') }}" class="dot-filter-form">
-        <div style="flex:1;min-width:220px;position:relative;">
-            <x-ds.icon name="search" :size="17" />
-            <input type="text" name="q" value="{{ $search }}" placeholder="Search auctions by title…" aria-label="Search auctions by title" class="dot-input" style="padding-left:36px;">
-        </div>
-        <select name="category" aria-label="Category" class="dot-input" style="max-width:200px;" data-autosubmit>
-            <option value="">All categories</option>
-            @foreach($categories as $cat)
-                <option value="{{ $cat->id }}" @selected((string) $category === (string) $cat->id)>{{ $cat->name }} ({{ $cat->auctions_count }})</option>
-            @endforeach
-        </select>
-        <select name="status" aria-label="Status" class="dot-input" style="max-width:160px;" data-autosubmit>
-            <option value="">Any status</option>
-            <option value="active" @selected($status === 'active')>Active</option>
-            <option value="ended" @selected($status === 'ended')>Ended</option>
-            <option value="cancelled" @selected($status === 'cancelled')>Cancelled</option>
-        </select>
-        <button type="submit" class="dot-btn dot-btn-primary">Search</button>
+    $empty = [
+        'live' => ['No lots are live right now', 'Lots open for bidding show here. Check what is scheduled to open next.'],
+        'ending' => ['Nothing is closing soon', 'Lots inside their final hour show here.'],
+        'scheduled' => ['No lots are scheduled', 'Lots a seller has published but not opened yet show here.'],
+        'pending' => ['No lots are waiting on a seller', 'Lots that ended below their reserve show here until the seller decides.'],
+        'sold' => ['No lots have sold yet', 'Lots that closed with a sale show here.'],
+        'unsold' => ['No lots ended unsold', 'Lots that closed without a sale show here.'],
+        'cancelled' => ['No lots were cancelled', 'Lots a seller cancelled show here.'],
+    ];
+@endphp
+<x-app-layout title="Browse lots" description="Live lots first, the ones closing soonest at the top." width="wide">
+    <x-slot name="header">Browse lots</x-slot>
+
+    <form method="GET" action="{{ route('auctions.index') }}" class="dc-filters" role="search" aria-label="Search and sort lots">
+        @if ($category !== null)<input type="hidden" name="category" value="{{ $category }}">@endif
+        @if ($state !== null)<input type="hidden" name="state" value="{{ $state }}">@endif
+        <x-ds.input class="dc-filters__q" label="Search by title" name="q" id="browse-q" type="search" :value="$search" placeholder="Guitar, desk, camera" autocomplete="off" maxlength="100" />
+        <x-ds.select class="dc-filters__sort" label="Sort by" name="sort" id="browse-sort" :value="$sort" :options="LotBrowser::SORTS" data-autosubmit />
+        <x-ds.button type="submit" icon="search" class="dc-filters__go">Search</x-ds.button>
     </form>
 
-    {{-- Results grid --}}
-    @if($auctions->count())
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.1rem;margin-bottom:2rem;">
-        @foreach($auctions as $auction)
-        <a href="{{ route('auctions.show', $auction) }}" class="dot-card" style="display:block;padding:1.25rem;text-decoration:none;transition:border-color .15s;">
-            @if($auction->images->isNotEmpty())
-            <img class="dot-cover" src="{{ $auction->images->first()->url() }}" alt="" loading="lazy">
-            @endif
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
-                @if($auction->category)
-                <span style="font-size:0.68rem;padding:0.2rem 0.55rem;border-radius:9999px;background:var(--c-scheduled-bg);border:1px solid var(--c-scheduled);color:var(--c-scheduled);font-weight:600;">
-                    {{ $auction->category->name }}
-                </span>
-                @else
-                <span></span>
-                @endif
+    <x-ds.tabs :tabs="$tabs" label="Lot state" class="dc-tabs" />
 
-                @if($auction->isScheduled())
-                <span class="dot-status dot-status-scheduled">Opens @localtime($auction->starts_at, 'M j')</span>
-                @elseif($auction->status === 'active')
-                <span style="display:inline-flex;align-items:center;gap:0.3rem;font-size:0.65rem;padding:0.2rem 0.55rem;border-radius:9999px;background:var(--c-live-bg);border:1px solid var(--c-live);color:var(--c-live);font-weight:600;">
-                    <span style="width:5px;height:5px;border-radius:9999px;background:var(--c-live-bg);"></span> Live
-                </span>
-                @elseif($auction->status === 'ended')
-                <span style="font-size:0.65rem;padding:0.2rem 0.55rem;border-radius:9999px;background:var(--c-scheduled-bg);border:1px solid var(--c-scheduled);color:var(--c-scheduled);font-weight:600;">Ended</span>
-                @else
-                <span style="font-size:0.65rem;padding:0.2rem 0.55rem;border-radius:9999px;background:var(--c-urgent-bg);border:1px solid var(--c-urgent);color:var(--c-urgent);font-weight:600;">Cancelled</span>
-                @endif
-            </div>
-
-            <div style="font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;color:var(--c-ink);margin-bottom:0.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                {{ $auction->title }}
-            </div>
-
-            <div style="display:flex;align-items:flex-end;justify-content:space-between;">
-                <div>
-                    <div style="font-size:10px;color:var(--c-ink-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.15rem;">Current bid</div>
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:1.15rem;font-weight:700;color:var(--c-notice);">{{ \App\Models\Auction::money($auction->current_price) }}</div>
-                </div>
-                @if($auction->isActive())
-                <div style="text-align:right;font-size:11px;color:var(--c-ink-3);">
-                    ends {{ $auction->ends_at->diffForHumans() }}
-                </div>
-                @endif
-            </div>
-        </a>
-        @endforeach
-    </div>
-
-    {{ $auctions->links() }}
-    @else
-    <div class="dot-card" style="padding:3rem 1.6rem;text-align:center;">
-        <x-ds.icon name="search" :size="40" />
-        <div style="font-size:0.85rem;color:var(--c-ink-3);font-weight:500;">No auctions match your search.</div>
-    </div>
+    @if ($categories->isNotEmpty() || $activeCategory)
+        <nav class="dc-chips" aria-label="Category">
+            <x-ds.chip :href="$link(['category' => null])" :current="$category === null">All categories</x-ds.chip>
+            @foreach ($categories as $cat)
+                <x-ds.chip :href="$link(['category' => $cat->id])" :current="$category === $cat->id" :count="$cat->lots">{{ $cat->name }}</x-ds.chip>
+            @endforeach
+        </nav>
     @endif
 
-</div>
+    <div class="dc-resultbar">
+        <p class="dc-resultbar__count" role="status">
+            <strong>{{ number_format($auctions->total()) }}</strong> {{ $auctions->total() === 1 ? 'lot' : 'lots' }}
+            @if ($state !== null) {{ ' ' }}{{ strtolower(LotBrowser::STATES[$state]) }}@endif
+            @if ($search !== '') {{ ' ' }}matching "{{ $search }}"@endif
+        </p>
+        @if ($filtered)
+            <ul class="dc-active" aria-label="Active filters">
+                @if ($search !== '')<li><x-ds.chip :href="$link(['q' => null])"><span class="sr-only">Remove search: </span>"{{ $search }}"<x-ds.icon name="close" :size="14" /></x-ds.chip></li>@endif
+                @if ($activeCategory)<li><x-ds.chip :href="$link(['category' => null])"><span class="sr-only">Remove category: </span>{{ $activeCategory->name }}<x-ds.icon name="close" :size="14" /></x-ds.chip></li>@endif
+                @if ($state !== null)<li><x-ds.chip :href="$link(['state' => null])"><span class="sr-only">Remove filter: </span>{{ LotBrowser::STATES[$state] }}<x-ds.icon name="close" :size="14" /></x-ds.chip></li>@endif
+                <li><a class="ds-btn ds-btn--link ds-btn--sm" href="{{ route('auctions.index', array_filter(['sort' => $base['sort'] ?? null])) }}"><span class="ds-btn__label">Clear all</span></a></li>
+            </ul>
+        @endif
+    </div>
 
+    @if ($auctions->isEmpty())
+        @if ($search !== '' || $category !== null)
+            <x-ds.empty-state :level="2" title="No lots match" icon="search" body="Try a shorter search, another category or another tab.">
+                <x-ds.button :href="route('auctions.index', array_filter(['sort' => $base['sort'] ?? null]))" variant="quiet">Clear all filters</x-ds.button>
+            </x-ds.empty-state>
+        @elseif ($state !== null)
+            <x-ds.empty-state :level="2" :title="$empty[$state][0]" icon="gavel" :body="$empty[$state][1]">
+                <x-ds.button :href="$link(['state' => $state === 'live' && $counts['scheduled'] > 0 ? 'scheduled' : null])" variant="quiet">{{ $state === 'live' && $counts['scheduled'] > 0 ? 'See scheduled lots' : 'Show all lots' }}</x-ds.button>
+            </x-ds.empty-state>
+        @else
+            <x-ds.empty-state :level="2" title="No lots yet" icon="gavel" body="Nothing has been published. Lots show here as soon as a seller publishes one.">
+                <x-ds.button :href="route('seller.auctions.create')" icon="plus">List a lot</x-ds.button>
+            </x-ds.empty-state>
+        @endif
+    @else
+        <h2 class="sr-only">Lots</h2>
+        <ul class="ds-catalogue" aria-label="Lots">
+            @foreach ($auctions as $auction)
+                @php
+                    $lotState = Display::lotState($auction);
+                    $cue = ViewerCue::for($auction, $userId, $lotState);
+                    $watching = (bool) $auction->viewer_watching;
+                    $canWatch = $cue !== 'own' && ($watching || in_array($lotState, ['live', 'ending', 'scheduled', 'pending'], true));
+                @endphp
+                <li>
+                    <x-ds.lot-card :auction="$auction" :viewer="$cue">
+                        @if ($canWatch)
+                            <x-slot name="actions">
+                                <livewire:buyer.watch-toggle :key="'watch-'.$auction->id" :auction-id="$auction->id" :title="$auction->title" :watching="$watching" />
+                            </x-slot>
+                        @endif
+                    </x-ds.lot-card>
+                </li>
+            @endforeach
+        </ul>
+
+        <x-ds.pagination :paginator="$auctions" noun="lots" />
+    @endif
 </x-app-layout>
