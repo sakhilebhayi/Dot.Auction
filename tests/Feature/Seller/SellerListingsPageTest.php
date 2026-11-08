@@ -157,7 +157,7 @@ class SellerListingsPageTest extends TestCase
         $page = $this->actingAs($seller)->get(route('seller.auctions.index'))->assertOk()
             ->assertSee('Your decision')
             ->assertSee('Reject the bid')
-            ->assertSee('Bea Bidder');
+            ->assertSee('Bea B.');
         $this->assertStringContainsString('reserve-decision-panel', $page->getContent());
 
         // The panel on the list decides the same way the dashboard's does.
