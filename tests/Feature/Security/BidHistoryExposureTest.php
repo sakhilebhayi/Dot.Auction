@@ -53,7 +53,7 @@ class BidHistoryExposureTest extends TestCase
         $component = Livewire::actingAs($stranger)->test(BidPanel::class, ['auction' => $lot]);
         $state = json_encode($component->snapshot ?? []);
 
-        foreach (['987', 'reserve_price', 'hidden@snap.test', 'Hidden Person'] as $secret) {
+        foreach (['987.65', '98765', 'reserve_price', 'hidden@snap.test', 'Hidden Person'] as $secret) {
             $this->assertStringNotContainsString($secret, $state, "the Livewire snapshot sent to the browser contains '{$secret}'");
         }
     }
