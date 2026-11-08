@@ -15,6 +15,7 @@
     ], fn ($v) => $v !== null);
     $link = fn (array $change = []) => route('auctions.index', array_filter(array_merge($base, $change), fn ($v) => $v !== null && $v !== ''));
     $filtered = $search !== '' || $category !== null || $state !== null;
+    $promo = $closingSoon->isNotEmpty() && $auctions->currentPage() === 1;
 
     $tabs = [['label' => 'All lots', 'href' => $link(['state' => null]), 'current' => $state === null, 'count' => $counts['all']]];
     foreach (LotBrowser::STATES as $key => $word) {
@@ -34,13 +35,58 @@
 <x-app-layout title="Browse lots" description="Live lots first, the ones closing soonest at the top." width="wide">
     <x-slot name="header">Browse lots</x-slot>
 
-    <form method="GET" action="{{ route('auctions.index') }}" class="dc-filters" role="search" aria-label="Search and sort lots">
-        @if ($category !== null)<input type="hidden" name="category" value="{{ $category }}">@endif
-        @if ($state !== null)<input type="hidden" name="state" value="{{ $state }}">@endif
-        <x-ds.input class="dc-filters__q" label="Search by title" name="q" id="browse-q" type="search" :value="$search" placeholder="Guitar, desk, camera" autocomplete="off" maxlength="100" />
-        <x-ds.select class="dc-filters__sort" label="Sort by" name="sort" id="browse-sort" :value="$sort" :options="LotBrowser::SORTS" data-autosubmit />
-        <x-ds.button type="submit" icon="search" class="dc-filters__go">Search</x-ds.button>
-    </form>
+    {{-- One search. From 64rem it is the shell's search box (the top bar keeps the tab, category and sort); below that the top bar has none, so the page shows its own.
+         Sort applies as soon as it changes; without JavaScript the Apply button is there. --}}
+    <x-slot name="actions">
+        <form method="GET" action="{{ route('auctions.index') }}" class="dc-filters" role="search" aria-label="Search and sort lots">
+            @if ($category !== null)<input type="hidden" name="category" value="{{ $category }}">@endif
+            @if ($state !== null)<input type="hidden" name="state" value="{{ $state }}">@endif
+            <x-ds.input class="dc-filters__q" label="Search lots" name="q" id="browse-q" type="search" :value="$search" placeholder="Guitar, desk, camera" autocomplete="off" maxlength="100" />
+            <x-ds.button type="submit" icon="search" variant="quiet" class="dc-filters__go">Search</x-ds.button>
+            <x-ds.select class="dc-filters__sort" label="Sort by" name="sort" id="browse-sort" :value="$sort" :options="LotBrowser::SORTS" data-autosubmit />
+            <noscript><x-ds.button type="submit" variant="quiet">Apply sort</x-ds.button></noscript>
+        </form>
+    </x-slot>
+
+    @if ($promo)
+        <section class="dc-closing" aria-labelledby="closing-soon-title">
+            <div class="dc-closing__head">
+                <h2 class="dc-closing__title" id="closing-soon-title">Closing soon</h2>
+                <p class="dc-closing__sub">{{ $closingSoon->count() === 1 ? 'This lot closes' : 'These lots close' }} within the hour.</p>
+            </div>
+            <ol class="dc-closing__list">
+                @foreach ($closingSoon as $lot)
+                    @php
+                        $cue = ViewerCue::for($lot, $userId, 'ending');
+                        $watching = (bool) $lot->viewer_watching;
+                        $bids = (int) $lot->bids_count;
+                        $hasBids = $bids > 0;
+                    @endphp
+                    <li class="dc-close">
+                        <div class="dc-close__clock">
+                            <x-ds.countdown :ends="$lot->ends_at" size="xl" label="Closes in" :show-at="false" stacked />
+                            <x-ds.rail :starts="$lot->starts_at" :ends="$lot->ends_at" :extensions="(int) $lot->snipe_extensions" thick class="dc-close__rail" />
+                        </div>
+                        <div class="dc-close__lot">
+                            <h3 class="dc-close__name"><a href="{{ route('auctions.show', $lot) }}" class="dc-close__link">{{ $lot->title }}</a></h3>
+                            <p class="dc-close__facts">
+                                <span>{{ $bids }} {{ $bids === 1 ? 'bid' : 'bids' }}</span>
+                                @if ((int) $lot->snipe_extensions > 0)<span>Extended {{ (int) $lot->snipe_extensions }} {{ (int) $lot->snipe_extensions === 1 ? 'time' : 'times' }}</span>@endif
+                                @if ($cue)@php $c = ViewerCue::describe($cue); @endphp<span class="ds-lot__cue ds-lot__cue--{{ $cue }}"><x-ds.icon :name="$c['icon']" :size="14" /> {{ $c['word'] }}</span>@endif
+                            </p>
+                        </div>
+                        <div class="dc-close__price">
+                            <span class="dc-close__price-label">{{ $hasBids ? 'Current bid' : 'Starting bid' }}</span>
+                            <x-ds.money :amount="$hasBids ? $lot->current_price : $lot->starting_price" size="xl" />
+                        </div>
+                        @if ($cue !== 'own')
+                            <div class="dc-close__act"><livewire:buyer.watch-toggle :key="'close-watch-'.$lot->id" :auction-id="$lot->id" :title="$lot->title" :watching="$watching" /></div>
+                        @endif
+                    </li>
+                @endforeach
+            </ol>
+        </section>
+    @endif
 
     <x-ds.tabs :tabs="$tabs" label="Lot state" class="dc-tabs" />
 
@@ -55,7 +101,7 @@
 
     <div class="dc-resultbar">
         <p class="dc-resultbar__count" role="status">
-            <strong>{{ number_format($auctions->total()) }}</strong> {{ $auctions->total() === 1 ? 'lot' : 'lots' }}
+            <strong>{{ number_format($auctions->total() + $closingSoon->count()) }}</strong> {{ $auctions->total() + $closingSoon->count() === 1 ? 'lot' : 'lots' }}
             @if ($state !== null) {{ ' ' }}{{ strtolower(LotBrowser::STATES[$state]) }}@endif
             @if ($search !== '') {{ ' ' }}matching "{{ $search }}"@endif
         </p>
@@ -69,7 +115,7 @@
         @endif
     </div>
 
-    @if ($auctions->isEmpty())
+    @if ($auctions->isEmpty() && $closingSoon->isEmpty())
         @if ($search !== '' || $category !== null)
             <x-ds.empty-state :level="2" title="No lots match" icon="search" body="Try a shorter search, another category or another tab.">
                 <x-ds.button :href="route('auctions.index', array_filter(['sort' => $base['sort'] ?? null]))" variant="quiet">Clear all filters</x-ds.button>
@@ -83,8 +129,8 @@
                 <x-ds.button :href="route('seller.auctions.create')" icon="plus">List a lot</x-ds.button>
             </x-ds.empty-state>
         @endif
-    @else
-        <h2 class="sr-only">Lots</h2>
+    @elseif ($auctions->isNotEmpty())
+        <h2 class="{{ $promo ? 'dc-closing__title dc-closing__title--rest' : 'sr-only' }}">{{ $promo ? 'Other lots' : 'Lots' }}</h2>
         <ul class="ds-catalogue" aria-label="Lots">
             @foreach ($auctions as $auction)
                 @php
@@ -105,6 +151,6 @@
             @endforeach
         </ul>
 
-        <x-ds.pagination :paginator="$auctions" noun="lots" />
+        <x-ds.pagination :paginator="$auctions" :noun="$closingSoon->isNotEmpty() ? 'other lots' : 'lots'" />
     @endif
 </x-app-layout>

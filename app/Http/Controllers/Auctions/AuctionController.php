@@ -40,7 +40,18 @@ class AuctionController extends Controller
         $state = LotBrowser::normaliseState($request->query('state') ?? $request->query('status'));
         $sort = LotBrowser::normaliseSort($request->query('sort'));
 
+        // The lots about to close are promoted to a row of their own above the grid (the clock is the headline), and left out of the
+        // grid below so no lot is listed twice. Only on the plain list: a search, a category or another tab asks for something else.
+        $closingSoon = collect();
+        if ($search === '' && $category === null && in_array($state, [null, 'live'], true)) {
+            $closing = $browser->inState($browser->base(), 'ending', $now);
+            $closingSoon = $browser->withCardData($closing, $user)->orderBy('auctions.ends_at')->orderBy('auctions.id')->limit(3)->get();
+        }
+
         $query = $browser->inState($browser->base($search, $category), $state, $now);
+        if ($closingSoon->isNotEmpty()) {
+            $query->whereNotIn('auctions.id', $closingSoon->modelKeys());
+        }
         $browser->withCardData($query, $user);
         $browser->sorted($query, $sort, $now);
 
@@ -58,6 +69,7 @@ class AuctionController extends Controller
 
         return view('auctions.index', [
             'auctions' => $auctions,
+            'closingSoon' => $closingSoon,
             'categories' => $categories,
             'counts' => $counts,
             'search' => $search,

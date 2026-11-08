@@ -33,6 +33,12 @@
             <header class="sh-top">
                 <x-ds.brand variant="mark" :width="52" :href="route('dashboard')" class="sh-top__mark" />
                 <form class="sh-search" method="GET" action="{{ route('auctions.index') }}" role="search">
+                    {{-- On Browse this is the page's search from 64rem up, so it keeps the tab, category and sort the visitor has chosen. --}}
+                    @if (request()->routeIs('auctions.index'))
+                        @foreach (['state', 'category', 'sort'] as $keep)
+                            @if (is_string(request()->query($keep)) && request()->query($keep) !== '')<input type="hidden" name="{{ $keep }}" value="{{ request()->query($keep) }}">@endif
+                        @endforeach
+                    @endif
                     <label for="shell-search" class="sr-only">Search lots</label>
                     <x-ds.icon name="search" :size="18" class="sh-search__icon" />
                     <input id="shell-search" type="search" name="q" value="{{ request()->routeIs('auctions.index') && is_string(request()->query('q')) ? request()->query('q') : '' }}" placeholder="Search lots" autocomplete="off">
