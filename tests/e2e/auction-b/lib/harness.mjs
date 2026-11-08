@@ -117,10 +117,10 @@ export class Spec {
    * `launch` is the page InfoDot would serve; the origin is what the app's login-CSRF check looks at.
    * Returns the navigation response of the POST (the redirect target is page.url() afterwards).
    */
-  async ecosystemSignIn(p, token, { origin = 'http://infodot.test', redirect = '' } = {}) {
+  async ecosystemSignIn(p, token, { origin = 'http://infodot.test', redirect = '', base = this.app.base } = {}) {
     await p.route(`${origin}/**`, (route) => route.fulfill({
       contentType: 'text/html',
-      body: `<!doctype html><title>InfoDot launch</title><link rel="icon" href="data:,"><form id="f" method="post" action="${this.app.base}/auth/ecosystem"><input name="token" value="${token}"><input name="redirect" value="${redirect}"><button>Go</button></form>`,
+      body: `<!doctype html><title>InfoDot launch</title><link rel="icon" href="data:,"><form id="f" method="post" action="${base}/auth/ecosystem"><input name="token" value="${token}"><input name="redirect" value="${redirect}"><button>Go</button></form>`,
     }));
     await p.goto(`${origin}/launch`);
     const [nav] = await Promise.all([p.waitForNavigation({ waitUntil: 'load' }), p.evaluate(() => document.getElementById('f').submit())]);
