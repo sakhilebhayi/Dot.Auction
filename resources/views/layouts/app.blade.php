@@ -53,7 +53,11 @@
             <main id="main" class="sh-main" tabindex="-1">
                 <div class="sh-page sh-page--{{ $width }}">
                     @php
-                        $headTitle = isset($header) && trim((string) $header) !== '' ? strip_tags((string) $header) : $title;
+                        // A header slot arrives already escaped (its {{ }} ran once), and x-ds.page-header escapes its title prop again. Drop any
+                        // markup, decode the slot's entities once, and let the component do the one escape: "ship's" must not read "ship&#039;s".
+                        $headTitle = isset($header) && trim((string) $header) !== ''
+                            ? html_entity_decode(strip_tags((string) $header), ENT_QUOTES | ENT_HTML5, 'UTF-8')
+                            : $title;
                     @endphp
                     @if ($headTitle)
                         <x-ds.page-header :title="$headTitle" :back="$back" :back-label="$backLabel" :meta="$meta ?? null" :actions="$actions ?? null" :hidden="! $titleVisible" />
