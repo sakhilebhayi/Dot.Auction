@@ -36,6 +36,8 @@ export async function bootApp(name, extraEnv = {}) {
         DB_CONNECTION: 'sqlite',
         DB_DATABASE: dbFile,
         DB_URL: '',
+        DB_TRANSACTION_MODE: 'IMMEDIATE',
+        DB_BUSY_TIMEOUT: '20000',
         SESSION_DRIVER: 'database',
         CACHE_STORE: 'database',
         QUEUE_CONNECTION: 'sync',
