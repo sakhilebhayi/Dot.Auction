@@ -160,7 +160,8 @@ class BidPlacer
     }
 
     /**
-     * @throws BidRejected when the amount is not a positive number of at most 2 decimals
+     * @throws BidRejected when the amount is not a positive, finite number of at most 2 decimals, or is above the
+     *                     platform price ceiling (the same one sellers are held to), which also keeps it inside decimal(12,2)
      */
     private function parseCents(float|int|string $amount): int
     {
@@ -169,14 +170,23 @@ class BidPlacer
         }
 
         $scaled = (float) $amount * 100;
+
+        // INF/NAN (typed, or an exponent such as 1e308 overflowing the multiplication) and anything that is not at
+        // least one cent never reach an int cast or the database.
+        if (! is_finite($scaled) || $scaled < 0.5) {
+            throw new BidRejected('Enter a valid bid amount.');
+        }
+
+        $ceilingCents = max(1, (int) config('auction.listing.max_price', 100000000)) * 100;
+
+        if ($scaled > $ceilingCents + 0.5) {
+            throw new BidRejected('Bids above '.Auction::money($ceilingCents / 100).' are not accepted.');
+        }
+
         $cents = (int) round($scaled);
 
         if (abs($scaled - $cents) > 1e-6) {
             throw new BidRejected('Bid amounts can have at most 2 decimal places.');
-        }
-
-        if ($cents <= 0) {
-            throw new BidRejected('Enter a valid bid amount.');
         }
 
         return $cents;

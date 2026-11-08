@@ -19,8 +19,13 @@ class BidPanel extends Component
 {
     public Auction $auction;
 
+    /**
+     * Exactly what the browser sent, as text. A `float` property made a crafted request a 500: Livewire's property
+     * assignment throws a TypeError for text ("abc") and its snapshot cannot hold the INF that "1e400" becomes. The
+     * value is judged by BidPlacer, which accepts only a finite amount of at most 2 decimals.
+     */
     #[Validate('required|numeric|min:0.01')]
-    public float $bidAmount = 0;
+    public string $bidAmount = '';
 
     /**
      * Client token for idempotency: a double-click or replayed request
@@ -44,7 +49,7 @@ class BidPanel extends Component
     public function mount(Auction $auction): void
     {
         $this->auction = $auction;
-        $this->bidAmount = $auction->minimumBid();
+        $this->bidAmount = Auction::fromCents($auction->minimumBidCents());
         $this->submissionToken = Str::uuid()->toString();
     }
 
@@ -95,7 +100,7 @@ class BidPanel extends Component
     public function refreshBids(array $data): void
     {
         $this->auction->refresh();
-        $this->bidAmount = $this->auction->minimumBid();
+        $this->bidAmount = Auction::fromCents($this->auction->minimumBidCents());
         unset($this->recentBids);
     }
 
@@ -186,7 +191,7 @@ class BidPanel extends Component
     private function syncFromDatabase(): void
     {
         $this->auction->refresh();
-        $this->bidAmount = $this->auction->minimumBid();
+        $this->bidAmount = Auction::fromCents($this->auction->minimumBidCents());
         unset($this->recentBids);
     }
 
