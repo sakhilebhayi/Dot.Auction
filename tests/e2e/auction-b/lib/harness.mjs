@@ -55,6 +55,7 @@ export class Spec {
       viewport: SIZES[size] ?? size, colorScheme, reducedMotion, hasTouch: touch, isMobile: touch, acceptDownloads: true,
       deviceScaleFactor: size === 'desktop' ? 1 : 2,
     });
+    ctx.__touch = touch;
     ctx.setDefaultTimeout(12000);
     ctx.setDefaultNavigationTimeout(30000);
     const tag = label || `${size}/${colorScheme}`;
@@ -117,13 +118,14 @@ export class Spec {
   async shot(p, name, { full = true } = {}) {
     const file = path.join(this.shotDir, `${name}.png`);
     try {
-      // fullPage screenshots drop the touch emulation (pointer: coarse) on mobile contexts, which would change what is
-      // measured afterwards; a taller viewport for one frame gives the same picture and keeps the emulation.
-      const vp = p.viewportSize();
-      const tall = full ? await p.evaluate(() => Math.min(Math.max(document.documentElement.scrollHeight, 400), 6000)) : null;
-      if (full && vp && tall > vp.height) await p.setViewportSize({ width: vp.width, height: tall });
-      await p.screenshot({ path: file, fullPage: false });
-      if (full && vp && tall > vp.height) await p.setViewportSize(vp);
+      // A fullPage screenshot drops the touch emulation (pointer: coarse) of a mobile context, which would change what is
+      // measured afterwards; switching it back on over CDP restores it.
+      await p.screenshot({ path: file, fullPage: full });
+      if (p.context().__touch) {
+        const cdp = await p.context().newCDPSession(p);
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+        await cdp.detach();
+      }
       this.shots.push(path.relative(outDir, file));
     } catch (e) { this.note(`screenshot ${name} failed: ${e.message}`); }
   }
