@@ -1,19 +1,11 @@
-{{-- A short catalogue of lot cards with the viewer's cue and the watch control. In: $lots (loaded with LotBrowser::withCardData), $userId. --}}
-<ul class="ds-catalogue" aria-label="Lots">
+{{-- Lots closing soon as ruled strips with the clock as the headline, the viewer's cue and the watch control. In: $lots (loaded with LotBrowser::withCardData), $userId. --}}
+<ol class="dc-closing__list" aria-label="Lots">
     @foreach ($lots as $lot)
-        @php
-            $lotState = \App\Support\Display::lotState($lot);
-            $cue = \App\Support\ViewerCue::for($lot, $userId, $lotState);
-            $watching = (bool) $lot->viewer_watching;
-        @endphp
-        <li>
-            <x-ds.lot-card :auction="$lot" :viewer="$cue">
-                @if ($cue !== 'own')
-                    <x-slot name="actions">
-                        <livewire:buyer.watch-toggle :key="'dash-watch-'.$lot->id" :auction-id="$lot->id" :title="$lot->title" :watching="$watching" />
-                    </x-slot>
-                @endif
-            </x-ds.lot-card>
-        </li>
+        @php $cue = \App\Support\ViewerCue::for($lot, $userId, \App\Support\Display::lotState($lot)); @endphp
+        <x-ds.lot-row :auction="$lot" :viewer="$cue" size="lg">
+            @if ($cue !== 'own')
+                <x-slot name="actions"><livewire:buyer.watch-toggle :key="'dash-watch-'.$lot->id" :auction-id="$lot->id" :title="$lot->title" :watching="(bool) $lot->viewer_watching" /></x-slot>
+            @endif
+        </x-ds.lot-row>
     @endforeach
-</ul>
+</ol>

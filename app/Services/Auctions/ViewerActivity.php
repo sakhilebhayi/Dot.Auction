@@ -8,8 +8,10 @@ use App\Models\ReserveNotMetProposal;
 use App\Models\SettlementPayment;
 use App\Models\User;
 use App\Models\Watchlist;
+use App\Support\PageRange;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -101,7 +103,7 @@ final class ViewerActivity
         $page = $query->orderByDesc('auctions.ends_at')->orderByDesc('auctions.id')
             ->paginate($perPage, pageName: 'ended_page')->withQueryString();
 
-        return $this->withMySettlements($page, $user);
+        return $this->withMySettlements(PageRange::within($page), $user);
     }
 
     /**
@@ -113,7 +115,7 @@ final class ViewerActivity
     {
         $query = $this->lots->withCardData($this->watchedBy(Auction::query(), $user)->browsable(), $user);
 
-        return $this->lots->soonestFirst($query)->paginate($perPage)->withQueryString();
+        return PageRange::within($this->lots->soonestFirst($query)->paginate($perPage)->withQueryString());
     }
 
     public function watchingCount(User $user): int
@@ -134,7 +136,7 @@ final class ViewerActivity
             ->whereRaw('not exists (select 1 from reserve_not_met_proposals rp where rp.auction_id = auctions.id and rp.status = ?)', ['rejected']);
         $this->lots->withViewerBid($query, $user)->with('images');
 
-        $page = $query->orderByDesc('auctions.ends_at')->orderByDesc('auctions.id')->paginate($perPage)->withQueryString();
+        $page = PageRange::within($query->orderByDesc('auctions.ends_at')->orderByDesc('auctions.id')->paginate($perPage)->withQueryString());
 
         return $this->withMySettlements($page, $user);
     }
@@ -302,8 +304,8 @@ final class ViewerActivity
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<Auction>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<Auction>
+     * @param  Builder<Auction>  $query
+     * @return Builder<Auction>
      */
     private function watchedBy($query, User $user)
     {

@@ -21,6 +21,7 @@ use App\Services\Auctions\BidPlacer;
 use App\Services\Auctions\BuyNowPurchaser;
 use App\Services\Auctions\ListingManager;
 use App\Services\Auctions\SettlementLifecycle;
+use App\Services\Paystack\PaystackConfig;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
@@ -544,13 +545,16 @@ class AuctionDemoSeeder extends Seeder
     private function settlementStates(Auction $laptop, Auction $chairs, Auction $potjie, Auction $mower, Auction $rod, Auction $camera): void
     {
         $window = (int) config('auction.payment_window_hours', 72);
+        // "Payment opened" and "deadline passed" are only true while online payment is switched on. With no Paystack key the sales
+        // are recorded as awaiting payment and the pages say payment opens soon, so the history must not claim otherwise.
+        $paymentOn = app(PaystackConfig::class)->canTakePayments();
 
         // Pending (awaiting payment): the laptop (Sipho) and the camera (Johan).
         foreach ([$laptop, $camera] as $lot) {
             $s = $this->settlementFor($lot);
             $due = $s->created_at->copy()->addHours($window);
             $s->forceFill(['payment_due_at' => $due])->save();
-            $this->event($s, 'payment_opened', 'Payment opened (demo data).', $s->created_at);
+            $paymentOn && $this->event($s, 'payment_opened', 'Payment opened.', $s->created_at);
         }
 
         // Overdue (still payable): the chairs, due two days ago. Both sides told through the real notification.
@@ -560,10 +564,12 @@ class AuctionDemoSeeder extends Seeder
             'payment_due_at' => now()->subDays(1),
             'overdue_at' => now()->subDays(1),
         ])->save();
-        $this->event($s, 'overdue', 'Payment deadline passed (demo data).', now()->subDay());
-        $s->loadMissing(['auction', 'winner', 'seller']);
-        $s->winner->notify(new SettlementOverdueNotification($s, 'winner'));
-        $s->seller->notify(new SettlementOverdueNotification($s, 'seller'));
+        $paymentOn && $this->event($s, 'overdue', 'Payment deadline passed.', now()->subDay());
+        if ($paymentOn) {
+            $s->loadMissing(['auction', 'winner', 'seller']);
+            $s->winner->notify(new SettlementOverdueNotification($s, 'winner'));
+            $s->seller->notify(new SettlementOverdueNotification($s, 'seller'));
+        }
 
         // Paid: the potjie (Aisha) and the fishing rod (Sipho).
         foreach ([$potjie, $rod] as $i => $lot) {
@@ -580,7 +586,7 @@ class AuctionDemoSeeder extends Seeder
                 'provider_transaction_id' => '90000000'.($i + 1), 'initiated_by' => $s->winner_id,
                 'paid_at' => $paidAt, 'summary' => 'Demo payment (no real money moved).',
             ]);
-            $this->event($s, 'paid', 'Paid (demo data).', $paidAt);
+            $this->event($s, 'paid', 'Paid.', $paidAt);
             $s->loadMissing(['auction', 'winner', 'seller']);
             $s->winner->notify(new SettlementPaidNotification($s, 'winner'));
             $s->seller->notify(new SettlementPaidNotification($s, 'seller'));
@@ -593,7 +599,7 @@ class AuctionDemoSeeder extends Seeder
             'payment_due_at' => $s->created_at->copy()->addHours($window),
             'overdue_at' => $s->created_at->copy()->addHours($window),
         ])->save();
-        $this->event($s, 'overdue', 'Payment deadline passed (demo data).', $s->created_at->copy()->addHours($window));
+        $this->event($s, 'overdue', 'Payment deadline passed.', $s->created_at->copy()->addHours($window));
         app(SettlementLifecycle::class)->cancel($s, $this->users['pieter']);
     }
 
@@ -670,16 +676,16 @@ class AuctionDemoSeeder extends Seeder
         SettlementPayment::forceCreate([
             'settlement_id' => $s->id, 'reference' => 'AUC-DEMO-INIT-1', 'amount_cents' => $s->amount_cents, 'currency' => $s->currency,
             'status' => SettlementPayment::INITIATED, 'initiated_by' => $s->winner_id, 'expires_at' => now()->addMinutes(20),
-            'summary' => 'Checkout started (demo data).',
+            'summary' => 'Checkout started.',
         ]);
         SettlementPayment::forceCreate([
             'settlement_id' => $s->id, 'reference' => 'AUC-DEMO-FAIL-1', 'amount_cents' => $s->amount_cents, 'currency' => $s->currency,
-            'status' => SettlementPayment::FAILED, 'initiated_by' => $s->winner_id, 'summary' => 'Card declined (demo data).',
+            'status' => SettlementPayment::FAILED, 'initiated_by' => $s->winner_id, 'summary' => 'Card declined.',
         ]);
         SettlementPayment::forceCreate([
             'settlement_id' => null, 'reference' => 'AUC-DEMO-UNMATCHED-1', 'amount_cents' => 125000, 'currency' => 'ZAR',
             'status' => SettlementPayment::UNMATCHED, 'reason' => 'unknown_reference',
-            'provider_transaction_id' => '900000099', 'summary' => 'Money reported for a reference this app never issued (demo data).',
+            'provider_transaction_id' => '900000099', 'summary' => 'Money reported for a reference this app never issued.',
         ]);
     }
 

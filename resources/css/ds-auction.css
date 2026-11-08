@@ -7,7 +7,7 @@
 .ds-countdown__value { font-family: var(--f-mono); font-weight: 600; font-size: var(--t-lg); line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ds-countdown__at { flex-basis: 100%; font-size: var(--t-sm); color: var(--c-ink-3); }
 .ds-cd-n { font-variant-numeric: tabular-nums; }
-.ds-cd-u { margin: 0 0 0 0.12ch; font-family: var(--f-ui); font-size: 0.62em; font-weight: 600; color: var(--c-ink-3); letter-spacing: 0; }
+.ds-cd-u { margin: 0 0 0 0.12ch; font-family: var(--f-ui); font-size: max(0.7em, 0.75rem); font-weight: 600; color: var(--c-ink-3); letter-spacing: 0; }
 .ds-cd-word { font-family: var(--f-ui); font-size: 0.8em; font-weight: 650; letter-spacing: 0; }
 .ds-countdown.is-urgent .ds-countdown__value { color: var(--c-urgent); }
 .ds-countdown.is-urgent .ds-cd-u { color: var(--c-urgent); }
@@ -63,6 +63,9 @@
     background: transparent; color: var(--c-ink); border: 1px solid transparent; border-radius: var(--r-1);
     font: inherit; text-align: left;
 }
+.ds-rung__row .ds-money { margin-left: auto; }
+.ds-rung__go { align-self: center; color: var(--c-ink-3); flex: none; }
+button.ds-rung__row:hover .ds-rung__go, button.ds-rung__row:focus-visible .ds-rung__go { color: var(--c-ink); }
 .ds-rung__label { font-size: var(--t-sm); color: var(--c-ink-2); font-weight: 500; }
 button.ds-rung__row { cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out); }
 button.ds-rung__row:hover { background: var(--c-quiet-hover); }

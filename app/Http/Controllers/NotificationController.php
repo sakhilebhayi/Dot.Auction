@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\Notifications\Destination;
+use App\Support\PageRange;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,7 +19,7 @@ class NotificationController extends Controller
         $user = $request->user();
 
         return view('notifications.index', [
-            'notifications' => $user->notifications()->latest()->latest('id')->paginate(20)->withQueryString(),
+            'notifications' => PageRange::within($user->notifications()->latest()->latest('id')->paginate(20)->withQueryString()),
             'unread' => $user->unreadNotifications()->count(),
         ]);
     }

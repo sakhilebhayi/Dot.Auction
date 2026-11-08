@@ -87,15 +87,20 @@
                             <tr>
                                 <td data-label="Lot" class="dc-lotcell"><a class="dc-lotname" href="{{ route('auctions.show', $lot) }}">{{ $lot->title }}</a></td>
                                 <td data-label="Your bid" class="num"><x-ds.money :amount="$lot->viewer_top_bid" /></td>
-                                <td data-label="Final price" class="num">@if (in_array($lotState, ['sold', 'unsold', 'pending'], true) && (int) $lot->bids_count > 0)<x-ds.money :amount="$lot->current_price" />@else None @endif</td>
+                                <td data-label="Final price" class="num">@if (in_array($lotState, ['sold', 'unsold', 'pending', 'closing'], true) && (int) $lot->bids_count > 0)<x-ds.money :amount="$lot->current_price" />@else None @endif</td>
                                 <td data-label="Outcome">
                                     @if ($won)<x-ds.badge tone="live" icon="trophy" size="sm">You won</x-ds.badge>
+                                        @if ($sale)
+                                            @php $position = \App\Support\SettlementPosition::of($sale); @endphp
+                                            @if ($position->isOverdue())<span class="dc-sub"><x-ds.status state="payment_overdue" size="sm" /></span>
+                                            @elseif ($position->isWaiting())<span class="dc-sub">Payment opens soon</span>@endif
+                                        @endif
                                     @elseif ($lotState === 'sold' || ($lotState === 'pending' && ! $lot->viewer_leads))<x-ds.badge tone="neutral" size="sm">Not won</x-ds.badge>
                                     @else<x-ds.status :state="$lotState" size="sm" />@endif
                                 </td>
                                 <td data-label="Ended">{{ Display::time($lot->ends_at, 'D j M, H:i') }}</td>
                                 <td class="actions">
-                                    @if ($won && $sale)<x-ds.button :href="route('settlements.show', $sale)" size="sm" :variant="$sale->isPayable() ? 'primary' : 'quiet'">{{ $sale->isPayable() ? 'Pay now' : 'View sale' }}</x-ds.button>
+                                    @if ($won && $sale)<x-ds.button :href="route('settlements.show', $sale)" size="sm" :variant="$position->canPayNow() ? 'primary' : 'quiet'">{{ $position->winnerAction() ?? 'View sale' }}</x-ds.button>
                                     @else<x-ds.button :href="route('auctions.show', $lot)" variant="quiet" size="sm">Open lot</x-ds.button>@endif
                                 </td>
                             </tr>

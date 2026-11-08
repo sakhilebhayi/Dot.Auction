@@ -62,6 +62,18 @@ const unitsFor = (seconds) => {
 };
 const unitsKey = (units) => units.map((u) => u.join('')).join(' ');
 
+let liveRegion = null;
+const announce = (text) => {
+    if (!liveRegion) {
+        liveRegion = document.createElement('p');
+        liveRegion.className = 'sr-only';
+        liveRegion.setAttribute('role', 'status');
+        liveRegion.setAttribute('aria-live', 'polite');
+        document.body.appendChild(liveRegion);
+    }
+    liveRegion.textContent = text;
+};
+
 const tickCountdown = (el, now) => {
     const target = Number(el.dataset.target);
     const offset = Number(el.dataset.offset);
@@ -80,6 +92,16 @@ const tickCountdown = (el, now) => {
             el.dispatchEvent(new CustomEvent('ds:countdown-end', { bubbles: true, detail: { mode: el.dataset.mode } }));
         }
         return;
+    }
+
+    // The clock itself is never announced. The lot page's own clock says so politely twice, at five minutes and at one, so a screen reader
+    // user hears that the lot is about to close without hearing every second.
+    if (el.closest('.lot-clock') && el.dataset.mode !== 'opening') {
+        const before = el.dataset.prev === undefined ? null : Number(el.dataset.prev);
+        [[300, '5 minutes'], [60, '1 minute']].forEach(([at, words]) => {
+            if (before !== null && before > at && left <= at) { announce('This lot closes in ' + words + '.'); }
+        });
+        el.dataset.prev = String(left);
     }
 
     const units = unitsFor(left);

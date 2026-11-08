@@ -66,6 +66,6 @@ operator).
 
 ## Showing the payment screens
 
-With no Paystack key the app shows its honest "payment is not available yet" copy. To see the Pay now screens
+With no Paystack key every page says "Payment opens soon" and what will be owed (`App\Support\SettlementPosition`); the seeded overdue sale reads as waiting, there is no Pay now, and no "deadline passed" history is written. Seed again after setting the key to get the payment-opened and deadline history (and the overdue notices) too. To see the Pay now screens
 set `PAYSTACK_SECRET_KEY=sk_test_demo` (a fake test key: pressing Pay now then fails at Paystack, which shows
 the gateway-error state). No real key is ever needed or wanted here.

@@ -30,8 +30,10 @@
         {{-- Where the price is and how long is left --}}
         <div class="lot-bid__top">
             <div class="lot-bid__tags">
-                <x-ds.status :state="$o->statusState()" />
-                @if ($live && $extensions > 0)<x-ds.status state="extended" :count="$extensions" />@endif
+                <div class="lot-bid__chips">
+                    <x-ds.status :state="$o->statusState()" />
+                    @if ($live && $extensions > 0)<x-ds.status state="extended" :count="$extensions" />@endif
+                </div>
                 @if (! $o->isSeller && in_array($state, ['scheduled', 'live', 'ending', 'closing', 'pending'], true))
                     <livewire:auctions.watchlist-button :auction="$a" :key="'watch-'.$a->id" />
                 @endif
@@ -200,6 +202,7 @@
     @if ($o->canBid)
         <x-ds.dialog :id="$confirmId" :title="'Place a bid of '.($confirmAmount !== '' ? $confirmAmount : $min).'?'" size="sm" wire:ignore.self>
             <div class="ds-confirm">
+                <p class="ds-confirm__lot">On {{ $a->title }}</p>
                 <p class="ds-confirm__body">A bid is binding and cannot be withdrawn. If it is the highest when the lot closes, you buy the lot at this price.</p>
                 @if ($inLateWindow)<p class="ds-confirm__body">This lot closes soon, so your bid adds {{ $extra }} {{ $extra === 1 ? 'minute' : 'minutes' }} to the clock.</p>@endif
                 <div class="ds-dialog__foot">
@@ -217,6 +220,7 @@
     @if ($o->canBuyNow)
         <x-ds.dialog :id="$buyNowId" :title="'Buy now for '.Auction::money($a->buy_now_price).'?'" size="sm" wire:ignore.self>
             <div class="ds-confirm">
+                <p class="ds-confirm__lot">{{ $a->title }}</p>
                 <p class="ds-confirm__body">Bidding ends straight away and you win this lot at {{ Auction::money($a->buy_now_price) }}. Like a bid, it is binding.</p>
                 <p class="ds-confirm__body">After you confirm, this page shows the payment step for the sale.</p>
                 <div class="ds-dialog__foot">

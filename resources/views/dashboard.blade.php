@@ -48,7 +48,7 @@
                         <li class="dc-need dc-need--{{ $need['tone'] }}">
                             <x-ds.icon :name="$need['icon']" :size="22" class="dc-need__icon" />
                             <p class="dc-need__text">{{ $need['text'] }}</p>
-                            <x-ds.button :href="$need['href']" variant="quiet" size="sm" class="dc-need__action">{{ $need['action'] }}</x-ds.button>
+                            @if ($need['action'])<x-ds.button :href="$need['href']" variant="quiet" size="sm" class="dc-need__action">{{ $need['action'] }}</x-ds.button>@endif
                         </li>
                     @endforeach
                 </ul>
@@ -102,17 +102,18 @@
                 @if ($salesToPay->isNotEmpty())
                     <x-ds.section title="Won and to pay" id="to-pay" description="Lots you won that are not paid for yet.">
                         <x-ds.table caption="Won lots waiting for payment">
-                            <thead><tr><th scope="col">Lot</th><th scope="col" class="num">Amount</th><th scope="col">Pay by</th><th scope="col" class="actions"><span class="sr-only">Action</span></th></tr></thead>
+                            <thead><tr><th scope="col">Lot</th><th scope="col" class="num">Amount</th><th scope="col">Deadline</th><th scope="col" class="actions"><span class="sr-only">Action</span></th></tr></thead>
                             <tbody>
-                                @foreach ($salesToPay->take(6) as $sale)
+                                @foreach ($salesToPay->take(6) as $position)
+                                    @php $sale = $position->settlement; @endphp
                                     <tr>
                                         <td data-label="Lot" class="dc-lotcell">
                                             <a class="dc-lotname" href="{{ route('settlements.show', $sale) }}">{{ $sale->auction->title }}</a>
-                                            @if ($sale->status === 'payment_overdue')<span class="dc-sub"><x-ds.status state="payment_overdue" size="sm" /></span>@endif
+                                            @if ($position->isOverdue())<span class="dc-sub"><x-ds.status state="payment_overdue" size="sm" /></span>@endif
                                         </td>
                                         <td data-label="Amount" class="num"><x-ds.money :amount="$sale->amount_cents / 100" /></td>
-                                        <td data-label="Pay by">{{ $sale->payment_due_at ? Display::time($sale->payment_due_at, 'D j M, H:i') : 'Not set' }}</td>
-                                        <td class="actions"><x-ds.button :href="route('settlements.show', $sale)" size="sm">Pay now</x-ds.button></td>
+                                        <td data-label="Deadline">{{ $position->canPayNow() ? ($sale->payment_due_at ? Display::time($sale->payment_due_at, 'D j M, H:i') : 'Not set') : 'Opens soon' }}</td>
+                                        <td class="actions"><x-ds.button :href="route('settlements.show', $sale)" size="sm" :variant="$position->canPayNow() ? 'primary' : 'quiet'">{{ $position->winnerAction() ?? 'View sale' }}</x-ds.button></td>
                                     </tr>
                                 @endforeach
                             </tbody>

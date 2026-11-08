@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Auctions;
 use App\Http\Controllers\Controller;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
-use App\Models\AuctionSettlement;
+use App\Notifications\OutbidNotification;
 use App\Services\Auctions\LotBrowser;
+use App\Support\PageRange;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
@@ -39,11 +40,22 @@ class AuctionController extends Controller
         $state = LotBrowser::normaliseState($request->query('state') ?? $request->query('status'));
         $sort = LotBrowser::normaliseSort($request->query('sort'));
 
+        // The lots about to close are promoted to a row of their own above the grid (the clock is the headline), and left out of the
+        // grid below so no lot is listed twice. Only on the plain list: a search, a category or another tab asks for something else.
+        $closingSoon = collect();
+        if ($search === '' && $category === null && in_array($state, [null, 'live'], true)) {
+            $closing = $browser->inState($browser->base(), 'ending', $now);
+            $closingSoon = $browser->withCardData($closing, $user)->orderBy('auctions.ends_at')->orderBy('auctions.id')->limit(3)->get();
+        }
+
         $query = $browser->inState($browser->base($search, $category), $state, $now);
+        if ($closingSoon->isNotEmpty()) {
+            $query->whereNotIn('auctions.id', $closingSoon->modelKeys());
+        }
         $browser->withCardData($query, $user);
         $browser->sorted($query, $sort, $now);
 
-        $auctions = $query->paginate(12)->withQueryString();
+        $auctions = PageRange::within($query->paginate(12)->withQueryString());
 
         // One grouped query each for the tab counts and the category chips, both for the same search the list answers.
         $counts = $browser->counts($search, $category, $now);
@@ -57,6 +69,7 @@ class AuctionController extends Controller
 
         return view('auctions.index', [
             'auctions' => $auctions,
+            'closingSoon' => $closingSoon,
             'categories' => $categories,
             'counts' => $counts,
             'search' => $search,
@@ -87,9 +100,14 @@ class AuctionController extends Controller
      * AuctionPolicy. Reserve price is never passed to the view — only the
      * reserveMet() boolean — so the Blade template has no way to leak it.
      */
-    public function show(Auction $auction): View
+    public function show(Request $request, Auction $auction): View
     {
         Gate::authorize('view', $auction);
+
+        // Having opened the lot, an unread "you were outbid" notice about it has been answered.
+        if ($request->user() !== null) {
+            OutbidNotification::markReadFor($request->user(), $auction->id);
+        }
 
         $auction->load(['category', 'seller', 'items', 'images']);
 

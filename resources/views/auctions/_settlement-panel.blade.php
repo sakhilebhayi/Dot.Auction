@@ -5,22 +5,23 @@
 @php
     $payments = app(\App\Services\Paystack\PaystackConfig::class);
     $isWinner = $settlement->winner_id === auth()->id();
-    $title = match (true) {
-        $settlement->status === 'paid' => 'Payment received',
-        $settlement->status === 'cancelled' => 'Sale cancelled',
-        $settlement->status === 'payment_overdue' => 'Payment overdue',
-        $payments->canTakePayments() => 'Payment due',
+    $position = \App\Support\SettlementPosition::of($settlement, $payments);
+    $title = match ($position->state()) {
+        'paid' => 'Payment received',
+        'cancelled' => 'Sale cancelled',
+        'overdue' => 'Payment overdue',
+        'due' => 'Payment due',
         default => 'Payment pending',
     };
 @endphp
 <div class="lot-pay">
     <div class="lot-pay__head">
         <h3 class="lot-pay__title">{{ $title }}</h3>
-        <x-ds.status :state="$settlement->status" size="sm" />
+        <x-ds.status :state="$position->badge()" size="sm" />
         @include('settlements._mode', ['payments' => $payments])
     </div>
 
-    @if ($settlement->status === 'paid')
+    @if ($position->state() === 'paid')
         <p class="lot-pay__text">
             @if ($isWinner)
                 You paid {{ $settlement->amount() }}. Thank you.
@@ -28,18 +29,18 @@
                 The buyer paid {{ $settlement->amount() }} to Dot.Auction. Payout is not available yet: payment is received and paying you out is a manual step.
             @endif
         </p>
-    @elseif ($settlement->status === 'cancelled')
+    @elseif ($position->state() === 'cancelled')
         <p class="lot-pay__text">The seller cancelled this sale. Nothing is due.</p>
-    @elseif ($payments->canTakePayments())
+    @elseif ($position->canPayNow())
         @if ($isWinner)
             <p class="lot-pay__text">
                 You won this lot at {{ $settlement->amount() }}.
-                @if ($settlement->payment_due_at) Pay by @localtime($settlement->payment_due_at, 'j M Y, H:i', true). @endif
+                @if ($settlement->payment_due_at) Pay by {{ \App\Support\Display::time($settlement->payment_due_at, null, true) }}. @endif
             </p>
             <x-ds.button :href="route('settlements.show', $settlement)" block>Pay now</x-ds.button>
         @else
             <p class="lot-pay__text">
-                Sold for {{ $settlement->amount() }}. {{ $settlement->status === 'payment_overdue' ? 'The buyer is overdue.' : 'Waiting for the buyer to pay.' }}
+                Sold for {{ $settlement->amount() }}. {{ $position->isOverdue() ? 'The buyer is overdue.' : 'Waiting for the buyer to pay.' }}
                 Payout is not available yet: when payment is received, paying you out is a manual step.
             </p>
             <x-ds.button variant="quiet" :href="route('settlements.show', $settlement)" block>Open payment page</x-ds.button>
@@ -47,8 +48,8 @@
     @else
         @if ($isWinner)
             <p class="lot-pay__text">
-                You won this lot at {{ $settlement->amount() }}. Dot.Auction has not opened payment yet, so nothing is due now.
-                You will be told when the payment step opens.
+                You won this lot at {{ $settlement->amount() }}. Payment opens soon: nothing is due today, and you will owe {{ $settlement->amount() }} once it does.
+                We will tell you when it opens.
             </p>
         @else
             <p class="lot-pay__text">
