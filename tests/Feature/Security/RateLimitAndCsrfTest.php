@@ -173,10 +173,14 @@ class RateLimitAndCsrfTest extends TestCase
         $this->actingAs($user);
         RateLimiter::clear('bid:'.$user->id);
 
-        $panel = Livewire::test(BidPanel::class, ['auction' => $lot]);
-        for ($i = 0; $i < 21; $i++) {
-            $panel->set('bidAmount', (string) (1 + $i))->call('placeBid');
+        // Fill the person's window, then a perfectly valid bid is refused with the plain message.
+        for ($i = 0; $i < 20; $i++) {
+            RateLimiter::hit('bid:'.$user->id, 60);
         }
+
+        $panel = Livewire::test(BidPanel::class, ['auction' => $lot])
+            ->set('bidAmount', (string) ($lot->minimumBid() + 100))
+            ->call('placeBid');
         $this->assertStringContainsString('Too many bids', (string) $panel->get('error'));
     }
 }

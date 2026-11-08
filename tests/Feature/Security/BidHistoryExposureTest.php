@@ -30,8 +30,10 @@ class BidHistoryExposureTest extends TestCase
         foreach ([$seller, $one, $two, User::factory()->withPersonalTeam()->create(), User::factory()->withPersonalTeam()->platformOperator()->create()] as $viewer) {
             $html = Livewire::actingAs($viewer)->test(BidPanel::class, ['auction' => $lot])->html();
 
-            $this->assertStringContainsString('Thabo N.', $html);
-            $this->assertStringContainsString('R120.00', $html);
+            // A viewer sees their own bid as "You"; everyone else sees a masked name.
+            $this->assertStringContainsString($viewer->is($one) ? 'You' : 'Thabo N.', $html);
+            // The money component splits the figure across elements, so read the visible text.
+            $this->assertStringContainsString('R120.00', preg_replace('/\s+/', '', strip_tags($html)));
             foreach (['Nkosifull', 'Brien-Patel', 'hist.test', '987', 'bidder_id'] as $secret) {
                 $this->assertStringNotContainsString($secret, $html, "viewer {$viewer->id} can see '{$secret}' in the bid panel");
             }
