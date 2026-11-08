@@ -27,15 +27,22 @@ class AuctionController extends Controller
     {
         Gate::authorize('viewAny', Auction::class);
 
-        $search = trim((string) $request->get('q', ''));
-        $category = $request->get('category');
-        $status = $request->get('status');
+        // Query-string values are untrusted: an array (?q[]=x), text where an id belongs (?category=abc) or a number
+        // too big for the column must narrow to "no filter" or "no results", never become a 500.
+        $rawSearch = $request->query('q');
+        $search = is_string($rawSearch) ? trim($rawSearch) : '';
+        $category = $this->positiveId($request->query('category'));
+        $status = is_string($request->query('status')) ? $request->query('status') : null;
 
         $auctions = Auction::query()
             ->browsable()
             ->with(['category', 'images'])
-            ->when($search !== '', fn ($q) => $q->where('title', 'like', "%{$search}%"))
-            ->when($category, fn ($q) => $q->where('category_id', $category))
+            // Case-insensitive on every database (PostgreSQL's LIKE is not), with % and _ taken literally.
+            ->when($search !== '', fn ($q) => $q->whereRaw(
+                'lower(title) like ? escape ?',
+                ['%'.addcslashes(mb_strtolower($search), '\\%_').'%', '\\'],
+            ))
+            ->when($category !== null, fn ($q) => $q->where('category_id', $category))
             ->when($status, fn ($q) => $q->where('status', $status))
             ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
             ->orderBy('ends_at')
@@ -51,6 +58,20 @@ class AuctionController extends Controller
             'category' => $category,
             'status' => $status,
         ]);
+    }
+
+    /**
+     * A database id from the query string: a positive integer that fits a bigint column, or null.
+     */
+    private function positiveId(mixed $value): ?int
+    {
+        if (! is_string($value) || ! ctype_digit($value) || strlen($value) > 18) {
+            return null;
+        }
+
+        $id = (int) $value;
+
+        return $id > 0 ? $id : null;
     }
 
     /**
