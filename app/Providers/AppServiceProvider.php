@@ -20,7 +20,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // TESTING ONLY: the real-browser suite (tests/e2e/auction) cannot use Http::fake(), so it asks for a fake Paystack client.
+        // Never bound in production: the environment must be local or testing AND the flag must be on.
+        if ($this->app->environment('local', 'testing') && config('paystack.e2e_fake') === true) {
+            $this->app->singleton(\App\Services\Paystack\PaystackClient::class, \App\Services\Paystack\E2eFakePaystackClient::class);
+        }
     }
 
     /**

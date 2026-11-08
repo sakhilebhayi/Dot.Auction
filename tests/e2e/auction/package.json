@@ -1,0 +1,14 @@
+{
+  "name": "dot-auction-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real-browser end-to-end specs for Dot.Auction (R-42). Self-contained: playwright-core drives your own Chrome, axe-core checks accessibility.",
+  "type": "module",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "dependencies": {
+    "axe-core": "4.11.0",
+    "playwright-core": "1.57.0"
+  }
+}

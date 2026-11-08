@@ -34,4 +34,8 @@ return [
     // Webhook calls allowed per minute per IP, counted before the signature is checked.
     'webhook_attempts_per_minute' => (int) env('PAYSTACK_WEBHOOK_PER_MINUTE', 120),
 
+    // TESTING ONLY. Honoured only in the "local" and "testing" environments (see AppServiceProvider): the real-browser suite in
+    // tests/e2e/auction swaps in a fake gateway client. Leave unset everywhere else.
+    'e2e_fake' => (bool) env('AUCTION_E2E_FAKE_PAYSTACK', false),
+
 ];

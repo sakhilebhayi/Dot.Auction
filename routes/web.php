@@ -175,6 +175,40 @@ if (app()->environment('local', 'testing')) {
         return view('dev.kit', ['lots' => \App\Support\KitData::lots($now), 'now' => $now]);
     })->name('dev.kit');
 
+    // TESTING ONLY (the browser suite in tests/e2e/auction): a fake Paystack checkout and a switch for the fake gateway's mode.
+    // Registered only when AUCTION_E2E_FAKE_PAYSTACK is on as well, in these two environments only.
+    if (config('paystack.e2e_fake') === true) {
+        Route::get('/dev/fake-paystack-mode/{mode}', function (string $mode) {
+            abort_unless(in_array($mode, ['ok', 'unreachable', 'error'], true), 404);
+            \Illuminate\Support\Facades\Cache::put(\App\Services\Paystack\E2eFakePaystackClient::MODE_KEY, $mode, now()->addHour());
+
+            return response('mode '.$mode);
+        })->name('dev.fake-paystack.mode');
+
+        Route::get('/dev/fake-paystack/{reference}', function (string $reference) {
+            $init = \Illuminate\Support\Facades\Cache::get(\App\Services\Paystack\E2eFakePaystackClient::ref($reference, 'init'));
+            abort_if($init === null, 404);
+
+            return response('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Fake Paystack checkout</title></head><body>'
+                .'<main><h1>Fake Paystack checkout</h1><p>Reference '.e($reference).' for '.e($init['currency']).' '.number_format($init['amount'] / 100, 2).'.</p>'
+                .'<p><a id="fake-pay" href="/dev/fake-paystack/'.e($reference).'/complete?result=success">Pay</a> '
+                .'<a id="fake-fail" href="/dev/fake-paystack/'.e($reference).'/complete?result=failed">Decline</a> '
+                .'<a id="fake-abandon" href="/dev/fake-paystack/'.e($reference).'/complete?result=abandoned">Close checkout</a></p></main></body></html>');
+        })->name('dev.fake-paystack.checkout');
+
+        Route::get('/dev/fake-paystack/{reference}/complete', function (Request $request, string $reference) {
+            $init = \Illuminate\Support\Facades\Cache::get(\App\Services\Paystack\E2eFakePaystackClient::ref($reference, 'init'));
+            abort_if($init === null, 404);
+            \Illuminate\Support\Facades\Cache::put(
+                \App\Services\Paystack\E2eFakePaystackClient::ref($reference, 'result'),
+                in_array($request->query('result'), ['success', 'failed', 'abandoned', 'pending'], true) ? $request->query('result') : 'abandoned',
+                now()->addHour(),
+            );
+
+            return redirect()->away($init['callback'].'?trxref='.$reference.'&reference='.$reference);
+        })->name('dev.fake-paystack.complete');
+    }
+
     Route::get('/dev/logout', function (Request $request) {
         Auth::logout();
         $request->session()->invalidate();

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsurePlatformOperator;
+use App\Http\Middleware\KeepFlashForLivewire;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrustedHostList;
 use Illuminate\Foundation\Application;
@@ -20,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'operator' => EnsurePlatformOperator::class,
         ]);
+
+        // A Livewire poll between a redirect and its page must not eat the flash message (see the class).
+        $middleware->web(append: [KeepFlashForLivewire::class]);
 
         // Baseline browser protections (enforced headers plus a report-only CSP) on every response.
         $middleware->append(SecurityHeaders::class);
