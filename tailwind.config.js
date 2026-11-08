@@ -16,12 +16,9 @@ const ramp = (map) => Object.fromEntries(Object.entries(map).map(([step, name]) 
 
 /** @type {import('tailwindcss').Config} */
 export default {
-    content: [
-        './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
-        './vendor/laravel/jetstream/**/*.blade.php',
-        './storage/framework/views/*.php',
-        './resources/views/**/*.blade.php',
-    ],
+    // Only this app's views: Jetstream's and the pagination views are all published into resources/views, so scanning the vendor
+    // stubs (which still carry their old Tailwind palettes and a thick left border) only added unused classes.
+    content: ['./resources/views/**/*.blade.php', './resources/js/**/*.js'],
 
     darkMode: 'class',
 
@@ -30,9 +27,11 @@ export default {
             colors: {
                 white: token('--n-0'),
                 black: token('--n-950'),
+                // 400 to 600 are the greys Jetstream uses for hints and secondary text (often with no dark: partner), so they are the
+                // theme-aware muted ink rather than fixed greys: AA on both grounds.
                 gray: ramp({
-                    50: '--n-50', 100: '--n-100', 200: '--n-200', 300: '--n-300', 400: '--n-400',
-                    500: '--n-500', 600: '--n-600', 700: '--n-700', 800: '--n-800', 900: '--n-900', 950: '--n-950',
+                    50: '--n-50', 100: '--n-100', 200: '--n-200', 300: '--n-300', 400: '--c-ink-3',
+                    500: '--c-ink-3', 600: '--c-ink-3', 700: '--n-700', 800: '--n-800', 900: '--n-900', 950: '--n-950',
                 }),
                 indigo: ramp({
                     50: '--blue-100', 100: '--blue-100', 200: '--blue-300', 300: '--blue-300', 400: '--blue-300',
@@ -43,8 +42,8 @@ export default {
                     500: '--red-500', 600: '--red-600', 700: '--red-700', 800: '--red-700', 900: '--red-900',
                 }),
                 green: ramp({
-                    50: '--teal-100', 100: '--teal-100', 200: '--teal-300', 300: '--teal-300', 400: '--teal-300',
-                    500: '--teal-600', 600: '--teal-600', 700: '--teal-700', 800: '--teal-700', 900: '--teal-900',
+                    50: '--teal-100', 100: '--teal-100', 200: '--teal-300', 300: '--teal-300', 400: '--c-ok',
+                    500: '--c-ok', 600: '--c-ok', 700: '--teal-700', 800: '--teal-700', 900: '--teal-900',
                 }),
                 yellow: ramp({
                     50: '--gold-100', 100: '--gold-100', 200: '--gold-300', 300: '--gold-300', 400: '--gold-500',

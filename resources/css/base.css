@@ -1,6 +1,9 @@
 /* Element defaults for every page. Reads tokens only. Plain CSS: it loads after Tailwind's preflight in app.css and stands alone in errors.css. */
 html {
     overflow-x: clip;
+    scrollbar-color: var(--c-line-strong) var(--c-ground);
+    caret-color: var(--c-ink);
+    accent-color: var(--c-ink);
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     background: var(--c-ground);

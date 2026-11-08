@@ -17,13 +17,13 @@
             <x-ds.icon name="search" :size="17" />
             <input type="text" name="q" value="{{ $search }}" placeholder="Search auctions by title…" aria-label="Search auctions by title" class="dot-input" style="padding-left:36px;">
         </div>
-        <select name="category" aria-label="Category" class="dot-input" style="max-width:200px;" onchange="this.form.submit()">
+        <select name="category" aria-label="Category" class="dot-input" style="max-width:200px;" data-autosubmit>
             <option value="">All categories</option>
             @foreach($categories as $cat)
                 <option value="{{ $cat->id }}" @selected((string) $category === (string) $cat->id)>{{ $cat->name }} ({{ $cat->auctions_count }})</option>
             @endforeach
         </select>
-        <select name="status" aria-label="Status" class="dot-input" style="max-width:160px;" onchange="this.form.submit()">
+        <select name="status" aria-label="Status" class="dot-input" style="max-width:160px;" data-autosubmit>
             <option value="">Any status</option>
             <option value="active" @selected($status === 'active')>Active</option>
             <option value="ended" @selected($status === 'ended')>Ended</option>

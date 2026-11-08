@@ -55,7 +55,7 @@
 @media (hover: none) { .ds-btn--primary:hover:not(:disabled) { background: var(--c-action); } }
 
 .ds-iconbtn {
-    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center;
     width: var(--hit); height: var(--hit); padding: 0;
     background: transparent; color: var(--c-ink); border: 1px solid transparent; border-radius: var(--r-2);
     cursor: pointer; text-decoration: none;
@@ -136,3 +136,9 @@
 .ds-alert--notice .ds-alert__icon { color: var(--c-notice); }
 .ds-alert--danger { background: var(--c-danger-bg); border-color: var(--c-danger); }
 .ds-alert--danger .ds-alert__icon { color: var(--c-danger); }
+
+/* Touch: on coarse pointers every small control still has a 44px target. */
+@media (pointer: coarse) {
+    .ds-btn--sm, .ds-iconbtn--small { min-height: var(--hit); }
+    .ds-iconbtn--small { width: var(--hit); height: var(--hit); }
+}

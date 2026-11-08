@@ -5,7 +5,7 @@
 <x-ds.dropdown label="Account menu" align="end">
     <x-slot name="trigger">
         <x-ds.avatar :name="auth()->user()->name" :size="32" decorative />
-        <span class="sh-user__name">{{ auth()->user()->name }}</span>
+        <span class="sh-user__name">{{ auth()->user()->name }}</span><span class="sr-only">, account menu</span>
         <x-ds.icon name="chevron-down" :size="16" />
     </x-slot>
     <p class="ds-menu__label">Signed in as {{ auth()->user()->email }}</p>

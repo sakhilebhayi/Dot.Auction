@@ -13,7 +13,7 @@
             </div>
         </div>
         <div class="dot-head-actions">
-            <a href="{{ route('auctions.index') }}" style="display:inline-flex;align-items:center;gap:0.5rem;border-radius:9999px;background:var(--c-sunken);border:1px solid var(--c-line);padding:0.7rem 1.4rem;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:var(--c-ink);text-decoration:none;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
+            <a href="{{ route('auctions.index') }}" style="display:inline-flex;align-items:center;gap:0.5rem;border-radius:9999px;background:var(--c-sunken);border:1px solid var(--c-line);padding:0.7rem 1.4rem;font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:var(--c-ink);text-decoration:none;transition:background 0.2s;">
                 <x-ds.icon name="browse" :size="18" />
                 Browse Auctions
             </a>

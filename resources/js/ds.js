@@ -86,7 +86,7 @@ const tickCountdown = (el, now) => {
     const key = unitsKey(units);
     if (el.dataset.shown !== key) {
         el.dataset.shown = key;
-        value.innerHTML = units.map(([n, u]) => '<span class="ds-cd-n">' + n + '</span><span class="ds-cd-u">' + u + '</span>').join('');
+        value.innerHTML = units.map(([n, u]) => '<span class="ds-cd-n">' + n + '</span><span class="ds-cd-u">' + u + '</span>').join(' ');
     }
     if (el.dataset.mode !== 'opening') {
         el.classList.toggle('is-urgent', left <= Number(el.dataset.urgent || 0));
@@ -308,8 +308,38 @@ window.addEventListener('pageshow', () => {
     $$('[data-ds-lock][aria-busy="true"]').forEach((button) => { button.removeAttribute('aria-busy'); button.classList.remove('is-loading'); button.disabled = false; });
 });
 
+/* ---------- Declarative replacements for inline handlers (a strict CSP forbids onclick, onchange and onsubmit attributes) ---------- */
+// data-confirm="Question?" on a form or a button asks with the browser's own confirm() before it submits or acts. Interim for pages not yet
+// moved to ds.confirm (a dialog); new work uses ds.confirm.
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) { return; }
+    if (form.hasAttribute('data-ds-noop')) { event.preventDefault(); return; }
+    const message = form.dataset.confirm;
+    if (message && !window.confirm(message)) { event.preventDefault(); }
+}, true);
+document.addEventListener('click', (event) => {
+    const control = event.target.closest('button[data-confirm], a[data-confirm], input[data-confirm]');
+    if (control && !control.closest('form[data-confirm]') && !window.confirm(control.dataset.confirm)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+    }
+    const toastTrigger = event.target.closest('[data-ds-toast]');
+    if (toastTrigger) {
+        try { toast(JSON.parse(toastTrigger.dataset.dsToast)); } catch (e) { /* a malformed attribute shows nothing */ }
+    }
+}, true);
+// data-autosubmit on a select or input sends its form when the value changes.
+document.addEventListener('change', (event) => {
+    const field = event.target;
+    if (field instanceof HTMLElement && field.hasAttribute('data-autosubmit') && field.form) { field.form.requestSubmit(); }
+});
+
 /* ---------- Boot ---------- */
 const boot = () => {
+    // data-autofocus: the element takes focus when the page loads (an error summary after a failed submit).
+    document.querySelector('[data-autofocus]')?.focus();
     initTabsets();
     $$('dialog[data-open-on-load]').forEach((dialog) => dialogs.open(dialog.id));
     startClocks();

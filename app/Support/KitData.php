@@ -30,8 +30,8 @@ final class KitData
             $auction->id = $id;
             $auction->setRelation('images', new Collection);
             $auction->setRelation('winningBid', null);
-            $auction->bids_count = 14;
-            $auction->reserve_price = $over['reserve_price'] ?? null;
+            $auction->setAttribute('bids_count', $over['bids_count'] ?? 14);
+            $auction->setAttribute('reserve_price', $over['reserve_price'] ?? null);
 
             return $auction;
         };

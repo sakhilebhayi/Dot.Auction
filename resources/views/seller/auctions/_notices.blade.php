@@ -3,7 +3,7 @@
 @endif
 
 @if($errors->any())
-    <div role="alert" id="error-summary" tabindex="-1" class="dot-alert dot-alert-error">
+    <div role="alert" id="error-summary" tabindex="-1" class="dot-alert dot-alert-error" data-autofocus>
         <strong>{{ $errors->count() === 1 ? 'There is 1 problem to fix' : 'There are '.$errors->count().' problems to fix' }}</strong>
         <ul>
             @foreach($errors->messages() as $field => $messages)
@@ -19,7 +19,4 @@
             @endforeach
         </ul>
     </div>
-@endif
-@if($errors->any())
-    <script>document.getElementById('error-summary')?.focus();</script>
 @endif

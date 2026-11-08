@@ -113,3 +113,8 @@ select.dot-input option { background: var(--c-raised); color: var(--c-ink); }
 }
 @media (max-width: 640px) { .dot-form-grid { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 479.98px) { .dot-kpi-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; } }
+
+@media (pointer: coarse) {
+    .dot-btn-small, .dot-btn { min-height: var(--hit); }
+    .dot-link { display: inline-flex; align-items: center; min-height: var(--hit); }
+}

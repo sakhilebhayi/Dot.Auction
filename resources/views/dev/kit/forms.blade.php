@@ -1,4 +1,4 @@
-<form class="kit-stack" onsubmit="return false">
+<form class="kit-stack" data-ds-noop>
     <x-ds.input label="Your bid" name="bid-{{ $scheme }}" money hint="The next valid bid is R1,300.00." value="1300.00" data-ds-bid-input />
     <x-ds.input label="Title" name="title-{{ $scheme }}" placeholder="Rolled-top oak desk" hint="Buyers see this first." />
     <x-ds.input label="Reserve price" name="reserve-{{ $scheme }}" money optional error="The reserve must be higher than the start price." value="500" />

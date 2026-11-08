@@ -176,7 +176,7 @@
                             @csrf
                             <button type="submit" class="dot-btn dot-btn-primary">Publish auction</button>
                         </form>
-                        <form method="POST" action="{{ route('seller.auctions.destroy', $auction) }}" onsubmit="return confirm('Delete this draft permanently?');">
+                        <form method="POST" action="{{ route('seller.auctions.destroy', $auction) }}" data-confirm="Delete this draft permanently?">
                             @csrf @method('DELETE')
                             <button type="submit" class="dot-btn dot-btn-danger">Delete draft</button>
                         </form>
@@ -189,7 +189,7 @@
                     @if($locked)
                         <p class="dot-help">It has bids, so it can no longer be cancelled.</p>
                     @else
-                        <form method="POST" action="{{ route('seller.auctions.cancel', $auction) }}" onsubmit="return confirm('Cancel this auction? Buyers will no longer be able to bid.');">
+                        <form method="POST" action="{{ route('seller.auctions.cancel', $auction) }}" data-confirm="Cancel this auction? Buyers will no longer be able to bid.">
                             @csrf
                             <button type="submit" class="dot-btn dot-btn-danger">Cancel auction</button>
                         </form>

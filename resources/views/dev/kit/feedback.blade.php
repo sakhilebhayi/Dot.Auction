@@ -6,8 +6,8 @@
     <div class="kit-row">
         <x-ds.button variant="quiet" data-dialog-open="kit-dialog-{{ $scheme }}">Open dialog</x-ds.button>
         <x-ds.confirm id="kit-confirm-{{ $scheme }}" action="#" method="DELETE" title="Delete this draft?" body="The photos go with it. This cannot be undone." confirm="Delete draft" icon="trash" variant="danger">Delete draft</x-ds.confirm>
-        <x-ds.button variant="quiet" onclick="window.dsToast({title:'Bid placed', body:'You lead at R1,300.00.', tone:'success'})">Show a toast</x-ds.button>
-        <x-ds.button variant="quiet" onclick="window.dsToast({title:'Payment failed', body:'Nothing was charged.', tone:'danger'})">Show an error toast</x-ds.button>
+        <x-ds.button variant="quiet" data-ds-toast='{"title":"Bid placed","body":"You lead at R1,300.00.","tone":"success"}'>Show a toast</x-ds.button>
+        <x-ds.button variant="quiet" data-ds-toast='{"title":"Payment failed","body":"Nothing was charged.","tone":"danger"}'>Show an error toast</x-ds.button>
     </div>
     <x-ds.dialog id="kit-dialog-{{ $scheme }}" title="Confirm your bid" description="A bid is a promise to buy if you win.">
         <x-ds.input label="Your bid" name="dialog-bid-{{ $scheme }}" money value="1300.00" />

@@ -1,5 +1,5 @@
 <div class="kit-stack">
-    <x-ds.page-header title="Seller payments" description="Sales you made and money still to come." back="#" back-label="Back to my lots">
+    <x-ds.page-header :level="2" title="Seller payments" description="Sales you made and money still to come." back="#" back-label="Back to my lots">
         <x-slot name="meta"><x-ds.status state="awaiting_payment" size="sm" /></x-slot>
         <x-slot name="actions"><x-ds.button size="sm" icon="plus">List a lot</x-ds.button></x-slot>
     </x-ds.page-header>

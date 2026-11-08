@@ -21,6 +21,6 @@
 <span {{ $attributes->class(['ds-countdown', 'ds-countdown--'.$size, 'is-urgent' => $urgent, 'is-over' => $over, 'is-stacked' => $stacked]) }}
     data-ds-countdown data-target="{{ $target->getTimestampMs() }}" data-server="{{ $nowAt->getTimestampMs() }}" data-mode="{{ $opening ? 'opening' : 'closing' }}" data-urgent="{{ $urgentAfter }}" data-label="{{ $text }}">
     <span class="ds-countdown__label" data-cd-label>{{ $over ? '' : $text }}</span>
-    <time class="ds-countdown__value" datetime="{{ $target->toIso8601ZuluString() }}" role="timer" aria-live="off" aria-atomic="true" data-cd-value>@if ($over)<span class="ds-cd-word">{{ $opening ? 'Open now' : 'Closed' }}</span>@else @foreach (Display::remainingParts($remaining) as [$n, $u])<span class="ds-cd-n">{{ $n }}</span><span class="ds-cd-u">{{ $u }}</span>@endforeach @endif</time>
+    <time class="ds-countdown__value" datetime="{{ $target->toIso8601ZuluString() }}" role="timer" aria-live="off" aria-atomic="true" data-cd-value>@if ($over)<span class="ds-cd-word">{{ $opening ? 'Open now' : 'Closed' }}</span>@else @foreach (Display::remainingParts($remaining) as [$n, $u])<span class="ds-cd-n">{{ $n }}</span><span class="ds-cd-u">{{ $u }}</span>@if (! $loop->last){{ ' ' }}@endif @endforeach @endif</time>
     @if ($showAt)<span class="ds-countdown__at">{{ Display::time($target, null, true) }}</span>@endif
 </span>

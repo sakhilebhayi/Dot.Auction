@@ -58,7 +58,8 @@
             @endphp
             <li class="ds-rung ds-rung--{{ $r['kind'] }} @if (! empty($r['you'])) is-you @endif">
                 @if ($press)
-                    <button type="button" class="ds-rung__row" data-ds-rung="{{ $amount }}" aria-label="Set my bid to {{ Display::money($amount) }}">
+                    <button type="button" class="ds-rung__row" data-ds-rung="{{ $amount }}">
+                        <span class="sr-only">Set my bid to</span>
                         <span class="ds-rung__label">{{ $r['label'] ?? 'Bid' }}</span>
                         <x-ds.money :amount="$amount" :size="$r['kind'] === 'next' ? 'lg' : 'md'" />
                     </button>

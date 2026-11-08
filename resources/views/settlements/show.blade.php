@@ -105,7 +105,7 @@
                 @if($settlement->status === 'payment_overdue')
                     <form method="POST" action="{{ route('settlements.cancel', $settlement) }}" style="margin-top:1.25rem;">
                         @csrf
-                        <button type="submit" class="dot-btn dot-btn-danger" onclick="return confirm('Cancel this sale? The buyer will be told and can no longer pay.');">Cancel this sale</button>
+                        <button type="submit" class="dot-btn dot-btn-danger" data-confirm="Cancel this sale? The buyer will be told and can no longer pay.">Cancel this sale</button>
                         <div class="dot-help">Cancelling this sale does not relist the auction and does not refund anyone. The buyer is told, and can no longer pay.</div>
                     </form>
                 @endif

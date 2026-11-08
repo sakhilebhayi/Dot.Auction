@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Auction;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Support\Facades\Route;
@@ -57,7 +58,7 @@ final class Display
             return Auction::localTime($at, $format, $withZone);
         }
 
-        $local = \Carbon\Carbon::instance($at instanceof CarbonInterface ? $at->toDateTime() : $at)
+        $local = Carbon::instance($at instanceof CarbonInterface ? $at->toDateTime() : $at)
             ->setTimezone((string) config('auction.display_timezone', 'Africa/Johannesburg'));
 
         return $local->format($format ?? 'D j M, H:i').($withZone ? ' '.$local->format('T') : '');
@@ -82,7 +83,6 @@ final class Display
             default => $s.'s',
         };
     }
-
 
     /**
      * [value, unit] pairs for the countdown, same thresholds as remaining(): 2d 4h, 3h 12m, 12m 05s, 45s.
@@ -128,10 +128,10 @@ final class Display
         if ($auction->isScheduled()) {
             return 'scheduled';
         }
-        if ($status === 'active' && $auction->ends_at !== null && $auction->ends_at->isPast()) {
+        if ($status === 'active' && $auction->ends_at->isPast()) {
             return 'unsold'; // closed, the settle job has not run yet; shown as ended rather than live
         }
-        if ($auction->ends_at !== null && $auction->ends_at->lte(now()->addMinutes((int) config('auction.ending_soon_window_minutes', 60)))) {
+        if ($auction->ends_at->lte(now()->addMinutes((int) config('auction.ending_soon_window_minutes', 60)))) {
             return 'ending';
         }
 

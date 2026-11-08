@@ -9,6 +9,8 @@
     $built = file_exists($manifest) ? (json_decode((string) file_get_contents($manifest), true) ?: []) : [];
     $entries = array_values(array_filter(['resources/css/errors.css', 'resources/js/ds.js'], fn ($e) => isset($built[$e])));
 
+    $nonce = function_exists('csp_nonce') ? csp_nonce() : '';
+
     $discover = collect(config('ecosystem.platforms', []))
         ->reject(fn ($p) => ($p['name'] ?? null) === 'Dot.Auction')
         ->reject(fn ($p) => ($p['active'] ?? true) === false)
@@ -25,8 +27,8 @@
     <title>{{ $code }} @yield('title') | Dot.Auction</title>
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
     <link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/archivo-var-latin.woff2') }}" crossorigin>
-    <style>body{margin:0;font-family:system-ui,sans-serif;line-height:1.5}main{max-width:40rem;padding:2rem 1rem}a{color:inherit}</style>
-    <script>
+    <style @if ($nonce) nonce="{{ $nonce }}" @endif>body{margin:0;font-family:system-ui,sans-serif;line-height:1.5}main{max-width:40rem;padding:2rem 1rem}a{color:inherit}</style>
+    <script @if ($nonce) nonce="{{ $nonce }}" @endif>
         (function () { try { var s = localStorage.getItem('dot-theme'); var m = (s === 'dark' || s === 'light') ? s : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); document.documentElement.dataset.theme = m; document.documentElement.classList.toggle('dark', m === 'dark'); } catch (e) {} })();
     </script>
     @foreach ($entries as $entry)

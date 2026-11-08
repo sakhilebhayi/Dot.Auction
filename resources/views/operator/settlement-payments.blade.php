@@ -31,7 +31,7 @@
 
     <div class="dot-panel" style="overflow:hidden;">
         @if($payments->count())
-        <div style="overflow-x:auto;">
+        <div class="table-scroll" role="region" aria-label="Scrolls sideways on small screens" tabindex="0">
             <table class="dot-table">
                 <caption class="sr-only">Settlement payments</caption>
                 <thead>

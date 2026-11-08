@@ -73,3 +73,5 @@
 
 /* ---------- Flash banner (Jetstream x-banner and server flashes) ---------- */
 .sh-flash { padding: var(--s-3) var(--gutter) 0; }
+
+@media (max-width: 63.99rem) { .sh-top__mark { min-height: var(--hit); display: inline-flex; align-items: center; } }
