@@ -75,9 +75,10 @@
         </div>
 
         <nav class="sh-bar" aria-label="Main">
+            {{-- Buying is the core of the bar: Home, Browse, My bids, Watching. Selling sits in More ("List a lot" first) and on Home and My lots; the bar has no primary action of its own. --}}
+            <x-ds.nav-item variant="bar" :href="route('dashboard')" icon="home" :active="request()->routeIs('dashboard')">Home</x-ds.nav-item>
             <x-ds.nav-item variant="bar" :href="route('auctions.index')" icon="browse" :active="request()->routeIs('auctions.*')">Browse</x-ds.nav-item>
             <x-ds.nav-item variant="bar" :href="auction_route('buyer.bids')" icon="bids" :active="request()->routeIs('buyer.bids')">My bids</x-ds.nav-item>
-            <x-ds.nav-item variant="bar" :href="route('seller.auctions.create')" icon="plus" :accent="true">List a lot</x-ds.nav-item>
             <x-ds.nav-item variant="bar" :href="auction_route('buyer.watchlist')" icon="bookmark" :active="request()->routeIs('buyer.watchlist')">Watching</x-ds.nav-item>
             <button type="button" class="ds-nav ds-nav--bar" data-dialog-open="shell-menu"><x-ds.icon name="menu" :size="22" /><span class="ds-nav__label">More</span></button>
         </nav>

@@ -69,7 +69,12 @@ class ResponsiveShellTest extends TestCase
         $this->assertSame(1, $rail->length, 'the rail lists Browse');
         $bar = $xpath->query('//nav[contains(@class,"sh-bar")]//a[@href="'.route('auctions.index').'"]');
         $this->assertSame(1, $bar->length, 'the phone bar lists Browse');
-        $this->assertSame(1, $xpath->query('//nav[contains(@class,"sh-bar")]//a[@href="'.route('seller.auctions.create').'"][contains(@class,"is-accent")]')->length, 'the phone bar has one clear primary action');
+        $this->assertSame(0, $xpath->query('//nav[contains(@class,"sh-bar")]//a[@href="'.route('seller.auctions.create').'"]')->length, 'selling does not outrank buying in the phone bar');
+        $this->assertSame(0, $xpath->query('//nav[contains(@class,"sh-bar")]//a[contains(@class,"is-accent")]')->length, 'the bar has no primary action: the page owns it');
+        foreach (['dashboard', 'buyer.bids'] as $name) {
+            $this->assertSame(1, $xpath->query('//nav[contains(@class,"sh-bar")]//a[@href="'.route($name).'"]')->length, "the phone bar lists $name");
+        }
+        $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"]//a[@href="'.route('seller.auctions.create').'"]')->length, 'List a lot is in the menu sheet');
         $this->assertSame(1, $xpath->query('//nav[contains(@class,"sh-bar")]//button[@data-dialog-open="shell-menu"]')->length, 'More opens the menu sheet');
         $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"][@aria-labelledby="shell-menu-title"]')->length);
         $this->assertSame(1, $xpath->query('//meta[@name="viewport"][contains(@content,"width=device-width")]')->length);
