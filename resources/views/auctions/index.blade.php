@@ -80,9 +80,10 @@
 
     <div class="dc-resultbar">
         <p class="dc-resultbar__count" role="status">
-            <strong>{{ number_format($auctions->total() + $closingSoon->count()) }}</strong> {{ $auctions->total() + $closingSoon->count() === 1 ? 'lot' : 'lots' }}
+            <strong>{{ number_format($tally['all']) }}</strong> {{ $tally['all'] === 1 ? 'lot' : 'lots' }}
             @if ($state !== null) {{ ' ' }}{{ strtolower(LotBrowser::STATES[$state]) }}@endif
-            @if ($search !== '') {{ ' ' }}matching "{{ $search }}"@endif
+            @if ($search !== '') {{ ' ' }}matching "{{ $search }}"@endif<!--
+            -->@if ($tally['closing'] > 0 && $tally['others'] > 0)<span class="dc-resultbar__split">: {{ number_format($tally['closing']) }} closing within the hour and {{ number_format($tally['others']) }} {{ $tally['others'] === 1 ? 'other' : 'others' }}</span>@endif
         </p>
         @if ($filtered)
             <ul class="dc-active" aria-label="Active filters">

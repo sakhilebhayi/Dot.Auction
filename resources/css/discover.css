@@ -20,6 +20,26 @@
 @media (pointer: coarse) { .ds-lot__watch { min-height: var(--hit); } }
 .ds-lot__actions form { margin: 0; }
 
+/* ---------- Phones: a lot is a row, not a card ----------
+ * One tall card per lot made twelve lots about 7,400px of scrolling. Below 40rem each lot is a ruled row: a photo column, then the status, the title, the price with its
+ * label, the time left and the bids, and the watch control on the last line at the right. Everything the card says is still there, in the same order, and the whole row
+ * is still one link. From 40rem the card layout returns. */
+@media (max-width: 39.99rem) {
+    .ds-catalogue { grid-template-columns: minmax(0, 1fr); }
+    .ds-catalogue .ds-lot { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); }
+    .ds-catalogue .ds-lot__media { aspect-ratio: auto; min-height: 7.5rem; }
+    .ds-catalogue .ds-lot__rail { display: none; }
+    .ds-catalogue .ds-lot__number { padding: 1px 6px; font-size: var(--t-xs); }
+    .ds-catalogue .ds-lot__noimg { font-size: var(--t-xs); gap: var(--s-1); text-align: center; padding: 0 var(--s-2); }
+    .ds-catalogue .ds-lot__body { grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--s-2); padding: var(--s-2) var(--s-3); align-content: start; }
+    .ds-catalogue .ds-lot__body > * { grid-column: 1 / -1; }
+    .ds-catalogue .ds-lot__tags { min-height: 0; }
+    .ds-catalogue .ds-lot__price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2); }
+    .ds-catalogue .ds-lot__meta { grid-column: 1; align-self: center; justify-content: flex-start; }
+    .ds-catalogue .ds-lot__actions { grid-column: 2; padding: 0; align-self: center; }
+    .ds-catalogue .ds-lot__watch { margin-left: 0; min-height: 2.25rem; }
+}
+
 /* A lot fills its cell so the watch control sits on the same line in every card of a row. */
 .ds-catalogue > li > .ds-lot { height: 100%; }
 

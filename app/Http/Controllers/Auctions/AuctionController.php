@@ -72,6 +72,9 @@ class AuctionController extends Controller
             'closingSoon' => $closingSoon,
             'categories' => $categories,
             'counts' => $counts,
+            // The lots the page answers with, counted once: the closing-soon row and the grid below it. The header, the "other lots" line and
+            // the page summary all read these, so they cannot disagree.
+            'tally' => ['closing' => $closingSoon->count(), 'others' => $auctions->total(), 'all' => $auctions->total() + $closingSoon->count()],
             'search' => $search,
             'category' => $category,
             'activeCategory' => $category !== null ? $categories->firstWhere('id', $category) ?? AuctionCategory::find($category) : null,

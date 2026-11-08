@@ -67,10 +67,11 @@
                 @else
                     <div class="ds-rung__row">
                         <span class="ds-rung__label">{{ $r['label'] ?? 'Valid bid' }}@if (! empty($r['you']) && $r['kind'] === 'current')<span class="sr-only">, you lead</span>@endif</span>
+                        {{-- The marker sits inside the row, between the label and the figure, so it never crosses the row's border. --}}
+                        @if (! empty($r['you']) && $r['kind'] === 'current')<span class="ds-rung__you" aria-hidden="true">You</span>@endif
                         <x-ds.money :amount="$amount" :size="$r['kind'] === 'current' ? 'xl' : 'md'" :muted="$r['kind'] === 'start'" />
                     </div>
                 @endif
-                @if (! empty($r['you']))<span class="ds-rung__you">You</span>@endif
             </li>
         @endforeach
     </ol>

@@ -64,6 +64,8 @@
     font: inherit; text-align: left;
 }
 .ds-rung__row .ds-money { margin-left: auto; }
+/* A rung you can press ends in an arrow; one you cannot ends in the same width of nothing, so every figure shares one right edge. */
+div.ds-rung__row { padding-right: calc(var(--s-3) * 2 + 16px); }
 .ds-rung__go { align-self: center; color: var(--c-ink-3); flex: none; }
 button.ds-rung__row:hover .ds-rung__go, button.ds-rung__row:focus-visible .ds-rung__go { color: var(--c-ink); }
 .ds-rung__label { font-size: var(--t-sm); color: var(--c-ink-2); font-weight: 500; }
@@ -81,7 +83,7 @@ button.ds-rung__row:active { transform: translateY(1px); }
 .ds-rung--current .ds-rung__label { font-weight: 650; }
 .ds-rung--yours .ds-rung__row { background: var(--c-sunken); border: 1px dashed var(--c-line-strong); }
 .ds-rung--start .ds-rung__label { color: var(--c-ink-3); }
-.ds-rung__you { position: absolute; right: var(--s-3); top: 0; transform: translateY(-50%); padding: 0 8px; background: var(--c-ink); color: var(--c-ground); border-radius: var(--r-1); font-size: var(--t-xs); font-weight: 700; line-height: 1.5; }
+.ds-rung__you { align-self: center; flex: none; padding: 0 8px; background: var(--c-ink); color: var(--c-ground); border-radius: var(--r-1); font-size: var(--t-xs); font-weight: 700; line-height: 1.6; }
 .ds-ladder__reserve { display: flex; align-items: center; gap: var(--s-2); margin: 0; padding-left: var(--s-6); font-size: var(--t-sm); font-weight: 600; color: var(--c-ink-2); }
 .ds-ladder__reserve.is-met { color: var(--c-ok); }
 
