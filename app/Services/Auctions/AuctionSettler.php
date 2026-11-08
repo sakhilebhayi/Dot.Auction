@@ -51,8 +51,15 @@ class AuctionSettler
             if ($locked->reserveMet()) {
                 $locked->update(['status' => 'ended']);
                 DB::afterCommit(function () use ($locked, $topBid) {
-                    $topBid->bidder->notify(new AuctionWonNotification($locked, $topBid));
+                    // The hand-off that creates the settlement goes first: the auction is already ended and committed, and
+                    // nothing else will ever re-announce it, so a notice that fails to send must not be able to stop it.
                     event(new AuctionSettled($locked, $topBid));
+
+                    try {
+                        $topBid->bidder->notify(new AuctionWonNotification($locked, $topBid));
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
                 });
 
                 return true;
