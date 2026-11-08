@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Seller;
 
+use App\Actions\Jetstream\DeleteUser;
 use App\Models\Auction;
 use App\Models\AuctionImage;
 use App\Models\Bid;
@@ -385,17 +386,24 @@ class AuctionImageTest extends TestCase
         Storage::disk(self::DISK)->assertExists($keep->path);
     }
 
-    public function test_deleting_the_seller_account_removes_their_files(): void
+    public function test_leaving_removes_the_photos_of_unpublished_drafts_and_keeps_those_of_a_published_auction(): void
     {
         $seller = $this->seller();
-        $mine = $this->auctionFor($seller);
-        $path = $this->attach($mine)[0]->path;
+        $draft = Auction::factory()->draft()->create(['seller_id' => $seller->id]);
+        $draftPath = $this->attach($draft)[0]->path;
+        $cancelled = Auction::factory()->create(['seller_id' => $seller->id, 'status' => 'cancelled']);
+        $keptPath = $this->attach($cancelled)[0]->path;
         $other = $this->attach($this->auctionFor($this->seller()))[0];
 
-        $seller->delete();
+        // Account deletion anonymises (R-42 F-02): published auctions are other people's records and stay with their
+        // photos, a draft nobody has seen goes with its files.
+        app(DeleteUser::class)->delete($seller);
 
-        Storage::disk(self::DISK)->assertMissing($path);
+        Storage::disk(self::DISK)->assertMissing($draftPath);
+        Storage::disk(self::DISK)->assertExists($keptPath);
         Storage::disk(self::DISK)->assertExists($other->path);
+        $this->assertNull(Auction::find($draft->id));
+        $this->assertNotNull(Auction::find($cancelled->id));
     }
 
     // ----------------------------------------------------------------- serving

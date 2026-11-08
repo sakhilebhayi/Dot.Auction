@@ -25,7 +25,11 @@ class DeleteAccountTest extends TestCase
             ->set('password', 'password')
             ->call('deleteUser');
 
-        $this->assertNull($user->fresh());
+        // Anonymised, not removed: bids, sales and settlements belong to other people too (R-42 F-02).
+        $fresh = $user->fresh();
+        $this->assertNotNull($fresh);
+        $this->assertSame('Former member', $fresh->name);
+        $this->assertTrue($fresh->isAnonymised());
     }
 
     public function test_correct_password_must_be_provided_before_account_can_be_deleted(): void

@@ -96,8 +96,7 @@
             @foreach($this->recentBids as $bid)
             <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;border-radius:8px;background:{{ $bid->is_winning ? 'rgba(217,119,6,0.08)' : 'rgba(255,255,255,0.02)' }};">
                 <span style="font-size:12.5px;color:#a1a1aa;">
-                    {{ \Illuminate\Support\Str::before($bid->bidder->name, ' ') }}
-                    {{ \Illuminate\Support\Str::substr(\Illuminate\Support\Str::after($bid->bidder->name, ' '), 0, 1) }}.
+                    {{ $bid->bidder->maskedName() }}
                     @if($bid->is_winning)
                         <span class="dot-badge dot-badge-accent" style="margin-left:6px;">Leading</span>
                     @endif
