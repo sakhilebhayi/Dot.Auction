@@ -89,7 +89,8 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/auctions', [AuctionController::class, 'index'])->name('auctions.index');
+    // Search and filtering are the heaviest read on the site (a scan on the title); the limit is per person, not per IP.
+    Route::get('/auctions', [AuctionController::class, 'index'])->middleware('throttle:browse')->name('auctions.index');
     Route::get('/auctions/{auction}', [AuctionController::class, 'show'])->name('auctions.show');
     // Listing photos sit on a private disk; this is the only way to read one.
     Route::get('/auctions/{auction}/images/{image}', [AuctionImageController::class, 'show'])
@@ -100,14 +101,15 @@ Route::middleware([
     Route::prefix('seller/auctions')->name('seller.auctions.')->group(function () {
         Route::get('/', [ListingController::class, 'index'])->name('index');
         Route::get('/create', [ListingController::class, 'create'])->name('create');
-        Route::post('/', [ListingController::class, 'store'])->name('store');
+        Route::post('/', [ListingController::class, 'store'])->middleware('throttle:writes')->name('store');
         Route::get('/{auction}/edit', [ListingController::class, 'edit'])->name('edit');
-        Route::put('/{auction}', [ListingController::class, 'update'])->name('update');
-        Route::post('/{auction}/publish', [ListingController::class, 'publish'])->name('publish');
-        Route::post('/{auction}/cancel', [ListingController::class, 'cancel'])->name('cancel');
-        Route::delete('/{auction}', [ListingController::class, 'destroy'])->name('destroy');
-        Route::post('/{auction}/images', [ImageController::class, 'store'])->name('images.store');
-        Route::delete('/{auction}/images/{image}', [ImageController::class, 'destroy'])->name('images.destroy')->scopeBindings();
+        Route::put('/{auction}', [ListingController::class, 'update'])->middleware('throttle:writes')->name('update');
+        Route::post('/{auction}/publish', [ListingController::class, 'publish'])->middleware('throttle:writes')->name('publish');
+        Route::post('/{auction}/cancel', [ListingController::class, 'cancel'])->middleware('throttle:writes')->name('cancel');
+        Route::delete('/{auction}', [ListingController::class, 'destroy'])->middleware('throttle:writes')->name('destroy');
+        // Decoding and re-encoding photos costs CPU and memory: a tighter limit than other writes.
+        Route::post('/{auction}/images', [ImageController::class, 'store'])->middleware('throttle:uploads')->name('images.store');
+        Route::delete('/{auction}/images/{image}', [ImageController::class, 'destroy'])->middleware('throttle:writes')->name('images.destroy')->scopeBindings();
     });
 
     // Paying for a won auction. Both parties see the page; only the winner pays; only the seller
@@ -133,12 +135,12 @@ Route::middleware([
 
     Route::get('/bids', [BuyerBidsController::class, 'index'])->name('buyer.bids');
     Route::get('/watchlist', [BuyerWatchlistController::class, 'index'])->name('buyer.watchlist');
-    Route::delete('/watchlist/{auction}', [BuyerWatchlistController::class, 'destroy'])->name('buyer.watchlist.destroy');
+    Route::delete('/watchlist/{auction}', [BuyerWatchlistController::class, 'destroy'])->middleware('throttle:writes')->name('buyer.watchlist.destroy');
     Route::get('/won', [BuyerWonController::class, 'index'])->name('buyer.won');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
-    Route::post('/notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->middleware('throttle:writes')->name('notifications.read-all');
+    Route::post('/notifications/{notification}/open', [NotificationController::class, 'open'])->middleware('throttle:writes')->name('notifications.open');
     // --- /discover ---
 });
 

@@ -169,7 +169,9 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // Secure (HTTPS only) whenever the application is served over HTTPS, unless the environment says otherwise: a session
+    // cookie that also travels over plain HTTP can be read by anyone on the network path.
+    'secure' => env('SESSION_SECURE_COOKIE', str_starts_with((string) env('APP_URL'), 'https://') ?: null),
 
     /*
     |--------------------------------------------------------------------------

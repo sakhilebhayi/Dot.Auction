@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsurePlatformOperator;
+use App\Http\Middleware\LimitLivewireUpdates;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrustedHostList;
 use Illuminate\Foundation\Application;
@@ -23,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Baseline browser protections (enforced headers plus a report-only CSP) on every response.
         $middleware->append(SecurityHeaders::class);
+
+        // A per-person ceiling on Livewire calls (the bid panel's poll, the bell, clicks). In the web group, after the session
+        // starts, so it can count per signed-in person rather than per address.
+        $middleware->web(append: [LimitLivewireUpdates::class]);
 
         // Pin the Host header to the production host(s) (config security.trusted_hosts, default the APP_URL host).
         $middleware->trustHosts(at: fn () => TrustedHostList::patterns(), subdomains: false);

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -41,6 +42,19 @@ class AppServiceProvider extends ServiceProvider
         Blade::directive('localtime', fn (string $expression) => "<?php echo e(\\App\\Services\\DisplayTime::format({$expression})); ?>");
 
         Event::listen(DiagnosingHealth::class, fn () => DB::select('select 1'));
+
+        // Per-person limits (the signed-in user, else the IP address). Generous for a human, small for a script.
+        $person = fn (Request $request): string => $request->user()?->getAuthIdentifier() ? 'u'.$request->user()->getAuthIdentifier() : 'ip'.$request->ip();
+        // Only a text search is the expensive read (a scan on the title); plain browsing and the filter tabs are not counted.
+        RateLimiter::for('browse', fn (Request $request) => $request->filled('q') ? Limit::perMinute(60)->by($person($request)) : Limit::none());
+        RateLimiter::for('writes', fn (Request $request) => Limit::perMinute(60)->by($person($request)));       // listing edits, watch, notification actions
+        RateLimiter::for('uploads', fn (Request $request) => Limit::perMinute(20)->by($person($request)));      // photo uploads (CPU and memory)
+        // Every Livewire call: the bid panel's poll (every 10 s), the bell (every 30 s), clicks. 300 a minute is five a second.
+        RateLimiter::for('livewire', fn (Request $request) => Limit::perMinute(300)->by($person($request)));
+        // Fortify's own forms: the password-reset mail is the one an attacker can aim at somebody else's inbox.
+        RateLimiter::for('fortify-forms', fn (Request $request) => $request->routeIs('password.email')
+            ? Limit::perMinute(5)->by('reset|'.$request->ip().'|'.Str::lower((string) $request->input('email')))
+            : Limit::perMinute(60)->by($person($request)));
 
         // Counted per IP before the signature is checked, so junk cannot be used to hammer the app.
         RateLimiter::for('paystack-webhook', fn (Request $request) => Limit::perMinute(max(1, (int) config('paystack.webhook_attempts_per_minute', 120)))->by($request->ip()));
