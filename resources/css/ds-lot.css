@@ -1,0 +1,137 @@
+/*
+ * ds-lot: the lot page (auctions/show). Tokens only.
+ * Phone order: header, the bidding column, photos, facts, history. Wide (container 56rem): photos and facts left, the bidding column right.
+ * The wrappers around the bid panel are display: contents on a phone so its sections can sit in the page's own order.
+ */
+
+.sh-page:has(.lot) > .ds-pagehead { margin-bottom: var(--s-5); }
+.lot-no { display: inline-flex; align-items: center; padding: 1px 8px; background: var(--c-ink); color: var(--c-ground); font-family: var(--f-mono); font-size: var(--t-sm); font-weight: 700; letter-spacing: 0.02em; line-height: 1.5; }
+.lot-cat { color: var(--c-ink-2); font-size: var(--t-sm); font-weight: 550; }
+
+@media (max-width: 40rem) { .sh-page:has(.lot) .ds-pagehead__title { font-size: var(--t-xl); } .sh-page:has(.lot) .ds-pagehead__back { min-height: 2.25rem; } .lot-bid__top, .lot-bid__act { padding-inline: var(--s-4); } }
+.lot-wrap { container-type: inline-size; container-name: lot; }
+.lot { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-6); align-items: start; }
+.lot__side, .lot-bid { display: contents; }
+.lot-bid__main { order: 1; }
+.lot__gallery { order: 2; min-width: 0; }
+.lot__details { order: 3; min-width: 0; }
+.lot-bid__history { order: 4; }
+
+@container lot (min-width: 56rem) {
+    .lot { grid-template-columns: minmax(0, 1fr) minmax(23rem, 27rem); column-gap: var(--s-8); row-gap: var(--s-8); }
+    .lot__side, .lot-bid { display: block; }
+    .lot__side { grid-column: 2; grid-row: 1 / span 2; }
+    .lot__gallery { grid-column: 1; grid-row: 1; order: 0; }
+    .lot__details { grid-column: 1; grid-row: 2; order: 0; }
+    .lot-bid__main, .lot-bid__history { order: 0; }
+    .lot-bid__history { margin-top: var(--s-8); }
+}
+
+/* ---------- The bidding column ---------- */
+.lot-bid__main { display: grid; min-width: 0; background: var(--c-surface); border: 1px solid var(--c-line-strong); }
+.lot-bid__top { display: grid; gap: var(--s-3); padding: var(--s-4) var(--s-5); }
+.lot-bid__tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.lot-bid__tags .lot-watch { margin-left: auto; }
+.lot-price { display: grid; gap: 2px; }
+.lot-price__label { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--s-3); color: var(--c-ink-3); font-size: var(--t-sm); font-weight: 550; }
+.lot-price__amount { line-height: 1; }
+.lot-price__meta { color: var(--c-ink-2); font-variant-numeric: tabular-nums; }
+.lot-clock { display: grid; gap: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--c-line); }
+.lot-clock__ended { padding-top: var(--s-3); border-top: 1px solid var(--c-line); color: var(--c-ink-2); font-size: var(--t-sm); }
+.lot-note { color: var(--c-ink-3); font-size: var(--t-sm); line-height: 1.45; max-width: 52ch; }
+.lot-note.is-strong { color: var(--c-ink); font-weight: 600; }
+.lot-bid__top .lot-note { margin-top: calc(-1 * var(--s-1)); }
+.lot-link { color: var(--c-link); font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; }
+
+.lot-bid__act { display: grid; gap: var(--s-4); padding: var(--s-4) var(--s-5) var(--s-5); border-top: 1px solid var(--c-line); }
+
+/* What the lot means for this viewer */
+.lot-outcome { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-3); padding: var(--s-4); border: 1px solid var(--c-line-strong); border-radius: var(--r-2); background: var(--c-sunken); color: var(--c-ink); }
+.lot-outcome__icon { margin-top: 2px; color: var(--c-ink-2); }
+.lot-outcome__text { display: grid; gap: var(--s-2); justify-items: start; min-width: 0; }
+.lot-outcome__text p { max-width: 52ch; line-height: 1.5; }
+.lot-outcome__title { font-size: var(--t-lg); font-stretch: 106%; line-height: 1.2; }
+.lot-outcome__text .lot-outcome__done { font-weight: 650; }
+.lot-outcome__action { margin-top: var(--s-1); }
+.lot-outcome--success { background: var(--c-ok-bg); border-color: var(--c-ok); }
+.lot-outcome--success .lot-outcome__icon { color: var(--c-ok); }
+.lot-outcome--danger { background: var(--c-danger-bg); border-color: var(--c-danger); }
+.lot-outcome--danger .lot-outcome__icon { color: var(--c-danger); }
+.lot-outcome--notice { background: var(--c-notice-bg); border-color: var(--c-notice); }
+.lot-outcome--notice .lot-outcome__icon { color: var(--c-notice); }
+.lot-outcome--info .lot-outcome__icon { color: var(--c-scheduled); }
+
+/* The bid form */
+.lot-form { display: grid; gap: var(--s-3); }
+.lot-form__note { color: var(--c-ink-3); font-size: var(--t-sm); text-align: center; }
+.lot-ladder { margin-top: var(--s-1); }
+.lot-buynow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-3) var(--s-4); background: var(--c-sunken); border: 1px dashed var(--c-line-strong); }
+.lot-buynow__title { font-weight: 650; font-variant-numeric: tabular-nums; }
+.lot-buynow__text { color: var(--c-ink-2); font-size: var(--t-sm); }
+.lot-live-lost { padding: var(--s-2) var(--s-4); background: var(--c-notice-bg); color: var(--c-notice); border: 1px solid var(--c-notice); font-size: var(--t-sm); font-weight: 600; }
+
+/* Payment panel */
+.lot-pay { display: grid; gap: var(--s-3); padding: var(--s-5); border-top: 1px solid var(--c-line-strong); background: var(--c-raised); }
+.lot-pay__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); }
+.lot-pay__title { font-size: var(--t-lg); margin-right: auto; }
+.lot-pay__text { color: var(--c-ink-2); line-height: 1.5; max-width: 52ch; }
+
+/* ---------- Bid history ---------- */
+.lot-bid__history { display: grid; gap: var(--s-2); min-width: 0; }
+.lot-history__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-1) var(--s-4); padding-top: var(--s-4); border-top: 1px solid var(--c-line-strong); }
+.lot-h2 { font-size: var(--t-xl); }
+.lot-history__zone { color: var(--c-ink-3); font-size: var(--t-sm); }
+.lot-history__empty { padding: var(--s-4) 0; color: var(--c-ink-2); }
+.lot-history { list-style: none; margin: 0; padding: 0; }
+.lot-history__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who amount" "when top"; align-items: baseline; gap: 2px var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); }
+.lot-history__who { grid-area: who; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.lot-history__you { padding: 0 6px; background: var(--c-ink); color: var(--c-ground); border-radius: var(--r-1); font-size: var(--t-xs); font-weight: 700; line-height: 1.5; }
+.lot-history__amount { grid-area: amount; text-align: right; }
+.lot-history__when { grid-area: when; color: var(--c-ink-3); font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
+.lot-history__top { grid-area: top; text-align: right; color: var(--c-ink); font-size: var(--t-sm); font-weight: 700; }
+.lot-history__row.is-top .ds-money { font-weight: 750; }
+.lot-history__more { justify-self: start; }
+
+/* ---------- Gallery ---------- */
+.lot-gallery { display: grid; gap: var(--s-3); }
+.lot-gallery__stage { position: relative; background: var(--c-sunken); border: 1px solid var(--c-line); }
+.lot-gallery__track { display: flex; margin: 0; padding: 0; list-style: none; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
+.lot-gallery__track::-webkit-scrollbar { display: none; }
+.lot-gallery__track:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+.lot-gallery__slide { flex: 0 0 100%; display: grid; place-items: center; aspect-ratio: 4 / 3; scroll-snap-align: start; scroll-snap-stop: always; }
+.lot-gallery__slide img { width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+.lot-gallery__nav { position: absolute; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: var(--hit); height: var(--hit); padding: 0; background: var(--c-raised); color: var(--c-ink); border: 1px solid var(--c-line-strong); border-radius: var(--r-2); cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out); }
+.lot-gallery__nav[hidden] { display: none; }
+.lot-gallery__nav:hover { background: var(--c-quiet-hover); }
+.lot-gallery__nav:active { transform: translateY(-50%) scale(0.96); }
+.lot-gallery__nav[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.lot-gallery__nav--prev { left: var(--s-2); }
+.lot-gallery__nav--next { right: var(--s-2); }
+.lot-gallery__count { position: absolute; left: 0; bottom: 0; padding: 2px 10px; background: var(--c-ink); color: var(--c-ground); font-size: var(--t-sm); font-weight: 650; font-variant-numeric: tabular-nums; }
+.lot-gallery__thumbs { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.lot-gallery__thumbs[hidden] { display: none; }
+.lot-gallery__thumbs button { display: block; width: 4.5rem; height: 3.375rem; padding: 0; background: var(--c-sunken); border: 1px solid var(--c-line-strong); border-radius: var(--r-1); cursor: pointer; overflow: hidden; opacity: 0.8; transition: opacity var(--dur-micro) var(--ease-out); }
+.lot-gallery__thumbs button:hover { opacity: 1; }
+.lot-gallery__thumbs button[aria-current="true"] { opacity: 1; outline: 2px solid var(--c-ink); outline-offset: 1px; }
+.lot-gallery__thumbs img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (pointer: coarse) { .lot-gallery__thumbs button { width: var(--hit); height: var(--hit); } }
+.lot-gallery__none { display: grid; justify-items: center; gap: var(--s-2); padding: var(--s-12) var(--s-6); border: 1px dashed var(--c-line-strong); color: var(--c-ink-2); text-align: center; }
+
+/* ---------- Facts ---------- */
+.lot-details { display: grid; gap: var(--s-8); }
+.lot-desc { max-width: var(--measure); white-space: pre-line; line-height: var(--lh-body); }
+.lot-items { margin: 0; padding: 0; list-style: none; }
+.lot-items li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-1) var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); }
+.lot-items__name { font-weight: 600; }
+.lot-items__meta { color: var(--c-ink-3); font-size: var(--t-sm); }
+.lot-details .ds-dl--ledger dd { text-align: right; }
+
+/* ---------- Reserve decision (seller) ---------- */
+.lot-decide { display: grid; gap: var(--s-3); padding: var(--s-4); background: var(--c-raised); border: 1px solid var(--c-notice); border-radius: var(--r-2); }
+.lot-decide__title { font-size: var(--t-lg); }
+.lot-decide__help { color: var(--c-ink-2); font-size: var(--t-sm); line-height: 1.5; }
+.lot-decide__actions { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+.lot-watch { display: inline-block; }
+
+@media (prefers-reduced-motion: reduce) { .lot-gallery__track { scroll-behavior: auto; } }
