@@ -168,6 +168,19 @@ class SellerListingsPageTest extends TestCase
         $this->actingAs($this->seller())->get(route('seller.auctions.index'))->assertOk()->assertDontSee('Below Reserve');
     }
 
+    public function test_a_lot_whose_top_bid_the_seller_rejected_reads_not_sold_on_the_sellers_own_list(): void
+    {
+        $seller = $this->seller();
+        $lot = Auction::factory()->create(['seller_id' => $seller->id, 'title' => 'Rejected Rug', 'status' => 'ended', 'reserve_price' => '500.00', 'current_price' => '300.00', 'starts_at' => now()->subDays(2), 'ends_at' => now()->subMinute()]);
+        $bid = Bid::forceCreate(['auction_id' => $lot->id, 'bidder_id' => User::factory()->create()->id, 'amount' => '300.00', 'is_winning' => true]);
+        ReserveNotMetProposal::create(['auction_id' => $lot->id, 'bid_id' => $bid->id, 'reserve_price' => '500.00', 'status' => 'rejected']);
+
+        $row = $this->actingAs($seller)->get(route('seller.auctions.index'))->assertOk()->viewData('auctions')->first();
+
+        $this->assertSame('unsold', \App\Support\Display::lotState($row));
+        $this->actingAs($seller)->get(route('seller.auctions.index'))->assertSee('Not sold')->assertDontSee('Sold for');
+    }
+
     public function test_a_sold_lot_links_to_its_payment_and_says_where_the_payment_is(): void
     {
         [$settlement, , $seller] = $this->settlement(50000);

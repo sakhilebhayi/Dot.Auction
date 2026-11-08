@@ -266,8 +266,9 @@ if (upload && window.DataTransfer && window.XMLHttpRequest && window.FormData) {
         const fail = (message) => {
             busy = false;
             progress.hidden = true;
-            showProblem(message);
+            // render() rewrites the problem line from the queue, so it must run first or it wipes the server's reason.
             render();
+            showProblem(message);
             submit.disabled = false;
             if (window.dsToast) { window.dsToast({ title: 'Photos were not uploaded', body: message, tone: 'danger' }); }
         };

@@ -125,7 +125,12 @@ final class Display
         if ($status === 'ended') {
             // A seller who rejected the top bid below the reserve ends the lot with a "winning" bid and no sale. Lists load
             // that fact as the reserve_rejected column (App\Services\Auctions\LotBrowser); where it was not loaded the old rule holds.
-            $rejected = (bool) ($auction->getAttributes()['reserve_rejected'] ?? false);
+            $attributes = $auction->getAttributes();
+            $rejected = array_key_exists('reserve_rejected', $attributes)
+                ? (bool) $attributes['reserve_rejected']
+                // Not loaded by a list: ask the relation (eager-load `reserveProposal` to keep a list to one query). Without this a
+                // lot whose top bid the seller rejected read "Sold" on the seller's own list.
+                : ($auction->winningBid !== null && $auction->reserveProposal?->status === 'rejected');
 
             return $auction->winningBid !== null && ! $rejected ? 'sold' : 'unsold';
         }

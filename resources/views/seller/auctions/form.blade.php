@@ -18,6 +18,7 @@
     $snipeMax = (int) config('auction.snipe_max_extensions');
     $zone = DisplayTime::zone() === DisplayTime::DEFAULT_ZONE ? 'South Africa time ('.DisplayTime::abbreviation().')' : DisplayTime::label();
     $opensEditable = ! $auction->exists || $auction->status === 'draft' || $auction->isScheduled();
+    $noCategories = ! $editing && count($categories) === 0;
     $photoCount = $editing ? $auction->images->count() : 0;
     $photoRoom = max(0, $maxImages - $photoCount);
     $megabytes = number_format(config('auction.images.max_kilobytes') / 1024, 0);
@@ -82,7 +83,13 @@
                     <x-ds.section title="The lot" class="sl-section">
                         <x-ds.input name="title" label="Title" required maxlength="120" autocomplete="off" data-count :value="$value('title')"
                             hint="A short, specific name that buyers would search for." />
-                        <x-ds.select name="category_id" label="Category" required placeholder="Choose a category" :options="$categories" :value="(string) $value('category_id')" />
+                        @if ($noCategories)
+                            <x-ds.alert tone="notice" id="no-categories" title="No categories exist yet" class="sl-gap">
+                                Every lot needs a category, and none have been set up on this platform, so a lot cannot be saved yet. Categories are added by whoever runs Dot.Auction (there is no page for it): ask them to add some, then come back to this page.
+                            </x-ds.alert>
+                        @else
+                            <x-ds.select name="category_id" label="Category" required placeholder="Choose a category" :options="$categories" :value="(string) $value('category_id')" />
+                        @endif
                     </x-ds.section>
                 @endunless
 
@@ -144,7 +151,7 @@
                 @endunless
 
                 <div class="sl-savebar">
-                    <x-ds.button type="submit" :icon="$editing ? 'check' : 'arrow-right'">{{ $editing ? 'Save changes' : 'Save draft and add photos' }}</x-ds.button>
+                    <x-ds.button type="submit" :icon="$editing ? 'check' : 'arrow-right'" :disabled="$noCategories" :aria-describedby="$noCategories ? 'no-categories' : null">{{ $editing ? 'Save changes' : 'Save draft and add photos' }}</x-ds.button>
                     <x-ds.button :href="route('seller.auctions.index')" variant="quiet">{{ $editing ? 'Back to my lots' : 'Cancel' }}</x-ds.button>
                 </div>
             </form>

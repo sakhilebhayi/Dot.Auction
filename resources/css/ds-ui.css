@@ -31,7 +31,7 @@
 .ds-empty__action { margin-top: var(--s-3); }
 
 /* ---------- Table ---------- */
-.ds-tablewrap { width: 100%; }
+.ds-tablewrap { width: 100%; position: relative; } /* positioned so the 1px .sr-only labels inside the cells are clipped with the scroll box instead of widening the page */
 .ds-tablewrap.is-scroll { overflow-x: auto; }
 .ds-table { width: 100%; font-size: var(--t-md); }
 .ds-table__caption { padding-bottom: var(--s-3); text-align: left; font-size: var(--t-lg); font-weight: 700; }

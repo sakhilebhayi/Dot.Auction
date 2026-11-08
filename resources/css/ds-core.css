@@ -141,4 +141,5 @@
 @media (pointer: coarse) {
     .ds-btn--sm, .ds-iconbtn--small { min-height: var(--hit); }
     .ds-iconbtn--small { width: var(--hit); height: var(--hit); }
+    .ds-alert__text a { display: inline-flex; align-items: center; min-height: var(--hit); }
 }

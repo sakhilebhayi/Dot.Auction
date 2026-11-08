@@ -22,6 +22,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class SaveListingRequest extends FormRequest
 {
+    /** Everything on the form except the description: what a bid locks. */
+    public const TERM_FIELDS = ['title', 'category_id', 'starting_price', 'reserve_price', 'buy_now_price', 'bid_increment', 'starts_at', 'ends_at'];
+
     public function authorize(): bool
     {
         $auction = $this->auction();

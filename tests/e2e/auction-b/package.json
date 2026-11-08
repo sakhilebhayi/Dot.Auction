@@ -1,0 +1,9 @@
+{
+  "name": "auction-e2e-b",
+  "private": true,
+  "type": "module",
+  "description": "Dot.Auction seller / operator / account / platform end-to-end suite (real browser, real scheduler commands)",
+  "scripts": { "test": "node run.mjs" },
+  "dependencies": { "playwright-core": "1.49.1" },
+  "devDependencies": { "axe-core": "4.10.2" }
+}
