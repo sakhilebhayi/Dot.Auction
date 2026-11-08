@@ -138,9 +138,9 @@ export class Spec {
       // measured afterwards; switching it back on over CDP restores it.
       await p.screenshot({ path: file, fullPage: full });
       if (p.context().__touch) {
-        const cdp = await p.context().newCDPSession(p);
-        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
-        await cdp.detach();
+        // The override lives as long as the CDP session that set it, so the session is kept on the page, not detached.
+        p.__cdp ??= await p.context().newCDPSession(p);
+        await p.__cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
       }
       this.shots.push(path.relative(outDir, file));
     } catch (e) { this.note(`screenshot ${name} failed: ${e.message}`); }

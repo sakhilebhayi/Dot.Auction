@@ -253,4 +253,4 @@ Nothing below was decided or built; each is a rule or a fact only the owner has.
 3. **Terms name "BluePin Inc" as operator.** The holding company elsewhere in the ecosystem is written "BluPin". Legal text is not mine to edit; please confirm the registered name and the "Last updated: 6 August 2026" date.
 4. **Does a paid seller get paid out, and where is it recorded?** Still manual and untracked (decision 1 above). The sale pages say so once; the delete-account rule lets a seller with a paid sale leave. Needs a `paid_out_at` rule when payouts are real.
 5. **Filtered lists share their page title** ("My lots" for Live, Drafts, Ended). Fine for a tab state; if you want "My lots: Drafts" in the tab title and history, say so.
-6. **Sign-in throttling copy and limits** (5 attempts a minute per e-mail and address, Fortify's default) were left as they are. Say if the numbers should change.
+6. **Sign-in throttling copy and limits** (the limiter engaged within 8 bad attempts; Fortify's default is 5 a minute per e-mail and address) were left as they are. Say if the numbers should change.
