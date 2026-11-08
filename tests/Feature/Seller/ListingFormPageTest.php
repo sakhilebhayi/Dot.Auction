@@ -195,4 +195,21 @@ class ListingFormPageTest extends TestCase
         $this->actingAs($seller)->post(route('seller.auctions.images.store', $auction), ['images' => [UploadedFile::fake()->image('a.jpg', 40, 30)]])
             ->assertRedirect(route('seller.auctions.edit', $auction))->assertSessionHas('status', '1 photo added.');
     }
+
+    public function test_a_platform_with_no_categories_says_so_instead_of_offering_an_empty_select(): void
+    {
+        AuctionCategory::query()->delete();
+
+        $html = $this->actingAs($this->seller())->get(route('seller.auctions.create'))->assertOk()
+            ->assertSee('No categories exist yet')
+            ->assertSee('Categories are added by whoever runs Dot.Auction')
+            ->getContent();
+
+        $this->assertStringNotContainsString('id="category_id"', $html);
+        $this->assertMatchesRegularExpression('/<button[^>]*type="submit"[^>]*disabled|<button[^>]*disabled[^>]*type="submit"/', $html);
+
+        // With a category the form is the normal one.
+        AuctionCategory::factory()->create(['name' => 'Things']);
+        $this->actingAs($this->seller())->get(route('seller.auctions.create'))->assertOk()->assertSee('id="category_id"', false)->assertDontSee('No categories exist yet');
+    }
 }
