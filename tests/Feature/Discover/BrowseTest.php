@@ -328,7 +328,9 @@ class BrowseTest extends TestCase
         $proposal->auction->forceFill(['status' => 'ended'])->save();
 
         $plain = Auction::with('winningBid')->find($proposal->auction_id);
-        $this->assertSame('sold', Display::lotState($plain), 'without the flag the old rule holds');
+        // Without the flag the helper asks the relation (a seller's own list loads `reserveProposal`); it used to say 'sold' here, which
+        // is what the seller's list printed for a lot whose top bid they had rejected.
+        $this->assertSame('unsold', Display::lotState($plain), 'without the flag the proposal is read from the relation');
 
         $flagged = Auction::query()->select('auctions.*')->selectRaw("exists (select 1 from reserve_not_met_proposals rp where rp.auction_id = auctions.id and rp.status = 'rejected') as reserve_rejected")->with('winningBid')->find($proposal->auction_id);
         $this->assertSame('unsold', Display::lotState($flagged));

@@ -17,6 +17,12 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
      */
     public function update(User $user, array $input): void
     {
+        // The e-mail address is the account's identity: InfoDot signs people in and this app matches them by that address.
+        // If a signed-in person could change it, they could park their account on an address that belongs to somebody
+        // who has not signed in yet, and that person would be signed into the attacker's account on arrival. So the
+        // address shown on the form is read-only and whatever the request says is ignored; it changes in InfoDot.
+        $input['email'] = $user->email;
+
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],

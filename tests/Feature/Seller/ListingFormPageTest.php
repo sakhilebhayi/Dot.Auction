@@ -183,8 +183,8 @@ class ListingFormPageTest extends TestCase
             ->assertStatus(422)->assertJsonPath('errors.images.0', 'An auction can have at most 6 photos. This one has 2, so you can add 4 more.');
         $this->assertSame(2, $auction->images()->count());
 
-        // A stranger is refused the same way as before.
-        $this->actingAs($this->seller())->postJson(route('seller.auctions.images.store', $auction), ['images' => [UploadedFile::fake()->image('x.jpg', 40, 30)]])->assertForbidden();
+        // A stranger is refused, and a draft that is not theirs does not exist as far as they can tell (404, not 403).
+        $this->actingAs($this->seller())->postJson(route('seller.auctions.images.store', $auction), ['images' => [UploadedFile::fake()->image('x.jpg', 40, 30)]])->assertNotFound();
     }
 
     public function test_the_plain_form_post_still_redirects_with_a_message(): void
@@ -194,5 +194,22 @@ class ListingFormPageTest extends TestCase
 
         $this->actingAs($seller)->post(route('seller.auctions.images.store', $auction), ['images' => [UploadedFile::fake()->image('a.jpg', 40, 30)]])
             ->assertRedirect(route('seller.auctions.edit', $auction))->assertSessionHas('status', '1 photo added.');
+    }
+
+    public function test_a_platform_with_no_categories_says_so_instead_of_offering_an_empty_select(): void
+    {
+        AuctionCategory::query()->delete();
+
+        $html = $this->actingAs($this->seller())->get(route('seller.auctions.create'))->assertOk()
+            ->assertSee('No categories exist yet')
+            ->assertSee('Categories are added by whoever runs Dot.Auction')
+            ->getContent();
+
+        $this->assertStringNotContainsString('id="category_id"', $html);
+        $this->assertMatchesRegularExpression('/<button[^>]*type="submit"[^>]*disabled|<button[^>]*disabled[^>]*type="submit"/', $html);
+
+        // With a category the form is the normal one.
+        AuctionCategory::factory()->create(['name' => 'Things']);
+        $this->actingAs($this->seller())->get(route('seller.auctions.create'))->assertOk()->assertSee('id="category_id"', false)->assertDontSee('No categories exist yet');
     }
 }

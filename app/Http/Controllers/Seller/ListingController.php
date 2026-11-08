@@ -16,6 +16,7 @@ use App\Support\SellerLots;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
@@ -41,7 +42,7 @@ class ListingController extends Controller
                 ->where('seller_id', $user->id)
                 // Everything a row shows is loaded here, so the page costs the same number of queries for 1 lot or 15:
                 // the category, the cover photo, the winning bid (for the Sold or Not sold word) and the bid count.
-                ->with(['category', 'images', 'winningBid'])
+                ->with(['category', 'images', 'winningBid', 'reserveProposal'])
                 ->withCount('bids'),
             $state,
             $now,
@@ -109,7 +110,13 @@ class ListingController extends Controller
             return back()->withInput()->withErrors(['listing' => $e->getMessage()]);
         }
 
-        return redirect()->route('seller.auctions.edit', $auction)->with('status', 'Changes saved.');
+        // A form opened before the first bid still carries the term fields. They are dropped (only the description may
+        // change once a bid exists), and the seller is told so instead of "Changes saved." for a price that did not move.
+        $droppedTerms = $request->termsLocked() && $request->hasAny(SaveListingRequest::TERM_FIELDS);
+
+        return redirect()->route('seller.auctions.edit', $auction)->with('status', $droppedTerms
+            ? 'Description saved. A bid arrived while this page was open, so the price, reserve, closing time and other terms were not changed.'
+            : 'Changes saved.');
     }
 
     public function publish(Auction $auction): RedirectResponse
@@ -162,11 +169,18 @@ class ListingController extends Controller
             $auction->load('images');
         }
 
+        $categories = AuctionCategory::orderBy('name')->pluck('name', 'id')->all();
+
+        if ($categories === []) {
+            // A listing cannot be saved without a category. Make the cause findable instead of leaving an empty list.
+            Log::error('A seller opened the listing form but there are no auction categories. Run: php artisan auction:seed-categories');
+        }
+
         return view('seller.auctions.form', [
             'auction' => $auction,
             'maxImages' => (int) config('auction.images.max_per_auction', 6),
             'termsLocked' => $auction->exists && $auction->hasBids(),
-            'categories' => AuctionCategory::orderBy('name')->pluck('name', 'id')->all(),
+            'categories' => $categories,
             'values' => [
                 'title' => $auction->title,
                 'description' => $auction->description,

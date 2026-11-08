@@ -26,6 +26,12 @@ final class ViewerActivity
     /** The closing window the dashboard calls "ending soon": the next 24 hours. */
     public const SOON_HOURS = 24;
 
+    /**
+     * Lists on a page that are not paged (open bids, sales to pay, reserve decisions) stop here, so one very busy account
+     * cannot turn a page into hundreds of cards and thousands of query rows. Far above anything a person can act on.
+     */
+    public const SAFETY_CEILING = 120;
+
     public function __construct(private readonly LotBrowser $lots) {}
 
     /**
@@ -61,6 +67,7 @@ final class ViewerActivity
         return $query->orderByRaw('case when exists (select 1 from bids b where b.auction_id = auctions.id and b.bidder_id = ? and b.is_winning = ?) then 1 else 0 end', [$user->id, true])
             ->orderBy('auctions.ends_at')
             ->orderBy('auctions.id')
+            ->limit(self::SAFETY_CEILING)
             ->get();
     }
 
@@ -73,7 +80,7 @@ final class ViewerActivity
     {
         $query = $this->lots->withViewerBid($this->lots->ledBy(Auction::query(), $user), $user);
 
-        return $this->lots->inState($query, 'pending')->orderByDesc('auctions.ends_at')->get();
+        return $this->lots->inState($query, 'pending')->orderByDesc('auctions.ends_at')->limit(self::SAFETY_CEILING)->get();
     }
 
     /**
@@ -164,6 +171,7 @@ final class ViewerActivity
             ->orderByRaw("case when status = 'payment_overdue' then 0 else 1 end")
             ->orderBy('payment_due_at')
             ->orderBy('id')
+            ->limit(self::SAFETY_CEILING)
             ->get();
     }
 
@@ -179,6 +187,7 @@ final class ViewerActivity
             ->where('status', AuctionSettlement::PAYMENT_OVERDUE)
             ->with('auction:id,title')
             ->orderBy('payment_due_at')
+            ->limit(self::SAFETY_CEILING)
             ->get();
     }
 
@@ -192,6 +201,7 @@ final class ViewerActivity
             ->whereHas('auction', fn ($q) => $q->where('seller_id', $user->id))
             ->with(['auction', 'bid.bidder'])
             ->oldest()
+            ->limit(self::SAFETY_CEILING)
             ->get();
     }
 

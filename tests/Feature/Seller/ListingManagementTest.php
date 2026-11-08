@@ -255,6 +255,29 @@ class ListingManagementTest extends TestCase
         $this->assertTrue($before->ends_at->equalTo($after->ends_at));
     }
 
+    public function test_a_form_opened_before_the_first_bid_is_told_the_terms_were_not_changed(): void
+    {
+        $seller = $this->seller();
+        $auction = Auction::factory()->create(['seller_id' => $seller->id, 'reserve_price' => '210.00']);
+        $this->bidOn($auction);
+        $increment = $auction->fresh()->bid_increment;
+
+        $response = $this->actingAs($seller)
+            ->put(route('seller.auctions.update', $auction), $this->payload(['description' => 'New words.', 'bid_increment' => '1.00']));
+
+        $response->assertSessionHasNoErrors();
+        $this->assertStringContainsString('were not changed', (string) session('status'));
+        $this->assertStringNotContainsString('Changes saved', (string) session('status'));
+        $this->assertSame('New words.', $auction->fresh()->description);
+        $this->assertSame($increment, $auction->fresh()->bid_increment);
+
+        // The locked form sends only the description, and that is an ordinary save.
+        $this->actingAs($seller)
+            ->put(route('seller.auctions.update', $auction), ['description' => 'Only words.'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame('Changes saved.', session('status'));
+    }
+
     public function test_the_edit_page_locks_the_commercial_terms_once_a_bid_exists(): void
     {
         $seller = $this->seller();
@@ -427,12 +450,13 @@ class ListingManagementTest extends TestCase
         $stranger = $this->seller();
         $auction = Auction::factory()->draft()->create(['seller_id' => $owner->id]);
 
+        // A draft is the owner's alone: to anyone else it does not exist (404), so ids cannot be counted by trying them.
         $this->actingAs($stranger);
-        $this->get(route('seller.auctions.edit', $auction))->assertForbidden();
-        $this->put(route('seller.auctions.update', $auction), $this->payload())->assertForbidden();
-        $this->post(route('seller.auctions.publish', $auction))->assertForbidden();
-        $this->post(route('seller.auctions.cancel', $auction))->assertForbidden();
-        $this->delete(route('seller.auctions.destroy', $auction))->assertForbidden();
+        $this->get(route('seller.auctions.edit', $auction))->assertNotFound();
+        $this->put(route('seller.auctions.update', $auction), $this->payload())->assertNotFound();
+        $this->post(route('seller.auctions.publish', $auction))->assertNotFound();
+        $this->post(route('seller.auctions.cancel', $auction))->assertNotFound();
+        $this->delete(route('seller.auctions.destroy', $auction))->assertNotFound();
 
         $this->assertSame('draft', $auction->fresh()->status);
         $this->assertNotNull(Auction::find($auction->id));

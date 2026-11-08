@@ -68,6 +68,7 @@
 
 .dc-lotname { color: var(--c-ink); font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
 .dc-lotname:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+@media (pointer: coarse) { .dc-lotname { display: inline-flex; align-items: center; min-height: var(--hit); } }
 .dc-sub { display: block; margin-top: 2px; color: var(--c-ink-3); font-size: var(--t-sm); font-weight: 400; }
 .dc-ledger { margin-top: var(--s-4); }
 .dc-more { margin: var(--s-3) 0 0; }

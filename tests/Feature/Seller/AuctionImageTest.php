@@ -27,6 +27,12 @@ class AuctionImageTest extends TestCase
         Storage::fake('public');
     }
 
+    /** The uploaded files on the disk, without the smaller copies that are made next to them. */
+    private function sourceFiles(): array
+    {
+        return array_values(array_filter(Storage::disk(self::DISK)->allFiles(), fn (string $f) => ! preg_match('/-(thumb|medium|large)\.[a-z]+$/', $f)));
+    }
+
     private function seller(): User
     {
         return User::factory()->withPersonalTeam()->create();
@@ -128,7 +134,7 @@ class AuctionImageTest extends TestCase
             ->assertSessionHasErrors('images');
 
         $this->assertSame(6, $auction->images()->count());
-        $this->assertCount(6, Storage::disk(self::DISK)->allFiles());
+        $this->assertCount(6, $this->sourceFiles());
     }
 
     public function test_an_upload_that_would_pass_the_limit_is_refused_whole(): void
@@ -142,7 +148,7 @@ class AuctionImageTest extends TestCase
         ])->assertSessionHasErrors('images');
 
         $this->assertSame(4, $auction->images()->count(), 'all-or-nothing: no partial save');
-        $this->assertCount(4, Storage::disk(self::DISK)->allFiles());
+        $this->assertCount(4, $this->sourceFiles());
     }
 
     public function test_seven_files_in_one_request_are_refused(): void
@@ -417,7 +423,8 @@ class AuctionImageTest extends TestCase
 
         foreach ([$seller, $buyer] as $viewer) {
             $response = $this->actingAs($viewer)->get(route('auctions.images.show', [$auction, $image]))->assertOk();
-            $this->assertSame('image/jpeg', $response->headers->get('Content-Type'));
+            // A re-encoded copy (WebP where GD can write it); the stored file only when no copy could be made.
+            $this->assertContains($response->headers->get('Content-Type'), ['image/jpeg', 'image/webp']);
             $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
             $this->assertStringContainsString('private', $response->headers->get('Cache-Control'));
             $this->assertStringStartsWith('inline', $response->headers->get('Content-Disposition'));

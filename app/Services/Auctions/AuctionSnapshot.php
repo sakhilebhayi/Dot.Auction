@@ -54,6 +54,12 @@ class AuctionSnapshot
 
         $now = now();
 
+        // A draft is its seller's alone: to anyone else (or a guest) it is exactly as absent as an id that was never used,
+        // so the polling endpoint cannot be used to count or read other sellers' drafts.
+        if ($row !== null && $row['status'] === 'draft' && ($viewer === null || (int) $viewer->getKey() !== (int) $row['seller_id'])) {
+            $row = null;
+        }
+
         if ($row === null) {
             return [
                 'auction_id' => $id,
@@ -116,7 +122,7 @@ class AuctionSnapshot
     {
         $auction = Auction::query()
             ->whereKey($id)
-            ->select(['id', 'status', 'current_price', 'bid_increment', 'starts_at', 'ends_at'])
+            ->select(['id', 'seller_id', 'status', 'current_price', 'bid_increment', 'starts_at', 'ends_at'])
             ->withCount('bids')
             ->addSelect(['leading_bidder_id' => Bid::query()
                 ->select('bidder_id')
@@ -130,6 +136,7 @@ class AuctionSnapshot
         }
 
         return [
+            'seller_id' => (int) $auction->seller_id,
             'status' => (string) $auction->status,
             'current_price' => (string) $auction->current_price,
             'bid_increment' => (string) $auction->bid_increment,

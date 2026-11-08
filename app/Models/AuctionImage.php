@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Auctions\AuctionImageVariants;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,9 @@ class AuctionImage extends Model
         static::deleted(function (AuctionImage $image): void {
             $path = $image->path;
 
-            DB::afterCommit(fn () => Storage::disk(self::DISK)->delete($path));
+            DB::afterCommit(function () use ($path) {
+                Storage::disk(self::DISK)->delete([$path, ...AuctionImageVariants::allPaths($path)]);
+            });
         });
     }
 
@@ -38,8 +41,18 @@ class AuctionImage extends Model
         return $this->belongsTo(Auction::class);
     }
 
-    public function url(): string
+    /**
+     * The policy-checked address of this photo. `$size` is thumb, medium or large (see AuctionImageVariants); with none the
+     * response is the large copy. Prefer Auction::imageUrl() in views.
+     */
+    public function url(?string $size = null): string
     {
-        return route('auctions.images.show', [$this->auction_id, $this]);
+        $parameters = [$this->auction_id, $this];
+
+        if ($size !== null && $size !== AuctionImageVariants::DEFAULT_SIZE) {
+            $parameters['size'] = $size;
+        }
+
+        return route('auctions.images.show', $parameters);
     }
 }

@@ -54,3 +54,16 @@ Schedule::command(PublishMetrics::class)
     ->timezone('UTC')
     ->withoutOverlapping(60)
     ->onOneServer();
+
+// ─── Housekeeping ─────────────────────────────────────────────────────────────
+// Failed queue jobs are kept for two weeks (long enough to be looked at and retried with `queue:retry`), then dropped; the
+// password-reset tokens that were never used are cleared. Neither is about auctions, but both tables only ever grow.
+Schedule::command('queue:prune-failed --hours=336')
+    ->daily()
+    ->withoutOverlapping(30)
+    ->onOneServer();
+
+Schedule::command('auth:clear-resets')
+    ->daily()
+    ->withoutOverlapping(30)
+    ->onOneServer();
