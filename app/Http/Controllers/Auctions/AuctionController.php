@@ -93,20 +93,8 @@ class AuctionController extends Controller
 
         $auction->load(['category', 'seller', 'items', 'images']);
 
-        // HasUserScope already restricts this relation query to the
-        // authenticated user's own watchlist rows.
-        $isWatching = auth()->check() && $auction->watchlists()->exists();
-
-        // Payment hand-off status is only for the two parties to the sale.
-        $settlement = AuctionSettlement::query()
-            ->where('auction_id', $auction->id)
-            ->where(fn ($q) => $q->where('winner_id', auth()->id())->orWhere('seller_id', auth()->id()))
-            ->first();
-
-        return view('auctions.show', [
-            'auction' => $auction,
-            'isWatching' => $isWatching,
-            'settlement' => $settlement,
-        ]);
+        // Everything that depends on the viewer (the payment panel, leading or outbid, the seller's decision) is worked
+        // out by the bid panel itself (App\Support\LotOutcome), so it stays right while the page is open.
+        return view('auctions.show', ['auction' => $auction]);
     }
 }

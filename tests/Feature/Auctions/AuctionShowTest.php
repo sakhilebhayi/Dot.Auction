@@ -91,6 +91,6 @@ class AuctionShowTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('987.65');
-        $response->assertSee('Reserve not yet met');
+        $response->assertSee('Reserve not met');
     }
 }

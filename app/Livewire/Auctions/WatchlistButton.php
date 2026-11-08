@@ -13,6 +13,9 @@ class WatchlistButton extends Component
 
     public bool $watching = false;
 
+    /** Said to screen readers after a change. */
+    public string $message = '';
+
     public function mount(Auction $auction): void
     {
         $this->auction = $auction;
@@ -23,6 +26,11 @@ class WatchlistButton extends Component
 
     public function toggle(): void
     {
+        // A seller does not watch their own lot (the page does not offer the button; this closes the request path too).
+        if (auth()->id() === $this->auction->seller_id) {
+            return;
+        }
+
         // `watchlists` has a composite primary key (user_id, auction_id) and no
         // surrogate `id` column, so Eloquent's model-instance delete() (which
         // keys off getKey()/`id`) silently deletes zero rows. Delete via the
@@ -34,12 +42,14 @@ class WatchlistButton extends Component
         if ($exists) {
             Watchlist::where('auction_id', $this->auction->id)->delete();
             $this->watching = false;
+            $this->message = 'Removed from your watchlist.';
         } else {
             Watchlist::create([
                 'user_id' => auth()->id(),
                 'auction_id' => $this->auction->id,
             ]);
             $this->watching = true;
+            $this->message = 'Added to your watchlist.';
         }
     }
 

@@ -164,7 +164,7 @@ class BidPlacer
      * @throws BidRejected when the amount is not a positive, finite number of at most 2 decimals, or is above the
      *                     platform price ceiling (the same one sellers are held to), which also keeps it inside decimal(12,2)
      */
-    private function parseCents(float|int|string $amount): int
+    public function parseCents(float|int|string $amount): int
     {
         if (! is_numeric($amount)) {
             throw new BidRejected('Enter a valid bid amount.');

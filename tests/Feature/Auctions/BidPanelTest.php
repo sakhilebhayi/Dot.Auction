@@ -42,7 +42,7 @@ class BidPanelTest extends TestCase
             ->set('bidAmount', 220)
             ->call('placeBid')
             ->assertSet('error', null)
-            ->assertSet('success', 'Bid placed successfully!');
+            ->assertSet('success', 'Your bid of R220.00 is in.');
 
         $this->assertDatabaseHas('bids', [
             'auction_id' => $auction->id,
@@ -100,7 +100,7 @@ class BidPanelTest extends TestCase
             ->test(BidPanel::class, ['auction' => $auction])
             ->set('bidAmount', 240)
             ->call('placeBid')
-            ->assertSet('success', 'Bid placed successfully!');
+            ->assertSet('success', 'Your bid of R240.00 is in.');
 
         $this->assertEquals(1, $firstBuyer->fresh()->unreadNotifications()->count());
         $this->assertEquals(0, $newBuyer->fresh()->unreadNotifications()->count());

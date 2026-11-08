@@ -1,27 +1,62 @@
-<div style="padding:0.9rem 1.6rem;border-bottom:1px solid var(--c-line);">
+{{--
+  The seller's decision on a lot that ended below its reserve. Two real choices, each behind a confirm dialog that says what will happen.
+  Livewire ReserveDecisionPanel (public API: proposal, accept(), reject()). Used on the lot page and wherever a seller's pending decisions are listed.
+  The reserve amount is shown here because only the seller can ever reach this component (Gate review on both actions).
+--}}
+@php
+    use App\Models\Auction;
+    use App\Support\Display;
+    $bid = $proposal->bid;
+    $title = $proposal->auction->title;
+    $top = Auction::money($bid->amount);
+    $who = $bid->bidder->maskedName();
+@endphp
+<div class="lot-decide" id="reserve-decision-{{ $proposal->id }}">
     @if ($proposal->status === 'pending')
-        <div style="font-size:0.82rem;font-weight:600;color:var(--c-ink);font-family:'Syne',sans-serif;">
-            "{{ $proposal->auction->title }}" ended below reserve.
+        <h3 class="lot-decide__title">Decide on the highest bid for {{ $title }}</h3>
+        <x-ds.dl class="lot-decide__facts">
+            <div class="ds-dl__row"><dt>Highest bid</dt><dd>{{ $top }} from {{ $who }}</dd></div>
+            <div class="ds-dl__row"><dt>Your reserve</dt><dd>{{ Auction::money($proposal->reserve_price) }}</dd></div>
+            @if ($proposal->awaiting_since)<div class="ds-dl__row"><dt>Waiting since</dt><dd>{{ Display::time($proposal->awaiting_since, 'D j M, H:i', true) }}</dd></div>@endif
+        </x-ds.dl>
+        <p class="lot-decide__help">Accept it and {{ $who }} wins the lot at {{ $top }}, and a payment step is created. Reject it and the lot ends without a sale. You cannot change your mind afterwards.</p>
+        <div class="lot-decide__actions">
+            <x-ds.button data-dialog-open="accept-bid-{{ $proposal->id }}">Accept {{ $top }}</x-ds.button>
+            <x-ds.button variant="danger" data-dialog-open="reject-bid-{{ $proposal->id }}">Reject the bid</x-ds.button>
         </div>
-        <div style="font-size:0.7rem;color:var(--c-ink-3);margin-top:0.15rem;">
-            Top bid {{ \App\Models\Auction::money($proposal->bid->amount) }}
-            from {{ $proposal->bid->bidder->name }},
-            reserve {{ \App\Models\Auction::money($proposal->reserve_price) }}.
-        </div>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem;">
-            <button wire:click="accept" class="dot-pill-btn"
-                wire:confirm="Accept {{ \App\Models\Auction::money($proposal->bid->amount) }} from {{ $proposal->bid->bidder->name }}?"
-                style="font-size:0.72rem;font-weight:600;padding:0.35rem 0.85rem;border-radius:9999px;background:var(--c-live-bg);border:1px solid var(--c-live);color:var(--c-live);cursor:pointer;">
-                Accept top bid
-            </button>
-            <button wire:click="reject" class="dot-pill-btn" wire:confirm="End this auction unsold?"
-                style="font-size:0.72rem;font-weight:600;padding:0.35rem 0.85rem;border-radius:9999px;background:var(--c-urgent-bg);border:1px solid var(--c-urgent);color:var(--c-urgent);cursor:pointer;">
-                Reject
-            </button>
-        </div>
+
+        <x-ds.dialog :id="'accept-bid-'.$proposal->id" :title="'Accept '.$top.' from '.$who.'?'" size="sm">
+            <div class="ds-confirm">
+                <p class="ds-confirm__body">The lot sells at {{ $top }}, below your reserve of {{ Auction::money($proposal->reserve_price) }}. {{ $who }} is told they won, and the payment step opens. This cannot be undone.</p>
+                <div class="ds-dialog__foot">
+                    <x-ds.button variant="quiet" data-dialog-close>Not yet</x-ds.button>
+                    <x-ds.button autofocus wire:click="accept" wire:loading.attr="disabled" wire:target="accept">
+                        <span wire:loading.remove wire:target="accept">Accept {{ $top }}</span>
+                        <span wire:loading wire:target="accept">Accepting</span>
+                    </x-ds.button>
+                </div>
+            </div>
+        </x-ds.dialog>
+
+        <x-ds.dialog :id="'reject-bid-'.$proposal->id" title="End this lot without a sale?" size="sm">
+            <div class="ds-confirm">
+                <p class="ds-confirm__body">The lot ends unsold and {{ $who }} does not win it. This cannot be undone.</p>
+                <div class="ds-dialog__foot">
+                    <x-ds.button variant="quiet" data-dialog-close>Keep deciding</x-ds.button>
+                    <x-ds.button variant="danger" wire:click="reject" wire:loading.attr="disabled" wire:target="reject">
+                        <span wire:loading.remove wire:target="reject">End without a sale</span>
+                        <span wire:loading wire:target="reject">Ending</span>
+                    </x-ds.button>
+                </div>
+            </div>
+        </x-ds.dialog>
     @else
-        <div style="font-size:0.78rem;color:var(--c-ink-3);">
-            {{ ucfirst($proposal->status) }} on @localtime($proposal->decided_at, 'M j, Y').
-        </div>
+        <x-ds.alert :tone="$proposal->status === 'accepted' ? 'success' : 'info'" role="group" :title="$proposal->status === 'accepted' ? 'You accepted the highest bid' : 'You ended the lot without a sale'">
+            @if ($proposal->status === 'accepted')
+                {{ $title }} sold for {{ $top }} to {{ $who }} on {{ Display::time($proposal->decided_at, 'j M Y, H:i', true) }}.
+            @else
+                You rejected {{ $top }} from {{ $who }} on {{ Display::time($proposal->decided_at, 'j M Y, H:i', true) }}. {{ $title }} was not sold.
+            @endif
+        </x-ds.alert>
     @endif
 </div>

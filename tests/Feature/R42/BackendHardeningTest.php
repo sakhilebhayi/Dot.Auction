@@ -187,7 +187,7 @@ class BackendHardeningTest extends TestCase
         $panel = Livewire::actingAs($buyer)->test(BidPanel::class, ['auction' => $auction])->call('buyNow');
         $panel->assertSet('purchased', true)->assertSet('error', null);
         $success = $panel->get('success');
-        $this->assertStringContainsString('You bought this auction', $success);
+        $this->assertStringContainsString('You bought this lot', $success);
 
         $panel->call('buyNow')->assertSet('error', null)->assertSet('success', $success)->assertSet('purchased', true);
 
@@ -203,7 +203,7 @@ class BackendHardeningTest extends TestCase
         app(BuyNowPurchaser::class)->buy($auction->id, $buyer);
 
         $secondTab->call('buyNow')->assertSet('error', null)->assertSet('purchased', true);
-        $this->assertStringContainsString('You bought this auction', $secondTab->get('success'));
+        $this->assertStringContainsString('You bought this lot', $secondTab->get('success'));
         $this->assertSame(1, Bid::count());
     }
 
@@ -229,7 +229,7 @@ class BackendHardeningTest extends TestCase
         $panel = Livewire::actingAs($buyer)->test(BidPanel::class, ['auction' => $auction])
             ->set('bidAmount', 'abc')
             ->call('placeBid')
-            ->assertHasErrors(['bidAmount' => 'numeric']);
+            ->assertHasErrors(['bidAmount' => 'Enter your bid as a number, for example 250 or 250.50.']);
 
         $this->assertSame('Enter your bid as a number, for example 250 or 250.50.', $panel->get('error'));
         $panel->assertSee('Enter your bid as a number');
