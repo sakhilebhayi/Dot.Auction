@@ -267,6 +267,7 @@ class LotPageOutcomeTest extends TestCase
         $this->assertSame(1, substr_count($html, '<h1'));
         $this->assertMatchesRegularExpression('/<h1[^>]*>\s*Signed guitar\s*<\/h1>/', $html);
         $this->assertStringContainsString('The seller has not added photos to this lot.', $html);
+        $this->assertStringContainsString('No photo yet', $html);
         $lot = substr($html, (int) strpos($html, 'class="lot-wrap"'), (int) strpos($html, '</main>') - (int) strpos($html, 'class="lot-wrap"'));
         // The only inline style in the lot markup is the rail's custom property (--p, --o): data for the kit's closing rail, not decoration.
         $this->assertDoesNotMatchRegularExpression('/style="(?!--[po]: )/', $lot);

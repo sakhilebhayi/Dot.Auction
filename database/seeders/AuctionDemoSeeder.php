@@ -316,7 +316,7 @@ class AuctionDemoSeeder extends Seeder
 
         $this->lot($t, 'Box of assorted hardcover novels', 'books-music', 100, 10, [
             'description' => 'About forty hardcovers, mixed fiction. Some shelf wear.',
-            'photos' => 1, 'openedAgo' => '9 days', 'closedAgo' => '2 days',
+            'photos' => 0, 'openedAgo' => '9 days', 'closedAgo' => '2 days',
         ]);
 
         // ── Pieter (second seller) ──

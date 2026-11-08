@@ -120,7 +120,10 @@
 .lot-gallery__thumbs button[aria-current="true"] { opacity: 1; outline: 2px solid var(--c-ink); outline-offset: 1px; }
 .lot-gallery__thumbs img { display: block; width: 100%; height: 100%; object-fit: cover; }
 @media (pointer: coarse) { .lot-gallery__thumbs button { width: var(--hit); height: var(--hit); } }
-.lot-gallery__none { display: grid; justify-items: center; gap: var(--s-2); padding: var(--s-12) var(--s-6); border: 1px dashed var(--c-line-strong); color: var(--c-ink-2); text-align: center; }
+.lot-gallery__none { display: grid; align-content: center; justify-items: center; gap: var(--s-2); aspect-ratio: 4 / 3; padding: var(--s-6); background: var(--c-sunken); border: 1px solid var(--c-line); color: var(--c-ink-2); text-align: center; position: relative; }
+.lot-gallery__none::before { content: ""; position: absolute; inset: var(--s-4); border: 1px dashed var(--c-line-strong); pointer-events: none; }
+.lot-gallery__none p { margin: 0; }
+.lot-gallery__none-title { font-weight: 650; font-size: var(--t-md); color: var(--c-ink); }
 
 /* ---------- Facts ---------- */
 .lot-details { display: grid; gap: var(--s-8); }

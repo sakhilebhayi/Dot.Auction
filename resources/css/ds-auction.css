@@ -35,7 +35,8 @@
 .ds-lot__media { position: relative; aspect-ratio: 4 / 3; background: var(--c-sunken); overflow: hidden; }
 .ds-lot__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .ds-lot--cancelled .ds-lot__media img, .ds-lot--unsold .ds-lot__media img { opacity: 0.6; }
-.ds-lot__noimg { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: var(--s-2); color: var(--c-ink-3); font-size: var(--t-sm); }
+.ds-lot__noimg { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: var(--s-2); color: var(--c-ink-3); font-size: var(--t-sm); font-weight: 600; }
+.ds-lot__noimg::before { content: ""; position: absolute; inset: var(--s-3); border: 1px dashed var(--c-line-strong); pointer-events: none; }
 .ds-lot__number { position: absolute; left: 0; top: 0; padding: 4px 10px; background: var(--c-ink); color: var(--c-ground); font-family: var(--f-mono); font-size: var(--t-sm); font-weight: 700; letter-spacing: 0.02em; line-height: 1.4; }
 .ds-lot__rail { position: absolute; left: 0; right: 0; bottom: 0; }
 .ds-lot__body { display: grid; align-content: start; gap: var(--s-2); padding: var(--s-4); flex: 1; }

@@ -148,7 +148,7 @@ components:
 |---|---|
 | **Idea** | A price climbs a ladder while the clock runs down a rail. Time is the protagonist; prices are the data. |
 | **Metaphor** | The sale room: lot numbers on paddles, the catalogue sheet, the bid ladder of increments, the hammer at the end of the rail. |
-| **Signature** | The **bid ladder** (`ds.bid-ladder`): the real valid bids of one lot as rungs, the current price as the gold rung, the viewer's own bid marked "You", a private reserve shown only as met or not met. Its partner is the **closing rail** (`ds.rail`) and the sale-room **clock** (`ds.countdown`, in Chivo Mono so the digits never move). |
+| **Signature** | The **bid ladder** (`ds.bid-ladder`): the real valid bids of one lot as rungs, the current price as the gold rung, the viewer's own bid marked "You" (a marker inside its row, between the label and the figure, never across the border; every figure shares one right edge, pressable rung or not), a private reserve shown only as met or not met. Its partner is the **closing rail** (`ds.rail`) and the sale-room **clock** (`ds.countdown`, in Chivo Mono so the digits never move). |
 | **Emotion** | Calm certainty, the moment before the hammer falls: you can see exactly where the price is and how much time is left. |
 | **Motion verb** | **Strike.** Short, decisive, no bounce: a press travels 1px and stops, a dialog rises 8px in 240ms and stops, the rail advances in 1s linear steps. Nothing wobbles at rest. |
 | **Screenshot** | A lot page: the gold current rung at R1,250.00, the next bid R1,300.00 under it, the rail 90% spent and red, the clock reading 37m 58s. Captured set: `scratchpad/shell-shots/` (see the R-42 shell report for the path). |
@@ -207,7 +207,7 @@ Scale (ratio about 1.2, tokens `--t-*`): 12 / 14 / 16 / 19 / 23 / 28 / 34 / 44 (
 ## Layout
 
 - **Shell:** from 64rem a 15rem **rail** (brand, then Home, Buying: Browse lots, My bids, Watching, Won; Selling: My lots, Payments; Operations for operators), a sticky top bar (search, test or live badge, bell, theme, account) and a page column of 80rem (`default`), 54rem (`narrow`, forms and reading), 96rem (`wide`) or full. Below 64rem the rail goes away: a top bar with the logo mark and the bell, and a **bottom bar** of five items (Home, Browse, My bids, Watching, More). More opens a bottom sheet with every other destination (**List a lot** first among the selling ones), the account links, the theme switch and log out. *Decision (design jury 1, polish round):* the bar used to carry **List a lot** in gold in the centre, which put selling above buying for a person who mostly bids. Buying is the core of the bar now; listing stays one tap away in More, on Home (gold button beside Browse lots) and on My lots, where a seller is already looking. The bar has no primary action of its own: the page owns it (the bid, Place bid, Pay now). Narrow reading and form pages (`narrow`) share the left edge of every other page from 64rem; they are not centred.
-- **Grid:** one page container, a 4px base spacing scale (`--s-*`), a 1rem gutter (2rem from 64rem). Sections are bands divided by a 1px strong rule on top, not floating cards. Lots sit on a **ruled catalogue sheet** (`.ds-catalogue`: collapsed 1px borders), 17rem minimum cell.
+- **Grid:** one page container, a 4px base spacing scale (`--s-*`), a 1rem gutter (2rem from 64rem). Sections are bands divided by a 1px strong rule on top, not floating cards. Lots sit on a **ruled catalogue sheet** (`.ds-catalogue`: collapsed 1px borders), 17rem minimum cell. **Below 40rem a lot is a row, not a card**: a photo column, then status, title, price with its label, time left and bids, and the watch control at the right of the last line (twelve lots are about 1,700px, not 7,400). The card layout returns from 40rem.
 - **Stats:** never four equal tiles. Use one headline `ds.stat` (money size) beside a `ds.dl` ledger, or at most three figures of different weight, or a ledger only. A figure always names its baseline ("since 8 Nov, 09:00").
 - **Touch:** every control is 44px on coarse pointers (48px for inputs on phones); inputs are 16px so iOS never zooms.
 - **Landmarks:** skip link first, `header` (top bar), `nav` (rail or bar), one `main#main`, one `h1` from the layout `header` slot, a unique `<title>` per page from the layout `title` prop.
@@ -237,7 +237,7 @@ All anonymous Blade components live in `resources/views/components/ds/`; **the p
 | `ds.status` | the status vocabulary below; pass `state=` or `auction=` |
 | `ds.countdown` | server time first, JS ticks it; Chivo Mono digits; `role=timer`, never announced per second; `ds:countdown-end` event |
 | `ds.rail` | the closing rail: share of the sale already gone, a tick for the original close when late bids extended it |
-| `ds.lot-card` | a lot as a catalogue entry in `.ds-catalogue` |
+| `ds.lot-card` | a lot as a catalogue entry in `.ds-catalogue`; a compact row below 40rem. A lot with no photo shows the designed "No photo yet" tile (a sunken frame with a dashed inner rule), the same words in the gallery. Watch is offered only while a lot is scheduled or taking bids (`Display::isWatchable`); a closed or cancelled lot has none |
 | `ds.lot-row` | a lot that is closing as a ruled strip: the countdown is the headline figure (xl on Browse, lg on Home), the rail under it, price and watch beside. A different family from the catalogue on purpose: the Closing soon row on Browse and the 24-hour lists on Home. A list of one fills the width |
 | `ds.bid-ladder` | the signature element; rungs are buttons that fill `[data-ds-bid-input]` |
 | `ds.stat`, `ds.dl` | a headline figure; a ledger / stacked / inline definition list |
@@ -277,6 +277,10 @@ A word, a silhouette and a hue for each state; colour is never the only signal. 
 | paid | Paid | check in a circle | Ring |
 | payment_overdue, failed, unmatched | Payment overdue, Attempt failed, Needs a person | warning triangle or x | Hammer |
 | expired | Attempt expired | circle with a slash | outline only |
+
+### Words that name a sale or a payment
+
+A sale is described by `App\Support\SettlementPosition` and nothing else: lists, dashboards and pages call `listLabel()`, `headline()` or `badge()`, never the stored settlement status. While payment is off no page says overdue, due, Pay now or cancelled-for-lateness for a sale that cannot be paid. A payment *attempt* (operator page) is history and is labelled so: "Attempt started", "Attempt failed", "Attempt expired", with "Payment attempt, not completed" under it. Form errors are sentences a person can act on ("Enter a title for the lot."), never the framework's ("The title field is required."): every field has a plain name in `lang/en/validation.php`, and a sweep test submits every form empty.
 
 ### Shell, navigation and routes
 

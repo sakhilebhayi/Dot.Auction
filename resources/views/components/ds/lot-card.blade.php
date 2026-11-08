@@ -31,7 +31,7 @@
         @if ($image)
             <img src="{{ $auction->imageUrl($image, 'thumb') }}" alt="" loading="lazy" decoding="async" width="640" height="480">
         @else
-            <span class="ds-lot__noimg"><x-ds.icon name="gavel" :size="28" /><span>No photo yet</span></span>
+            <span class="ds-lot__noimg"><x-ds.icon name="image" :size="28" /><span>No photo yet</span></span>
         @endif
         <span class="ds-lot__number"><span class="sr-only">Lot </span>{{ $lot }}</span>
         @if ($live && ! $compact)<x-ds.rail :starts="$auction->starts_at" :ends="$auction->ends_at" :extensions="(int) $auction->snipe_extensions" class="ds-lot__rail" />@endif

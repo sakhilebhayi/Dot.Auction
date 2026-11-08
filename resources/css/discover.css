@@ -30,6 +30,7 @@
     .ds-catalogue .ds-lot__media { aspect-ratio: auto; min-height: 7.5rem; }
     .ds-catalogue .ds-lot__rail { display: none; }
     .ds-catalogue .ds-lot__number { padding: 1px 6px; font-size: var(--t-xs); }
+    .ds-catalogue .ds-lot__noimg::before { inset: var(--s-2); }
     .ds-catalogue .ds-lot__noimg { font-size: var(--t-xs); gap: var(--s-1); text-align: center; padding: 0 var(--s-2); }
     .ds-catalogue .ds-lot__body { grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--s-2); padding: var(--s-2) var(--s-3); align-content: start; }
     .ds-catalogue .ds-lot__body > * { grid-column: 1 / -1; }

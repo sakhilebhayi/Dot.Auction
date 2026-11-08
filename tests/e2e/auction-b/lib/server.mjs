@@ -44,7 +44,7 @@ export class AppInstance {
     for (const f of [this.dbPath, `${this.dbPath}-wal`, `${this.dbPath}-shm`]) fs.rmSync(f, { force: true });
     fs.writeFileSync(this.dbPath, '');
     this.artisan(['migrate', '--force']);
-    if (this.seed === 'demo') this.artisan(['auction:demo-seed', '--fresh'], { allowFail: false });
+    if (this.seed === 'demo') this.artisan(['auction:demo-seed', '--fresh', '--payments'], { allowFail: false });
     const router = path.join(repo, 'vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php');
     const log = fs.openSync(this.logPath, 'w');
     // `php artisan serve` strips every variable but a short allow-list from the child, which would lose the per-spec
