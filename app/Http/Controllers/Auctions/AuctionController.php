@@ -49,7 +49,8 @@ class AuctionController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        $categories = AuctionCategory::withCount('auctions')->orderBy('name')->get();
+        // The same set the list shows: other sellers' drafts are not counted (nor hinted at).
+        $categories = AuctionCategory::withCount(['auctions' => fn ($q) => $q->browsable()])->orderBy('name')->get();
 
         return view('auctions.index', [
             'auctions' => $auctions,

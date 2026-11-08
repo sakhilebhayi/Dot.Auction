@@ -115,12 +115,12 @@ trait BuildsSettlements
             'ends_at' => now()->subMinute(),
             'current_price' => Auction::fromCents($amountCents),
         ]);
-        $bid = Bid::create([
+        $bid = Bid::forceCreate([
             'auction_id' => $auction->id, 'bidder_id' => $winner->id,
             'amount' => Auction::fromCents($amountCents), 'is_winning' => true,
         ]);
 
-        $row = AuctionSettlement::create(array_merge([
+        $row = AuctionSettlement::forceCreate(array_merge([
             'auction_id' => $auction->id,
             'winning_bid_id' => $bid->id,
             'seller_id' => $auction->seller_id,
@@ -139,7 +139,7 @@ trait BuildsSettlements
      */
     protected function attempt(AuctionSettlement $settlement, array $attributes = []): SettlementPayment
     {
-        return SettlementPayment::create(array_merge([
+        return SettlementPayment::forceCreate(array_merge([
             'settlement_id' => $settlement->id,
             'provider' => 'paystack',
             'reference' => 'AUC-'.Str::upper(Str::random(20)),

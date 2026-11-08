@@ -100,15 +100,15 @@ class SettlementPaymentRecorder
 
             $paidAt = $tx->paidAtOrNow();
 
-            $payment->update([
+            $payment->forceFill([
                 'status' => SettlementPayment::PAID,
                 'reason' => null,
                 'provider_transaction_id' => $tx->transactionId,
                 'paid_at' => $paidAt,
                 'summary' => 'Confirmed by '.($source === self::FROM_WEBHOOK ? 'Paystack webhook' : 'server-side verification').'.',
-            ]);
+            ])->save();
 
-            $settlement->update(['status' => AuctionSettlement::PAID, 'paid_at' => $paidAt]);
+            $settlement->forceFill(['status' => AuctionSettlement::PAID, 'paid_at' => $paidAt])->save();
 
             SettlementEvent::create([
                 'settlement_id' => $settlement->id,
@@ -169,7 +169,7 @@ class SettlementPaymentRecorder
     private function recordNonSuccess(SettlementPayment $payment, VerifiedTransaction $tx): string
     {
         if (in_array($tx->status, ['failed', 'abandoned', 'reversed'], true)) {
-            $payment->update(['status' => SettlementPayment::FAILED, 'summary' => 'Paystack reported "'.$tx->status.'".']);
+            $payment->forceFill(['status' => SettlementPayment::FAILED, 'summary' => 'Paystack reported "'.$tx->status.'".'])->save();
 
             return self::FAILED;
         }
@@ -179,7 +179,7 @@ class SettlementPaymentRecorder
 
     private function hold(SettlementPayment $payment, string $reason, string $summary): string
     {
-        $payment->update(['status' => SettlementPayment::UNMATCHED, 'reason' => $reason, 'summary' => $summary]);
+        $payment->forceFill(['status' => SettlementPayment::UNMATCHED, 'reason' => $reason, 'summary' => $summary])->save();
 
         return self::HELD;
     }
@@ -200,7 +200,7 @@ class SettlementPaymentRecorder
             ->where('provider', 'paystack')->where('provider_transaction_id', $tx->transactionId)->exists();
 
         try {
-            SettlementPayment::query()->firstOrCreate(
+            SettlementPayment::unguarded(fn () => SettlementPayment::query()->firstOrCreate(
                 ['reference' => $tx->reference],
                 [
                     'provider' => 'paystack',
@@ -212,7 +212,7 @@ class SettlementPaymentRecorder
                     'provider_transaction_id' => $idTaken ? null : $tx->transactionId,
                     'summary' => 'Paystack reported "'.$tx->status.'" for a reference this app did not issue.',
                 ],
-            );
+            ));
         } catch (UniqueConstraintViolationException) {
             // A concurrent delivery of the same event stored it first.
         }

@@ -162,8 +162,8 @@ class AccessMatrixTest extends TestCase
         $image = AuctionImage::create(['auction_id' => $draft->id, 'path' => 'x/draft.jpg', 'mime' => 'image/jpeg', 'size_bytes' => 4, 'width' => 1, 'height' => 1]);
 
         $this->actingAs(User::factory()->withPersonalTeam()->create());
-        $this->get(route('auctions.show', $draft))->assertForbidden();
-        $this->get(route('auctions.images.show', [$draft, $image]))->assertForbidden();
+        $this->get(route('auctions.show', $draft))->assertNotFound();
+        $this->get(route('auctions.images.show', [$draft, $image]))->assertNotFound();
 
         $this->actingAs($seller);
         $this->get(route('auctions.show', $draft))->assertOk();
@@ -185,7 +185,7 @@ class AccessMatrixTest extends TestCase
     {
         $auction = Auction::factory()->create();
         $bidder = User::factory()->create(['name' => 'Thandiwe Zulu-Nkosi', 'email' => 'thandi.private@example.test']);
-        Bid::create(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 250, 'is_winning' => true]);
+        Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 250, 'is_winning' => true]);
 
         $page = $this->actingAs(User::factory()->withPersonalTeam()->create())
             ->get(route('auctions.show', $auction))->assertOk()->getContent();

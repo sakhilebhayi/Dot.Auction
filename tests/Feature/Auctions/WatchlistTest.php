@@ -18,7 +18,7 @@ class WatchlistTest extends TestCase
     {
         $seller = User::factory()->create();
         $buyer = User::factory()->withPersonalTeam()->create();
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Rare Stamp Collection',
             'starting_price' => 30,
@@ -62,7 +62,7 @@ class WatchlistTest extends TestCase
         $owner = User::factory()->create();
         $other = User::factory()->create();
         $seller = User::factory()->create();
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Cross-User Watch Test Lot',
             'starting_price' => 20,

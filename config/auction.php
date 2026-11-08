@@ -15,6 +15,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Display timezone
+    |--------------------------------------------------------------------------
+    | Times are STORED in UTC (config app.timezone, never change it). People
+    | read and type times in this zone: listing forms, the bid panel,
+    | settlements, notifications and e-mail data. See App\Services\DisplayTime.
+    */
+    'display_timezone' => env('AUCTION_DISPLAY_TIMEZONE', 'Africa/Johannesburg'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Realtime
+    |--------------------------------------------------------------------------
+    | `enabled`: whether Reverb pushes live updates. Production runs without it
+    | (BROADCAST_CONNECTION=log): set AUCTION_REALTIME_ENABLED=false there so
+    | /up/realtime reports "polling mode" with a 200 instead of a 503, and
+    | clients poll BidPanel::snapshot() every `poll_seconds`.
+    */
+    'realtime' => [
+        'enabled' => (bool) env('AUCTION_REALTIME_ENABLED', true),
+        'poll_seconds' => (int) env('AUCTION_POLL_SECONDS', 10),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Bid rate limit
     |--------------------------------------------------------------------------
     | Maximum bid submissions per user within the decay window (seconds).
@@ -56,6 +80,21 @@ return [
     | has this many minutes or fewer left.
     */
     'ending_soon_window_minutes' => (int) env('AUCTION_ENDING_SOON_WINDOW_MINUTES', 60),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Settlement sweep
+    |--------------------------------------------------------------------------
+    | auction:repair-unsettled (hourly) looks for ended auctions that have a
+    | winner but no settlement because the queued hand-off was lost. It looks
+    | back `lookback_days` (so sales that pre-date online settlement are never
+    | back-filled) and leaves an auction alone for `grace_minutes` after it
+    | closed, which is longer than the queue normally takes.
+    */
+    'settlement_sweep' => [
+        'lookback_days' => (int) env('AUCTION_SWEEP_LOOKBACK_DAYS', 7),
+        'grace_minutes' => (int) env('AUCTION_SWEEP_GRACE_MINUTES', 15),
+    ],
 
     /*
     |--------------------------------------------------------------------------

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Seller;
 use App\Models\Auction;
 use App\Rules\MoneyAmount;
 use App\Services\Auctions\ListingTerms;
+use App\Services\DisplayTime;
 use Carbon\CarbonInterface;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
@@ -18,8 +19,6 @@ use Illuminate\Validation\Validator;
  */
 class SaveListingRequest extends FormRequest
 {
-    private const DATE_FORMATS = ['Y-m-d\TH:i', 'Y-m-d\TH:i:s'];
-
     public function authorize(): bool
     {
         $auction = $this->auction();
@@ -184,21 +183,11 @@ class SaveListingRequest extends FormRequest
     }
 
     /**
-     * Interprets a datetime-local value in the application timezone.
-     * Rejects overflowing dates such as 31 February.
+     * Interprets a datetime-local value as wall-clock time in the display zone (Africa/Johannesburg by default) and
+     * returns it in UTC, which is what is stored. Rejects overflowing dates such as 31 February.
      */
     public static function parseDate(string $value): ?Carbon
     {
-        foreach (self::DATE_FORMATS as $format) {
-            if (Carbon::hasFormat($value, $format)) {
-                $date = Carbon::createFromFormat($format, $value, config('app.timezone'));
-
-                if ($date !== null && $date->format($format) === $value) {
-                    return $date;
-                }
-            }
-        }
-
-        return null;
+        return DisplayTime::parseInput($value);
     }
 }

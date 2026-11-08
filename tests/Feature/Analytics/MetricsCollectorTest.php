@@ -91,7 +91,7 @@ class MetricsCollectorTest extends TestCase
 
     private function bid(Auction $auction, string $createdUtc): Bid
     {
-        $bid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $this->bidder()->id, 'amount' => '250.00', 'is_winning' => false]);
+        $bid = Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $this->bidder()->id, 'amount' => '250.00', 'is_winning' => false]);
         $bid->forceFill(['created_at' => $this->at($createdUtc), 'updated_at' => $this->at($createdUtc)])->save();
 
         return $bid;
@@ -99,8 +99,8 @@ class MetricsCollectorTest extends TestCase
 
     private function settlement(Auction $auction, int $cents, string $createdUtc, string $currency = 'ZAR'): AuctionSettlement
     {
-        $bid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $this->bidder()->id, 'amount' => '1.00', 'is_winning' => true]);
-        $settlement = AuctionSettlement::create([
+        $bid = Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $this->bidder()->id, 'amount' => '1.00', 'is_winning' => true]);
+        $settlement = AuctionSettlement::forceCreate([
             'auction_id' => $auction->id, 'winning_bid_id' => $bid->id, 'seller_id' => $auction->seller_id,
             'winner_id' => $bid->bidder_id, 'amount_cents' => $cents, 'currency' => $currency, 'status' => 'awaiting_payment',
         ]);
@@ -324,7 +324,7 @@ class MetricsCollectorTest extends TestCase
         $a = $this->seller(self::COMPANY_A);
         $b = $this->seller(self::COMPANY_B);
         $auctionB = $this->auction($b);
-        Bid::create(['auction_id' => $auctionB->id, 'bidder_id' => $a->id, 'amount' => '300.00', 'is_winning' => true])
+        Bid::forceCreate(['auction_id' => $auctionB->id, 'bidder_id' => $a->id, 'amount' => '300.00', 'is_winning' => true])
             ->forceFill(['created_at' => $this->at('2026-11-02 10:00:00')])->save();
 
         $this->assertSame(0, $this->collect($a)['bids_7d'], 'bidding in someone else\'s sale is not selling');

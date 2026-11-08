@@ -21,7 +21,7 @@
         </div>
     @else
         <div style="font-size:0.78rem;color:#71717a;">
-            {{ ucfirst($proposal->status) }} on {{ $proposal->decided_at?->format('M j, Y') }}.
+            {{ ucfirst($proposal->status) }} on @localtime($proposal->decided_at, 'M j, Y').
         </div>
     @endif
 </div>

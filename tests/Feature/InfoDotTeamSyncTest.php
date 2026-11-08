@@ -189,7 +189,7 @@ class InfoDotTeamSyncTest extends TestCase
     {
         $ann = User::factory()->withPersonalTeam()->create(['email' => 'ann@acme.test']);
         $stranger = User::factory()->withPersonalTeam()->create();
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $ann->id, 'title' => 'Rare Stamp Collection', 'starting_price' => 30, 'current_price' => 30,
             'bid_increment' => 5, 'status' => 'active', 'starts_at' => now()->subHour(), 'ends_at' => now()->addDay(),
         ]);

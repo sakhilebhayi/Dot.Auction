@@ -42,7 +42,7 @@ class SettlementResilienceTest extends TestCase
             'starts_at' => now()->subDay(), 'ends_at' => now()->subMinute(),
         ], $overrides));
         $winner = User::factory()->create();
-        $bid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $winner->id, 'amount' => '150.00', 'is_winning' => true]);
+        $bid = Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $winner->id, 'amount' => '150.00', 'is_winning' => true]);
 
         return [$auction, $winner, $bid];
     }

@@ -9,7 +9,7 @@
                 Auction Dashboard
             </div>
             <div style="font-size:0.78rem;color:#71717a;margin-top:0.25rem;">
-                {{ now()->format('l, F j Y') }} &nbsp;·&nbsp; Your auction activity at a glance
+                @localtime(now(), 'l, F j Y') &nbsp;·&nbsp; Your auction activity at a glance
             </div>
         </div>
         <div class="dot-head-actions">

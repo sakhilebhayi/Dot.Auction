@@ -61,7 +61,7 @@
                                 <span class="dot-muted">Matches no sale</span>
                             @endif
                         </td>
-                        <td>{{ $payment->created_at->format('j M Y, H:i') }} {{ config('app.timezone') }}</td>
+                        <td>@localtime($payment->created_at, 'j M Y, H:i', true)</td>
                     </tr>
                     @endforeach
                 </tbody>

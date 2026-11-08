@@ -34,7 +34,7 @@ class OperatorSettlementPaymentsTest extends TestCase
         $this->attempt($settlement, ['reference' => 'AUC-ATTEMPT-INITIATED']);
         $this->attempt($settlement, ['reference' => 'AUC-ATTEMPT-PAID', 'status' => SettlementPayment::PAID, 'provider_transaction_id' => '55', 'paid_at' => now()]);
         $this->attempt($settlement, ['reference' => 'AUC-ATTEMPT-HELD', 'status' => SettlementPayment::UNMATCHED, 'reason' => 'amount_mismatch', 'summary' => 'Paystack reported 100 cents; the sale is 123450.']);
-        SettlementPayment::create(['provider' => 'paystack', 'reference' => 'GHOST-REF-1', 'status' => SettlementPayment::UNMATCHED, 'reason' => 'unknown_reference', 'amount_cents' => 5000, 'currency' => 'ZAR']);
+        SettlementPayment::forceCreate(['provider' => 'paystack', 'reference' => 'GHOST-REF-1', 'status' => SettlementPayment::UNMATCHED, 'reason' => 'unknown_reference', 'amount_cents' => 5000, 'currency' => 'ZAR']);
 
         $page = $this->actingAs($this->operator())->get(route('operator.settlement-payments.index'))->assertOk()
             ->assertSee('2 payments need an operator')

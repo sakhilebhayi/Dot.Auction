@@ -167,7 +167,7 @@ class PaymentDeadlineTest extends TestCase
         $auction = Auction::factory()->create(['starts_at' => now()->subDays(2), 'ends_at' => now()->addMinutes(10)]);
         $winner = User::factory()->withPersonalTeam()->create();
         app(BidPlacer::class)->place($auction, $winner, '220.00');
-        $auction->update(['ends_at' => now()->subMinute()]);
+        $auction->forceFill(['ends_at' => now()->subMinute()])->save();
 
         $this->artisan('auction:settle-ended')->assertSuccessful();
 
@@ -180,7 +180,7 @@ class PaymentDeadlineTest extends TestCase
         $this->disablePaystack();
         $auction = Auction::factory()->create(['starts_at' => now()->subDays(2), 'ends_at' => now()->addMinutes(10)]);
         app(BidPlacer::class)->place($auction, User::factory()->withPersonalTeam()->create(), '220.00');
-        $auction->update(['ends_at' => now()->subMinute()]);
+        $auction->forceFill(['ends_at' => now()->subMinute()])->save();
 
         $this->artisan('auction:settle-ended')->assertSuccessful();
 

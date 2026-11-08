@@ -23,7 +23,7 @@ class SettleEndedAuctionsCommandTest extends TestCase
     {
         $seller = User::factory()->create();
 
-        return Auction::create(array_merge([
+        return Auction::forceCreate(array_merge([
             'seller_id' => $seller->id,
             'title' => 'Antique Clock',
             'starting_price' => 100,
@@ -53,7 +53,7 @@ class SettleEndedAuctionsCommandTest extends TestCase
         Event::fake([AuctionSettled::class]);
         $auction = $this->makeEndedAuction(['reserve_price' => 150, 'current_price' => 200]);
         $bidder = User::factory()->create();
-        $bid = Bid::create([
+        $bid = Bid::forceCreate([
             'auction_id' => $auction->id,
             'bidder_id' => $bidder->id,
             'amount' => 200,
@@ -72,7 +72,7 @@ class SettleEndedAuctionsCommandTest extends TestCase
         Notification::fake();
         $auction = $this->makeEndedAuction(['current_price' => 120]);
         $bidder = User::factory()->create();
-        Bid::create([
+        Bid::forceCreate([
             'auction_id' => $auction->id,
             'bidder_id' => $bidder->id,
             'amount' => 120,
@@ -91,7 +91,7 @@ class SettleEndedAuctionsCommandTest extends TestCase
         Event::fake([ReserveNotMet::class]);
         $auction = $this->makeEndedAuction(['reserve_price' => 500, 'current_price' => 300]);
         $bidder = User::factory()->create();
-        $bid = Bid::create([
+        $bid = Bid::forceCreate([
             'auction_id' => $auction->id,
             'bidder_id' => $bidder->id,
             'amount' => 300,
@@ -126,7 +126,7 @@ class SettleEndedAuctionsCommandTest extends TestCase
         Event::fake([AuctionSettled::class]);
         $auction = $this->makeEndedAuction(['current_price' => 200]);
         $bidder = User::factory()->create();
-        Bid::create(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 200, 'is_winning' => true]);
+        Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 200, 'is_winning' => true]);
 
         $stale = Auction::find($auction->id); // still says "active"
         $this->artisan('auction:settle-ended')->assertSuccessful();
@@ -142,7 +142,7 @@ class SettleEndedAuctionsCommandTest extends TestCase
         Notification::fake();
         $auction = $this->makeEndedAuction(['reserve_price' => 500, 'current_price' => 300]);
         $bidder = User::factory()->create();
-        Bid::create(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 300, 'is_winning' => true]);
+        Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 300, 'is_winning' => true]);
 
         $stale = Auction::find($auction->id);
         $this->artisan('auction:settle-ended')->assertSuccessful();
@@ -158,7 +158,7 @@ class SettleEndedAuctionsCommandTest extends TestCase
         // e.g. the seller/admin extended ends_at after the command selected it.
         $auction = $this->makeEndedAuction();
         $stale = Auction::find($auction->id);
-        $auction->update(['ends_at' => now()->addDay()]);
+        $auction->forceFill(['ends_at' => now()->addDay()])->save();
 
         $this->assertFalse(app(AuctionSettler::class)->settle($stale));
         $this->assertSame('active', $auction->fresh()->status);
@@ -169,7 +169,7 @@ class SettleEndedAuctionsCommandTest extends TestCase
         Notification::fake();
         $auction = $this->makeEndedAuction(['reserve_price' => '0.30', 'current_price' => '0.30']);
         $bidder = User::factory()->create();
-        Bid::create(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => '0.30', 'is_winning' => true]);
+        Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => '0.30', 'is_winning' => true]);
 
         $this->artisan('auction:settle-ended')->assertSuccessful();
 

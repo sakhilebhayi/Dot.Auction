@@ -76,7 +76,7 @@ class SettlementPayer
                 return $live;
             }
 
-            $payment = SettlementPayment::create([
+            $payment = SettlementPayment::forceCreate([
                 'settlement_id' => $locked->id,
                 'provider' => 'paystack',
                 'reference' => 'AUC-'.strtoupper((string) Str::ulid()),
@@ -100,7 +100,7 @@ class SettlementPayer
                 throw new PaymentGatewayException('Paystack sent an answer this app could not understand. Nothing was charged. Please try again later.', 'unexpected_response', true);
             }
 
-            $payment->update(['authorization_url' => $result->authorizationUrl]);
+            $payment->forceFill(['authorization_url' => $result->authorizationUrl])->save();
 
             return $payment;
         });

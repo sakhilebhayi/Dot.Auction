@@ -44,7 +44,7 @@ class RecordSettlementForPayment implements ShouldQueue
         $payments = app(PaystackConfig::class);
 
         try {
-            $settlement = AuctionSettlement::firstOrCreate(
+            $settlement = AuctionSettlement::unguarded(fn () => AuctionSettlement::firstOrCreate(
                 ['auction_id' => $auction->id],
                 [
                     'winning_bid_id' => $event->winningBid->id,
@@ -55,7 +55,7 @@ class RecordSettlementForPayment implements ShouldQueue
                     'status' => AuctionSettlement::AWAITING_PAYMENT,
                     'payment_due_at' => $payments->canTakePayments() ? now()->addHours($payments->paymentWindowHours()) : null,
                 ],
-            );
+            ));
         } catch (UniqueConstraintViolationException) {
             return;
         }

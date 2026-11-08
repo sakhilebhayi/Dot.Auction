@@ -234,7 +234,7 @@ class PaystackWebhookTest extends TestCase
     public function test_the_settlement_amount_is_the_authority_even_if_the_attempt_row_disagrees(): void
     {
         [$settlement, $payment] = $this->scene(123450);
-        $payment->update(['amount_cents' => 100]);
+        $payment->forceFill(['amount_cents' => 100])->save();
 
         $this->webhook($this->chargeSuccess($payment, ['amount' => 100]))->assertOk();
 
@@ -310,8 +310,8 @@ class PaystackWebhookTest extends TestCase
     public function test_a_late_payment_on_an_expired_attempt_or_an_overdue_settlement_is_still_applied(): void
     {
         [$settlement, $payment] = $this->scene();
-        $payment->update(['status' => SettlementPayment::EXPIRED, 'expires_at' => now()->subHour()]);
-        $settlement->update(['status' => AuctionSettlement::PAYMENT_OVERDUE, 'overdue_at' => now()->subDay()]);
+        $payment->forceFill(['status' => SettlementPayment::EXPIRED, 'expires_at' => now()->subHour()])->save();
+        $settlement->forceFill(['status' => AuctionSettlement::PAYMENT_OVERDUE, 'overdue_at' => now()->subDay()])->save();
 
         $this->webhook($this->chargeSuccess($payment))->assertOk();
 
@@ -321,7 +321,7 @@ class PaystackWebhookTest extends TestCase
     public function test_money_arriving_for_a_cancelled_settlement_is_held_for_an_operator(): void
     {
         [$settlement, $payment, $winner] = $this->scene();
-        $settlement->update(['status' => AuctionSettlement::CANCELLED, 'cancelled_at' => now()]);
+        $settlement->forceFill(['status' => AuctionSettlement::CANCELLED, 'cancelled_at' => now()])->save();
 
         $this->webhook($this->chargeSuccess($payment))->assertOk();
 

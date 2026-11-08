@@ -41,7 +41,7 @@ class SettlementMigrationTest extends TestCase
         // A row written before any of this existed: no payment columns at all.
         $auction = Auction::factory()->create(['status' => 'ended']);
         $winner = User::factory()->create();
-        $bid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $winner->id, 'amount' => '777.00', 'is_winning' => true]);
+        $bid = Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $winner->id, 'amount' => '777.00', 'is_winning' => true]);
         $legacyId = (string) Str::uuid();
         DB::table('auction_settlements')->insert([
             'id' => $legacyId, 'auction_id' => $auction->id, 'winning_bid_id' => $bid->id,

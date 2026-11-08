@@ -25,7 +25,7 @@ class BidHistoryOrderTest extends TestCase
         $ids = [];
 
         foreach ([210, 220, 230, 240, 250] as $amount) {
-            $ids[] = Bid::create([
+            $ids[] = Bid::forceCreate([
                 'auction_id' => $auction->id,
                 'bidder_id' => User::factory()->create()->id,
                 'amount' => $amount,
@@ -46,7 +46,7 @@ class BidHistoryOrderTest extends TestCase
         $second = now()->startOfSecond();
 
         foreach ([210, 220, 230] as $amount) {
-            Bid::create(['auction_id' => $auction->id, 'bidder_id' => User::factory()->create()->id, 'amount' => $amount, 'is_winning' => false]);
+            Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => User::factory()->create()->id, 'amount' => $amount, 'is_winning' => false]);
         }
         Bid::query()->update(['created_at' => $second, 'updated_at' => $second]);
 

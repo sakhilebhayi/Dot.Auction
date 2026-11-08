@@ -18,7 +18,7 @@ class ReserveNotMetProposalTest extends TestCase
         $seller = User::factory()->create();
         $bidder = User::factory()->create();
 
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Vintage Camera',
             'starting_price' => 100,
@@ -30,7 +30,7 @@ class ReserveNotMetProposalTest extends TestCase
             'ends_at' => now()->subMinute(),
         ]);
 
-        $bid = Bid::create([
+        $bid = Bid::forceCreate([
             'auction_id' => $auction->id,
             'bidder_id' => $bidder->id,
             'amount' => 300,

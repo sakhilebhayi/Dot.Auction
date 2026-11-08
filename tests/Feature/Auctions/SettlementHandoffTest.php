@@ -32,7 +32,7 @@ class SettlementHandoffTest extends TestCase
         $auction = Auction::factory()->create(['starts_at' => now()->subDays(2), 'ends_at' => now()->addMinutes(10)]);
         $winner = User::factory()->withPersonalTeam()->create();
         app(BidPlacer::class)->place($auction, $winner, $amount);
-        $auction->update(['ends_at' => now()->subMinute()]);
+        $auction->forceFill(['ends_at' => now()->subMinute()])->save();
 
         return [$auction, $winner];
     }
@@ -102,7 +102,7 @@ class SettlementHandoffTest extends TestCase
         ]);
         $bidder = User::factory()->create();
         app(BidPlacer::class)->place($auction, $bidder, '220.00');
-        $auction->update(['ends_at' => now()->subMinute()]);
+        $auction->forceFill(['ends_at' => now()->subMinute()])->save();
 
         $this->artisan('auction:settle-ended')->assertSuccessful();
         $this->assertSame('pending_review', $auction->fresh()->status);

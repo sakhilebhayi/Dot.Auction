@@ -72,7 +72,7 @@
                 <div class="dot-card" style="padding:1rem 1.15rem;">
                     <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#52525b;margin-bottom:0.4rem;">Buy Now</div>
                     <div style="font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;color:{{ $auction->buy_now_price ? '#fcd34d' : '#3f3f46' }};">
-                        {{ $auction->buy_now_price ? 'R'.number_format($auction->buy_now_price, 2) : '—' }}
+                        {{ $auction->buy_now_price ? \App\Models\Auction::money($auction->buy_now_price) : '—' }}
                     </div>
                 </div>
             </div>

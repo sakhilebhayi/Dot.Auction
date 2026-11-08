@@ -93,7 +93,7 @@ class BidPlacer
                     ->where('is_winning', true)
                     ->update(['is_winning' => false]);
 
-                $bid = Bid::create([
+                $bid = Bid::forceCreate([
                     'auction_id' => $locked->id,
                     'bidder_id' => $bidder->getKey(),
                     'amount' => $this->decimal($amountCents),
@@ -103,14 +103,15 @@ class BidPlacer
                 // Anti-snipe: decided from the LOCKED row, and written in the
                 // same UPDATE as the new price, so the bid and the moved
                 // close commit (or roll back) together.
-                $locked->update(array_merge(
+                $locked->forceFill(array_merge(
                     ['current_price' => $this->decimal($amountCents)],
                     $this->snipeExtension($locked),
-                ));
+                ))->save();
                 $bid->setRelation('auction', $locked);
 
                 $previousBidderId = $previousWinner?->bidder_id;
                 DB::afterCommit(function () use ($bid, $previousBidderId) {
+                    AuctionSnapshot::forget($bid->auction_id);
                     event(new BidPlaced($bid));
 
                     if ($previousBidderId !== null && $previousBidderId !== $bid->bidder_id) {

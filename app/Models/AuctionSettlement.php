@@ -29,11 +29,13 @@ class AuctionSettlement extends Model
 
     public const CANCELLED = 'cancelled';
 
-    protected $fillable = [
-        'auction_id', 'winning_bid_id', 'seller_id', 'winner_id',
-        'amount_cents', 'currency', 'status',
-        'payment_due_at', 'paid_at', 'overdue_at', 'cancelled_at', 'cancelled_by',
-    ];
+    /**
+     * Nothing is mass assignable: settlements are written only by the settlement listener, the payment recorder and the
+     * lifecycle service (forceFill/forceCreate under a row lock).
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [];
 
     protected $casts = [
         'amount_cents' => 'integer',

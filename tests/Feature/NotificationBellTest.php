@@ -29,7 +29,7 @@ class NotificationBellTest extends TestCase
     {
         $seller = User::factory()->create();
         $bidder = User::factory()->withPersonalTeam()->create();
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Outbid Test Lot',
             'starting_price' => 10,
@@ -39,7 +39,7 @@ class NotificationBellTest extends TestCase
             'starts_at' => now()->subHour(),
             'ends_at' => now()->addDay(),
         ]);
-        $bid = Bid::create([
+        $bid = Bid::forceCreate([
             'auction_id' => $auction->id,
             'bidder_id' => $bidder->id,
             'amount' => 30,
@@ -64,7 +64,7 @@ class NotificationBellTest extends TestCase
     {
         $seller = User::factory()->create();
         $bidder = User::factory()->withPersonalTeam()->create();
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Outbid Test Lot Two',
             'starting_price' => 10,
@@ -74,7 +74,7 @@ class NotificationBellTest extends TestCase
             'starts_at' => now()->subHour(),
             'ends_at' => now()->addDay(),
         ]);
-        $bid = Bid::create([
+        $bid = Bid::forceCreate([
             'auction_id' => $auction->id,
             'bidder_id' => $bidder->id,
             'amount' => 30,
@@ -104,7 +104,7 @@ class NotificationBellTest extends TestCase
     {
         $seller = User::factory()->create();
         $bidder = User::factory()->withPersonalTeam()->create();
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Outbid Test Lot Three',
             'starting_price' => 10,
@@ -114,7 +114,7 @@ class NotificationBellTest extends TestCase
             'starts_at' => now()->subHour(),
             'ends_at' => now()->addDay(),
         ]);
-        $bid = Bid::create([
+        $bid = Bid::forceCreate([
             'auction_id' => $auction->id,
             'bidder_id' => $bidder->id,
             'amount' => 30,

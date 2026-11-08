@@ -37,8 +37,8 @@
                     <div class="dot-help" style="margin-top:2px;">Started at {{ \App\Models\Auction::money($row->starting_price) }}</div>
                 </td>
                 <td>
-                    {{ $row->ends_at->format('M j, Y') }}
-                    <div class="dot-help" style="margin-top:2px;">{{ $row->ends_at->format('H:i') }}</div>
+                    @localtime($row->ends_at, 'M j, Y')
+                    <div class="dot-help" style="margin-top:2px;">@localtime($row->ends_at, 'H:i')</div>
                 </td>
                 <td>
                     <div class="dot-actions">

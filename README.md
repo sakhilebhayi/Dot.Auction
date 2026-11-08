@@ -44,7 +44,7 @@ kept-honest breakdown of what's actually implemented vs. still roadmap.
 - Dark / light mode toggle (Tailwind class-based strategy, persisted per browser)
 - Ecosystem SSO from the Dot hub
 
-> **Not yet built:** auto-bid execution (the `is_auto_bid` column exists, no engine acts on it),
+> **Not yet built:** proxy (auto) bidding (the unused `is_auto_bid` column is kept for it; the old unsafe engine was removed in R-42 and any future one must be built inside `BidPlacer`'s lock),
 > an auction settlement job (nothing flips `status` to `ended` automatically when `ends_at`
 > passes), dispute resolution, and the Knowledge Pack publisher to Dot.Brain.
 > `AuctionWonNotification` and `AuctionEndingSoonNotification` classes exist but have no
@@ -142,9 +142,10 @@ recipient as the in-app notification; nothing about who is notified in-app chang
 | `auction.won` | the winner (settlement, or the seller accepting a reserve-not-met bid) | `auction_title`, `final_price`, `currency`, `url` |
 | `auction.sold` | the seller, when the settlement is recorded | `auction_title`, `final_price`, `currency`, `status`, `url` |
 | `auction.ending_soon` | each watcher, once (`auction:notify-ending-soon`) | `auction_title`, `current_price`, `currency`, `ends_at`, `url` |
+| `auction.reserve_not_met` | the seller, once, when the auction closes below its reserve. **Off** until `NOTIFY_RESERVE_NOT_MET_EVENT=true` (Notify must have the event first); the in-app notice is always sent | `auction_title`, `current_price`, `currency`, `url` |
 
 Money is a string with two decimals and no separators (`"1234.50"`), the currency code
-(`AUCTION_CURRENCY_CODE`) is separate, `ends_at` is ISO 8601, `url` is an absolute `https` link to the
+(`AUCTION_CURRENCY_CODE`) is separate, `ends_at` is ISO 8601 with the display-zone offset (`+02:00`, same instant as UTC), `url` is an absolute `https` link to the
 auction page in this app. The email address is only ever in `recipient.email`; no other person's
 address, no bidder names, no payment details are sent. `auction.sold.status` is `sold` for a new
 settlement (awaiting payment).

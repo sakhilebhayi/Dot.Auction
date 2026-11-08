@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Auction;
 use App\Notifications\Concerns\SendsNotifyEvent;
+use App\Services\DisplayTime;
 use App\Services\Notify\NotifyClient;
 use Illuminate\Notifications\Notification;
 
@@ -45,7 +46,8 @@ class AuctionEndingSoonNotification extends Notification
                 'auction_title' => (string) $this->auction->title,
                 'current_price' => $notify->money($this->auction->current_price),
                 'currency' => (string) config('auction.currency_code', 'ZAR'),
-                'ends_at' => $this->auction->ends_at->toIso8601String(),
+                // Same instant as UTC, written with the display-zone offset (+02:00) for the e-mail's reader.
+                'ends_at' => DisplayTime::iso($this->auction->ends_at),
                 'url' => $notify->pageUrl('auctions.show', $this->auction),
             ],
         ];

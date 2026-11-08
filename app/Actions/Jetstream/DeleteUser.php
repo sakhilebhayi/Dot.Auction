@@ -2,10 +2,10 @@
 
 namespace App\Actions\Jetstream;
 
-use App\Models\Team;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
-use Laravel\Jetstream\Contracts\DeletesTeams;
+use App\Services\Auctions\AccountDeletionBlocked;
+use App\Services\Auctions\AccountEraser;
+use Illuminate\Validation\ValidationException;
 use Laravel\Jetstream\Contracts\DeletesUsers;
 
 class DeleteUser implements DeletesUsers
@@ -13,30 +13,20 @@ class DeleteUser implements DeletesUsers
     /**
      * Create a new action instance.
      */
-    public function __construct(protected DeletesTeams $deletesTeams) {}
+    public function __construct(protected AccountEraser $eraser) {}
 
     /**
-     * Delete the given user.
+     * "Delete" the given user. Auction data belongs to other people too (bids, sales, settlements), so the account is
+     * anonymised rather than removed, and refused while the person has live obligations. See AccountEraser.
+     *
+     * @throws ValidationException when the person still has live obligations (shown under the password field)
      */
     public function delete(User $user): void
     {
-        DB::transaction(function () use ($user) {
-            $this->deleteTeams($user);
-            $user->deleteProfilePhoto();
-            $user->tokens->each->delete();
-            $user->delete();
-        });
-    }
-
-    /**
-     * Delete the teams and team associations attached to the user.
-     */
-    protected function deleteTeams(User $user): void
-    {
-        $user->teams()->detach();
-
-        $user->ownedTeams->each(function (Team $team) {
-            $this->deletesTeams->delete($team);
-        });
+        try {
+            $this->eraser->erase($user);
+        } catch (AccountDeletionBlocked $e) {
+            throw ValidationException::withMessages(['password' => [$e->getMessage()]]);
+        }
     }
 }

@@ -1,4 +1,3 @@
-@php($zone = config('app.timezone'))
 <x-app-layout>
 <div class="dot-page dot-page-narrow">
 
@@ -45,13 +44,13 @@
                 @if($settlement->status === 'paid' && $settlement->paid_at)
                     <div>
                         <div class="dot-label" style="color:#a1a1aa;">Paid</div>
-                        <div class="dot-mono" style="color:#f4f4f5;">{{ $settlement->paid_at->format('j M Y, H:i') }} {{ $zone }}</div>
+                        <div class="dot-mono" style="color:#f4f4f5;">@localtime($settlement->paid_at, 'j M Y, H:i', true)</div>
                         @if($receipt)<div class="dot-help">Reference <span class="dot-mono">{{ $receipt->reference }}</span></div>@endif
                     </div>
                 @elseif($settlement->isPayable() && $settlement->payment_due_at)
                     <div>
                         <div class="dot-label" style="color:#a1a1aa;">{{ $settlement->status === 'payment_overdue' ? 'Was due' : 'Pay by' }}</div>
-                        <div class="dot-mono" style="color:#f4f4f5;">{{ $settlement->payment_due_at->format('j M Y, H:i') }} {{ $zone }}</div>
+                        <div class="dot-mono" style="color:#f4f4f5;">@localtime($settlement->payment_due_at, 'j M Y, H:i', true)</div>
                         <div class="dot-help">{{ $settlement->payment_due_at->diffForHumans() }}</div>
                     </div>
                 @endif
@@ -91,7 +90,7 @@
                 @elseif($settlement->status === 'payment_overdue')
                     <p class="dot-help" style="font-size:13px;margin-top:0;">The buyer has not paid by the deadline. They can still pay until you cancel. Dot.Auction does not relist or cancel anything for you.</p>
                 @elseif($settlement->status === 'cancelled')
-                    <p class="dot-help" style="font-size:13px;margin-top:0;">You cancelled this sale{{ $settlement->cancelled_at ? ' on '.$settlement->cancelled_at->format('j M Y').'' : '' }}. The auction has not been relisted.</p>
+                    <p class="dot-help" style="font-size:13px;margin-top:0;">You cancelled this sale{{ $settlement->cancelled_at ? ' on '.\App\Models\Auction::localTime($settlement->cancelled_at, 'j M Y') : '' }}. The auction has not been relisted.</p>
                 @endif
 
                 <p class="dot-help" style="font-size:13px;margin-bottom:0;">
