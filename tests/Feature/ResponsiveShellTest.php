@@ -138,22 +138,8 @@ class ResponsiveShellTest extends TestCase
         $this->assertStringContainsString('prefers-reduced-motion', $css);
     }
 
-    public function test_the_dashboard_table_scrolls_inside_its_own_container(): void
-    {
-        $user = User::factory()->withPersonalTeam()->create();
-        Auction::factory()->create(['seller_id' => $user->id, 'title' => 'Hereford heifers, twelve head']);
-
-        // The seller list no longer scrolls sideways: it is a stacked ds.table that becomes a card per lot (see SellerListingsPageTest).
-        foreach (['/dashboard'] as $url) {
-            $xpath = $this->xpath($this->actingAs($user)->get($url)->assertOk()->getContent());
-
-            $wrapped = $xpath->query('//div[contains(@class,"table-scroll")]//table[contains(@class,"dot-table")]');
-            $this->assertSame(1, $wrapped->length, "$url: the auctions table sits in a .table-scroll wrapper");
-            $this->assertSame(0, $xpath->query('//table[not(ancestor::div[contains(@class,"table-scroll")])]')->length, "$url: no bare table");
-            $region = $xpath->query('//div[contains(@class,"table-scroll")]')->item(0);
-            $this->assertSame('0', $region->getAttribute('tabindex'), 'A scroll region must be keyboard-focusable');
-        }
-    }
+    // The dashboard no longer carries a table (it lists what needs the person, in words), and the seller list is a
+    // stacked table with its own tests (SellerListingsPageTest), so the old scroll-container check has nothing to test.
 
     public function test_browse_filters_and_the_dashboard_tables_use_the_stacking_classes(): void
     {
