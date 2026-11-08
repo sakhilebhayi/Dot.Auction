@@ -22,6 +22,7 @@ use App\Services\Auctions\BuyNowPurchaser;
 use App\Services\Auctions\ListingManager;
 use App\Services\Auctions\SettlementLifecycle;
 use App\Services\Paystack\PaystackConfig;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
@@ -37,6 +38,13 @@ use RuntimeException;
  * timestamps are moved afterwards, to give lots a past ("opened two days ago") the services cannot
  * create in the present. People, lots and photos are invented; photos are plainly labelled
  * placeholders.
+ *
+ * Two worlds, both coherent. By default online payment is off (no Paystack key), so only the states that can exist
+ * with payment off are written: sales awaiting payment, with no deadline, no payment attempts and no overdue or
+ * cancelled notices. With `$payments` the process runs with a FAKE test key (`sk_test_demo...`, never sent anywhere:
+ * the seeder calls no gateway), the deadline and sale rules apply as they do live, and the full set is written:
+ * a started checkout, a failed attempt, paid, overdue and cancelled sales, each with the notices and history that
+ * state really produces.
  *
  * Refuses to run in production. Idempotent: if the demo world is already complete it changes
  * nothing; a half-finished earlier run is removed and rebuilt. `$fresh` rebuilds on demand (the
@@ -86,7 +94,14 @@ class AuctionDemoSeeder extends Seeder
 
     private int $photoSeed = 0;
 
-    public function __construct(private readonly bool $fresh = false) {}
+    private int $draftCount = 0;
+
+    private int $lotCount = 0;
+
+    /** The fake test key a `--payments` run uses. Obviously not a real key; only its prefix matters to PaystackConfig. */
+    public const FAKE_PAYSTACK_KEY = 'sk_test_demo_fake_gateway_never_sent';
+
+    public function __construct(private readonly bool $fresh = false, private readonly bool $payments = false) {}
 
     public function run(): void
     {
@@ -106,16 +121,26 @@ class AuctionDemoSeeder extends Seeder
         // Nothing should be pushed to a WebSocket server while seeding.
         config(['queue.default' => 'sync', 'broadcasting.default' => 'null']);
 
-        $this->purge();
-        $this->createPeople();
-        $this->createCategories();
-        $this->createLots();
-        $this->createWatchlists();
-        $this->createExtraNotifications();
-        $this->createOperatorEvidence();
-        $this->createZanele();
+        // The payment switch for this run only. Put back afterwards so a test (or a shell that goes on to serve) keeps its own setting.
+        $before = config('paystack.secret_key');
+        $this->payments && config(['paystack.secret_key' => self::FAKE_PAYSTACK_KEY, 'paystack.base_url' => 'https://api.paystack.co']);
 
-        $this->say('Demo world ready. Sign in as any demo user with the password "'.self::PASSWORD.'" or use /dev/login/{email}.');
+        try {
+            $this->purge();
+            $this->createPeople();
+            $this->createCategories();
+            $this->createLots();
+            $this->createWatchlists();
+            $this->spreadNotificationTimes();
+            $this->createExtraNotifications();
+            $this->createOperatorEvidence();
+            $this->createZanele();
+        } finally {
+            config(['paystack.secret_key' => $before]);
+        }
+
+        $this->say('Demo world ready'.($this->payments ? ' (with payments: started, failed, paid, overdue and cancelled sales)' : ' (payment off: sales are awaiting payment)').'. Sign in as any demo user with the password "'.self::PASSWORD.'" or use /dev/login/{email}.');
+        $this->payments && $this->say('To see Pay now on these sales, serve the app with PAYSTACK_SECRET_KEY='.self::FAKE_PAYSTACK_KEY.' (pressing Pay now then fails at Paystack: the gateway-error state).');
     }
 
     // ───────────────────────────── people ─────────────────────────────
@@ -428,7 +453,8 @@ class AuctionDemoSeeder extends Seeder
         $this->photos($auction, (int) ($spec['photos'] ?? 0), $category);
 
         if ($status === 'draft') {
-            $this->backdate($auction, now()->subDays(2));
+            // Drafts were started at different times: some yesterday, some last week.
+            $this->backdate($auction, now()->subHours(9 + (++$this->draftCount * 37) % 150));
 
             return $auction->fresh();
         }
@@ -443,6 +469,8 @@ class AuctionDemoSeeder extends Seeder
         // judges the real close. A lot that has to end in the past stays open (far close) until the settler runs.
         $openedAgo = $this->ago($spec['openedAgo'] ?? '1 day');
         $auction->forceFill(['starts_at' => $openedAgo, 'ends_at' => $closes ?? now()->addDays(2)])->save();
+        // Listed a few hours before it opened, by a different amount each time.
+        $this->backdate($auction, $openedAgo->copy()->subMinutes(70 + (++$this->lotCount * 53) % 400));
 
         foreach ($spec['bids'] ?? [] as $entry) {
             [$bidder, $amount, $minutesAgo] = $entry;
@@ -463,7 +491,11 @@ class AuctionDemoSeeder extends Seeder
         }
 
         if ($status === 'cancelled') {
-            return app(ListingManager::class)->cancel($auction);
+            $cancelled = app(ListingManager::class)->cancel($auction);
+            // Withdrawn some hours after it opened, not at the moment of seeding.
+            DB::table('auctions')->where('id', $cancelled->id)->update(['updated_at' => $openedAgo->copy()->addHours(6 + ($this->lotCount * 11) % 19)]);
+
+            return $cancelled->fresh();
         }
 
         return $auction;
@@ -495,7 +527,6 @@ class AuctionDemoSeeder extends Seeder
         }
 
         DB::table('reserve_not_met_proposals')->where('auction_id', $auction->id)->update(['created_at' => $at, 'updated_at' => $at]);
-        DB::table('notifications')->where('data', 'like', '%"auction_id":'.$auction->id.'%')->update(['created_at' => $at, 'updated_at' => $at]);
     }
 
     private function ago(string $spec): CarbonInterface
@@ -542,39 +573,32 @@ class AuctionDemoSeeder extends Seeder
 
     // ───────────────────────────── settlements ─────────────────────────────
 
+    /**
+     * The sale states. With payment off a sale can only be awaiting payment with no deadline (the listener already wrote that), so
+     * nothing is added. With `--payments` the states are reached the way they are live: a deadline from the payment window, the
+     * real overdue and cancel services, and a paid row written directly (a gateway cannot be called). Notices come from the real
+     * notification classes; only their timestamps are moved.
+     */
     private function settlementStates(Auction $laptop, Auction $chairs, Auction $potjie, Auction $mower, Auction $rod, Auction $camera): void
     {
-        $window = (int) config('auction.payment_window_hours', 72);
-        // "Payment opened" and "deadline passed" are only true while online payment is switched on. With no Paystack key the sales
-        // are recorded as awaiting payment and the pages say payment opens soon, so the history must not claim otherwise.
-        $paymentOn = app(PaystackConfig::class)->canTakePayments();
+        $config = app(PaystackConfig::class);
 
-        // Pending (awaiting payment): the laptop (Sipho) and the camera (Johan).
-        foreach ([$laptop, $camera] as $lot) {
-            $s = $this->settlementFor($lot);
-            $due = $s->created_at->copy()->addHours($window);
-            $s->forceFill(['payment_due_at' => $due])->save();
-            $paymentOn && $this->event($s, 'payment_opened', 'Payment opened.', $s->created_at);
+        if (! $config->canTakePayments()) {
+            return;
         }
 
-        // Overdue (still payable): the chairs, due two days ago. Both sides told through the real notification.
-        $s = $this->settlementFor($chairs);
-        $s->forceFill([
-            'status' => AuctionSettlement::PAYMENT_OVERDUE,
-            'payment_due_at' => now()->subDays(1),
-            'overdue_at' => now()->subDays(1),
-        ])->save();
-        $paymentOn && $this->event($s, 'overdue', 'Payment deadline passed.', now()->subDay());
-        if ($paymentOn) {
-            $s->loadMissing(['auction', 'winner', 'seller']);
-            $s->winner->notify(new SettlementOverdueNotification($s, 'winner'));
-            $s->seller->notify(new SettlementOverdueNotification($s, 'seller'));
+        $window = $config->paymentWindowHours();
+
+        // Awaiting payment, inside the deadline: the laptop (Sipho) and the camera (Johan).
+        foreach ([$laptop, $camera] as $lot) {
+            $s = $this->settlementFor($lot);
+            $s->forceFill(['payment_due_at' => $s->created_at->copy()->addHours($window)])->save();
         }
 
         // Paid: the potjie (Aisha) and the fishing rod (Sipho).
         foreach ([$potjie, $rod] as $i => $lot) {
             $s = $this->settlementFor($lot);
-            $paidAt = $s->created_at->copy()->addHours(5);
+            $paidAt = $s->created_at->copy()->addHours(5 + 7 * $i);
             $s->forceFill([
                 'status' => AuctionSettlement::PAID,
                 'payment_due_at' => $s->created_at->copy()->addHours($window),
@@ -585,22 +609,78 @@ class AuctionDemoSeeder extends Seeder
                 'amount_cents' => $s->amount_cents, 'currency' => $s->currency, 'status' => SettlementPayment::PAID,
                 'provider_transaction_id' => '90000000'.($i + 1), 'initiated_by' => $s->winner_id,
                 'paid_at' => $paidAt, 'summary' => 'Demo payment (no real money moved).',
+                'created_at' => $paidAt->copy()->subMinutes(4), 'updated_at' => $paidAt,
             ]);
-            $this->event($s, 'paid', 'Paid.', $paidAt);
+            $this->event($s, 'paid', 'Payment received.', $paidAt);
             $s->loadMissing(['auction', 'winner', 'seller']);
             $s->winner->notify(new SettlementPaidNotification($s, 'winner'));
             $s->seller->notify(new SettlementPaidNotification($s, 'seller'));
         }
 
-        // Cancelled: the lawnmower (Lerato). Overdue first, then the seller's real cancel action.
+        // Overdue: the chairs (Sipho) and the lawnmower (Lerato), whose deadlines passed. The real job marks them.
+        foreach ([$chairs, $mower] as $lot) {
+            $s = $this->settlementFor($lot);
+            $s->forceFill(['payment_due_at' => $s->created_at->copy()->addHours($window)])->save();
+        }
+        app(SettlementLifecycle::class)->markOverdue();
+
+        foreach ([$chairs, $mower] as $lot) {
+            $s = $this->settlementFor($lot);
+            $overdueAt = $s->payment_due_at->copy()->addMinutes(11);
+            $s->forceFill(['overdue_at' => $overdueAt])->save();
+            DB::table('settlement_events')->where('settlement_id', $s->id)->where('type', 'overdue')->update(['created_at' => $overdueAt]);
+        }
+
+        // Cancelled: the lawnmower. Pieter, its seller, gave up after the deadline, through the real cancel action.
         $s = $this->settlementFor($mower);
-        $s->forceFill([
-            'status' => AuctionSettlement::PAYMENT_OVERDUE,
-            'payment_due_at' => $s->created_at->copy()->addHours($window),
-            'overdue_at' => $s->created_at->copy()->addHours($window),
-        ])->save();
-        $this->event($s, 'overdue', 'Payment deadline passed.', $s->created_at->copy()->addHours($window));
         app(SettlementLifecycle::class)->cancel($s, $this->users['pieter']);
+        $cancelledAt = $s->fresh()->overdue_at->copy()->addHours(19)->addMinutes(7);
+        DB::table('auction_settlements')->where('id', $s->id)->update(['cancelled_at' => $cancelledAt, 'updated_at' => $cancelledAt]);
+        DB::table('settlement_events')->where('settlement_id', $s->id)->where('type', 'cancelled')->update(['created_at' => $cancelledAt]);
+    }
+
+    /**
+     * Give every notice the time its cause really happened, plus a few minutes of the job's delay, so a feed reads as a week of
+     * activity and not as one moment: a win when the lot closed, an outbid when the bid that displaced it arrived, a payment
+     * notice when the payment, the deadline or the cancel happened. Only timestamps change; the copy was written by the real classes.
+     */
+    private function spreadNotificationTimes(): void
+    {
+        $ids = array_map(fn (User $u) => $u->id, $this->users);
+        $rows = DB::table('notifications')->where('notifiable_type', User::class)->whereIn('notifiable_id', $ids)->get(['id', 'notifiable_id', 'data']);
+        $auctions = DB::table('auctions')->pluck('ends_at', 'id');
+        $settlements = DB::table('auction_settlements')->get()->keyBy('auction_id');
+
+        foreach ($rows as $row) {
+            $data = json_decode((string) $row->data, true) ?: [];
+            $auctionId = $data['auction_id'] ?? null;
+            $type = (string) ($data['type'] ?? '');
+            $jitter = abs(crc32((string) $row->id));
+            $settlement = $settlements->get($auctionId);
+
+            $at = match (true) {
+                in_array($type, ['auction_won', 'auction_sold', 'reserve_not_met'], true) && isset($auctions[$auctionId])
+                    => Carbon::parse($auctions[$auctionId], 'UTC')->addMinutes(1 + $jitter % 8)->addSeconds($jitter % 50),
+                $type === 'outbid' => $this->outbidAt((int) $auctionId, (int) $row->notifiable_id),
+                $type === 'auction_ending_soon' => now()->subMinutes(14 + $jitter % 19),
+                str_starts_with($type, 'settlement_paid') && $settlement?->paid_at => Carbon::parse($settlement->paid_at, 'UTC')->addMinutes(1 + $jitter % 3),
+                str_starts_with($type, 'settlement_overdue') && $settlement?->overdue_at => Carbon::parse($settlement->overdue_at, 'UTC')->addMinutes(1 + $jitter % 4),
+                $type === 'settlement_cancelled' && $settlement?->cancelled_at => Carbon::parse($settlement->cancelled_at, 'UTC')->addMinute(),
+                default => null,
+            };
+
+            if ($at !== null) {
+                DB::table('notifications')->where('id', $row->id)->update(['created_at' => $at, 'updated_at' => $at]);
+            }
+        }
+    }
+
+    /** When the newest bid by someone else on a lot arrived: the moment this person was outbid. */
+    private function outbidAt(int $auctionId, int $userId): ?CarbonInterface
+    {
+        $at = DB::table('bids')->where('auction_id', $auctionId)->where('bidder_id', '!=', $userId)->max('created_at');
+
+        return $at ? Carbon::parse($at, 'UTC')->addSeconds(2) : null;
     }
 
     private function settlementFor(Auction $auction): AuctionSettlement
@@ -670,22 +750,30 @@ class AuctionDemoSeeder extends Seeder
 
     private function createOperatorEvidence(): void
     {
+        // Payment attempts and payment events only exist when payment is on. With it off the operator page honestly has none.
+        if (! app(PaystackConfig::class)->canTakePayments()) {
+            return;
+        }
+
         $s = $this->settlementFor(Auction::query()->where('title', 'Dell Latitude laptop, i5, 16 GB')->firstOrFail());
 
-        // A started checkout, a failed attempt, and a payment event that matched no sale (needs an operator).
-        SettlementPayment::forceCreate([
-            'settlement_id' => $s->id, 'reference' => 'AUC-DEMO-INIT-1', 'amount_cents' => $s->amount_cents, 'currency' => $s->currency,
-            'status' => SettlementPayment::INITIATED, 'initiated_by' => $s->winner_id, 'expires_at' => now()->addMinutes(20),
-            'summary' => 'Checkout started.',
-        ]);
+        // Sipho's sale is still inside its deadline: a card that was declined two hours ago, then a checkout he started and left open.
         SettlementPayment::forceCreate([
             'settlement_id' => $s->id, 'reference' => 'AUC-DEMO-FAIL-1', 'amount_cents' => $s->amount_cents, 'currency' => $s->currency,
             'status' => SettlementPayment::FAILED, 'initiated_by' => $s->winner_id, 'summary' => 'Card declined.',
+            'created_at' => now()->subHours(2)->subMinutes(14), 'updated_at' => now()->subHours(2)->subMinutes(12),
         ]);
+        SettlementPayment::forceCreate([
+            'settlement_id' => $s->id, 'reference' => 'AUC-DEMO-INIT-1', 'amount_cents' => $s->amount_cents, 'currency' => $s->currency,
+            'status' => SettlementPayment::INITIATED, 'initiated_by' => $s->winner_id, 'expires_at' => now()->addMinutes(20),
+            'summary' => 'Checkout started.', 'created_at' => now()->subMinutes(10), 'updated_at' => now()->subMinutes(10),
+        ]);
+        // Money Paystack reported for a reference this app never issued: the one thing that needs an operator.
         SettlementPayment::forceCreate([
             'settlement_id' => null, 'reference' => 'AUC-DEMO-UNMATCHED-1', 'amount_cents' => 125000, 'currency' => 'ZAR',
             'status' => SettlementPayment::UNMATCHED, 'reason' => 'unknown_reference',
             'provider_transaction_id' => '900000099', 'summary' => 'Money reported for a reference this app never issued.',
+            'created_at' => now()->subHours(7)->subMinutes(31), 'updated_at' => now()->subHours(7)->subMinutes(31),
         ]);
     }
 
@@ -718,42 +806,96 @@ class AuctionDemoSeeder extends Seeder
     }
 
     /**
-     * A neutral placeholder: a flat colour per category, a diagonal pattern, and the words
-     * "DEMO IMAGE" so nobody mistakes it for a photo of a real item.
+     * A neutral stand-in photo: a flat studio wall, a floor band and one plain silhouette for the kind of thing (a screen, a table, a
+     * frame, a wheel...). No words, nothing that says demo, nothing that pretends to be a real item. Each photo of a lot moves the
+     * silhouette a little, so a gallery of three is three different pictures. Production lots show their sellers' real photos.
      */
     private function drawPlaceholder(string $path, string $title, string $category, int $index, int $total): void
     {
         $palette = [
-            'electronics' => [38, 58, 84], 'home-furniture' => [86, 66, 48], 'art-collectables' => [96, 52, 66],
-            'vehicles-parts' => [58, 62, 70], 'outdoors-sport' => [44, 78, 62], 'jewellery-watches' => [96, 82, 44],
-            'books-music' => [72, 54, 92], 'tools-equipment' => [92, 60, 36],
+            'electronics' => [[206, 213, 222], [64, 79, 98]], 'home-furniture' => [[222, 212, 198], [112, 84, 58]],
+            'art-collectables' => [[218, 206, 210], [122, 62, 82]], 'vehicles-parts' => [[210, 213, 216], [70, 76, 86]],
+            'outdoors-sport' => [[205, 218, 208], [54, 98, 74]], 'jewellery-watches' => [[224, 218, 200], [138, 112, 52]],
+            'books-music' => [[214, 208, 224], [84, 64, 112]], 'tools-equipment' => [[224, 210, 196], [140, 84, 44]],
         ];
-        [$r, $g, $b] = $palette[$category] ?? [60, 60, 66];
-        $shift = (++$this->photoSeed % 3) * 12;
+        [$wall, $ink] = $palette[$category] ?? [[212, 212, 216], [76, 76, 84]];
+        $seed = ++$this->photoSeed;
+        $w = 1280;
+        $h = 960;
+        $im = imagecreatetruecolor($w, $h);
+        $mix = fn (array $c, array $to, float $t) => imagecolorallocate($im, (int) ($c[0] + ($to[0] - $c[0]) * $t), (int) ($c[1] + ($to[1] - $c[1]) * $t), (int) ($c[2] + ($to[2] - $c[2]) * $t));
+        $wallC = $mix($wall, [255, 255, 255], 0.12 * (($seed + $index) % 3));
+        $floorC = $mix($wall, $ink, 0.18);
+        $shadowC = $mix($wall, $ink, 0.34);
+        $bodyC = $mix($ink, $wall, 0.12);
+        $faceC = $mix($ink, $wall, 0.62);
+        $lineC = $mix($ink, $wall, 0.32);
 
-        $w = 320;
-        $h = 240;
-        $small = imagecreatetruecolor($w, $h);
-        $bg = imagecolorallocate($small, min(255, $r + $shift), min(255, $g + $shift), min(255, $b + $shift));
-        $line = imagecolorallocate($small, min(255, $r + $shift + 18), min(255, $g + $shift + 18), min(255, $b + $shift + 18));
-        $ink = imagecolorallocate($small, 235, 235, 238);
-        imagefilledrectangle($small, 0, 0, $w, $h, $bg);
+        imagefilledrectangle($im, 0, 0, $w, $h, $wallC);
+        $horizon = 640;
+        imagefilledrectangle($im, 0, $horizon, $w, $h, $floorC);
 
-        for ($x = -$h; $x < $w; $x += 24) {
-            imageline($small, $x, $h, $x + $h, 0, $line);
+        // Where the object stands: left, centre or right of the frame, a little different in each photo of the lot.
+        $shift = [0, -120, 130, 60, -60][($seed + $index) % 5];
+        $cx = (int) ($w / 2) + $shift;
+        $scale = 1 - 0.08 * (($index - 1) % 3);
+        $u = fn (float $n): int => (int) round($n * $scale);
+
+        imagefilledellipse($im, $cx, $horizon + 70, $u(620), $u(70), $shadowC);
+
+        switch ($category) {
+            case 'electronics':
+                imagefilledrectangle($im, $cx - $u(300), $horizon - $u(360), $cx + $u(300), $horizon - $u(40), $bodyC);
+                imagefilledrectangle($im, $cx - $u(276), $horizon - $u(336), $cx + $u(276), $horizon - $u(64), $faceC);
+                imagefilledrectangle($im, $cx - $u(80), $horizon - $u(40), $cx + $u(80), $horizon - $u(8), $bodyC);
+                imagefilledrectangle($im, $cx - $u(150), $horizon - $u(8), $cx + $u(150), $horizon, $bodyC);
+                break;
+            case 'home-furniture':
+                imagefilledrectangle($im, $cx - $u(320), $horizon - $u(280), $cx + $u(320), $horizon - $u(236), $bodyC);
+                foreach ([-290, 262] as $x) {
+                    imagefilledrectangle($im, $cx + $u($x), $horizon - $u(236), $cx + $u($x) + $u(28), $horizon + $u(10), $bodyC);
+                }
+                imagefilledrectangle($im, $cx - $u(250), $horizon - $u(236), $cx + $u(250), $horizon - $u(206), $faceC);
+                break;
+            case 'art-collectables':
+                imagefilledrectangle($im, $cx - $u(250), $horizon - $u(420), $cx + $u(250), $horizon - $u(40), $bodyC);
+                imagefilledrectangle($im, $cx - $u(214), $horizon - $u(384), $cx + $u(214), $horizon - $u(76), $faceC);
+                imagefilledpolygon($im, [$cx - $u(214), $horizon - $u(76), $cx - $u(40), $horizon - $u(250), $cx + $u(60), $horizon - $u(150), $cx + $u(130), $horizon - $u(210), $cx + $u(214), $horizon - $u(120), $cx + $u(214), $horizon - $u(76)], $lineC);
+                break;
+            case 'vehicles-parts':
+                foreach ([-190, 190] as $x) {
+                    imagefilledellipse($im, $cx + $u($x), $horizon - $u(120), $u(240), $u(240), $bodyC);
+                    imagefilledellipse($im, $cx + $u($x), $horizon - $u(120), $u(130), $u(130), $faceC);
+                    imagefilledellipse($im, $cx + $u($x), $horizon - $u(120), $u(36), $u(36), $bodyC);
+                }
+                imagefilledrectangle($im, $cx - $u(190), $horizon - $u(130), $cx + $u(190), $horizon - $u(100), $bodyC);
+                break;
+            case 'outdoors-sport':
+                imagefilledpolygon($im, [$cx - $u(330), $horizon, $cx, $horizon - $u(400), $cx + $u(330), $horizon], $bodyC);
+                imagefilledpolygon($im, [$cx - $u(60), $horizon, $cx, $horizon - $u(190), $cx + $u(60), $horizon], $faceC);
+                break;
+            case 'jewellery-watches':
+                imagefilledellipse($im, $cx, $horizon - $u(230), $u(330), $u(330), $bodyC);
+                imagefilledellipse($im, $cx, $horizon - $u(230), $u(262), $u(262), $faceC);
+                imagefilledrectangle($im, $cx - $u(18), $horizon - $u(250), $cx + $u(4), $horizon - $u(228), $bodyC);
+                imagefilledrectangle($im, $cx - $u(12), $horizon - $u(396), $cx + $u(12), $horizon - $u(360), $bodyC);
+                imagefilledrectangle($im, $cx - $u(42), $horizon - $u(410), $cx + $u(42), $horizon - $u(394), $bodyC);
+                break;
+            case 'books-music':
+                $y = $horizon;
+                foreach ([[560, 70], [500, 62], [540, 58], [470, 66]] as $i => [$wd, $ht]) {
+                    imagefilledrectangle($im, $cx - $u($wd / 2) + $u(($i % 2) * 26), $y - $u($ht), $cx + $u($wd / 2) + $u(($i % 2) * 26), $y, $i % 2 ? $bodyC : $lineC);
+                    imagefilledrectangle($im, $cx - $u($wd / 2) + $u(($i % 2) * 26), $y - $u($ht) + $u(12), $cx + $u($wd / 2) + $u(($i % 2) * 26), $y - $u($ht) + $u(20), $faceC);
+                    $y -= $u($ht);
+                }
+                break;
+            default: // tools and anything else: a handle and a head
+                imagefilledrectangle($im, $cx - $u(18), $horizon - $u(430), $cx + $u(18), $horizon, $bodyC);
+                imagefilledrectangle($im, $cx - $u(190), $horizon - $u(430), $cx + $u(190), $horizon - $u(350), $bodyC);
+                imagefilledrectangle($im, $cx - $u(160), $horizon - $u(412), $cx + $u(160), $horizon - $u(368), $faceC);
         }
 
-        $label = 'DEMO IMAGE';
-        imagestring($small, 5, (int) (($w - strlen($label) * 9) / 2), 96, $label, $ink);
-        $caption = Str::limit($title, 34, '');
-        imagestring($small, 2, (int) (($w - strlen($caption) * 6) / 2), 124, $caption, $ink);
-        $page = 'photo '.$index.' of '.$total;
-        imagestring($small, 2, (int) (($w - strlen($page) * 6) / 2), 142, $page, $ink);
-
-        // Enlarge so the text is chunky and the file looks like a real listing photo size.
-        $big = imagecreatetruecolor(1280, 960);
-        imagecopyresampled($big, $small, 0, 0, 0, 0, 1280, 960, $w, $h);
-        imagejpeg($big, $path, 82);
+        imagejpeg($im, $path, 84);
     }
 
     private function say(string $line): void

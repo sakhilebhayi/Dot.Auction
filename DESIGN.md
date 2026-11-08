@@ -273,10 +273,10 @@ A word, a silhouette and a hue for each state; colour is never the only signal. 
 | cancelled | Cancelled | circle with a slash | outline only |
 | extended | Extended (n times) | arrow to an end bar | Ring |
 | draft | Draft | pencil | outline only |
-| awaiting_payment, initiated | Awaiting payment, Payment started | clock | Gavel text |
+| awaiting_payment, initiated | Awaiting payment, Attempt started | clock | Gavel text |
 | paid | Paid | check in a circle | Ring |
-| payment_overdue, failed, unmatched | Payment overdue, Payment failed, Needs a person | warning triangle or x | Hammer |
-| expired | Expired | circle with a slash | outline only |
+| payment_overdue, failed, unmatched | Payment overdue, Attempt failed, Needs a person | warning triangle or x | Hammer |
+| expired | Attempt expired | circle with a slash | outline only |
 
 ### Shell, navigation and routes
 

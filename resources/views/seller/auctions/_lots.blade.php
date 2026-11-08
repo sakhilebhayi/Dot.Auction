@@ -6,6 +6,7 @@
 @php
     use App\Models\Auction;
     use App\Support\Display;
+    use App\Support\SettlementPosition;
 @endphp
 <x-ds.table caption="Your lots" class="sl-table sl-cards">
     <thead>
@@ -62,7 +63,7 @@
                         <x-ds.status :state="$lot" size="sm" />
                     @endif
                     @if ($lot === 'sold' && $settlement)
-                        <span class="sl-sub">{{ $settlement->status === 'cancelled' ? 'Sale cancelled' : $settlement->statusLabel() }}</span>
+                        <span class="sl-sub">{{ SettlementPosition::of($settlement)->listLabel(false) }}</span>
                     @endif
                 </td>
                 <td data-label="Bids" class="num">{{ $row->bids_count }}</td>

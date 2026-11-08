@@ -117,6 +117,21 @@ final class SettlementPosition
         };
     }
 
+    /**
+     * The short phrase for a list row about this sale. $isWinner: true for the buyer, false for the seller, null for a third
+     * party (the operator). It never says overdue or due while there is nowhere to pay, so a list cannot disagree with the sale page.
+     */
+    public function listLabel(?bool $isWinner): string
+    {
+        return match ($this->state()) {
+            self::PAID => 'Paid',
+            self::CANCELLED => 'Sale cancelled',
+            self::OVERDUE => $isWinner === false ? 'Buyer is late paying' : 'Payment overdue',
+            self::DUE => 'Awaiting payment',
+            default => $isWinner === true ? 'Payment opens soon' : 'Waiting for payment to open',
+        };
+    }
+
     /** Cents owed that the winner can pay today. */
     public function owedNowCents(): int
     {

@@ -1,8 +1,9 @@
 @php
     use App\Models\Auction;
     use App\Support\Display;
+    use App\Support\SettlementPosition;
     $tabs = [['label' => 'All', 'href' => route('operator.settlement-payments.index'), 'current' => $status === null, 'count' => $allCount]];
-    $words = ['unmatched' => 'Needs a person', 'initiated' => 'Started', 'paid' => 'Paid', 'failed' => 'Failed', 'expired' => 'Expired'];
+    $words = ['unmatched' => 'Needs a person', 'initiated' => 'Attempts started', 'paid' => 'Paid', 'failed' => 'Attempts failed', 'expired' => 'Attempts expired'];
     foreach ($filters as $filter) {
         $n = (int) ($counts[$filter] ?? 0);
         if ($n > 0 || $status === $filter) {
@@ -26,6 +27,10 @@
         </x-ds.alert>
     @else
         <x-ds.alert tone="success" class="sl-gap" role="status">No payments need a person.</x-ds.alert>
+    @endif
+
+    @if ($allCount > 0 && ! $config->canTakePayments())
+        <x-ds.alert tone="info" class="sl-gap" title="These rows are earlier records">While payment is switched off no new attempt can start, and winners owe nothing today.</x-ds.alert>
     @endif
 
     @if ($allCount === 0)
@@ -56,6 +61,7 @@
                                 <td data-label="Status" class="sl-span">
                                     <x-ds.status :state="$payment->status" size="sm" />
                                     @if ($payment->reason)<span class="ops-reason">{{ $payment->reasonLabel() }}</span>@endif
+                                    @if (in_array($payment->status, ['initiated', 'failed', 'expired'], true))<span class="sl-sub">Payment attempt, not completed</span>@endif
                                     @if ($payment->summary)<span class="sl-sub">{{ $payment->summary }}</span>@endif
                                 </td>
                                 <td data-label="Amount" class="num">
@@ -64,7 +70,7 @@
                                 <td data-label="Sale" class="sl-span">
                                     @if ($payment->settlement)
                                         {{ $payment->settlement->auction->title ?? 'Lot #'.$payment->settlement->auction_id }}
-                                        <span class="sl-sub">Sale is {{ str_replace('_', ' ', $payment->settlement->status) }}</span>
+                                        <span class="sl-sub">Sale: {{ strtolower(SettlementPosition::of($payment->settlement, $config)->listLabel(null)) }}</span>
                                     @else
                                         <span class="sl-sub">Matches no sale</span>
                                     @endif

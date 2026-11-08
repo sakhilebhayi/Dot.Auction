@@ -184,12 +184,12 @@ final class Display
             'draft' => ['word' => 'Draft', 'long' => 'Not published', 'icon' => 'pencil', 'tone' => 'muted'],
             // Settlements
             'awaiting_payment' => ['word' => 'Awaiting payment', 'long' => null, 'icon' => 'clock', 'tone' => 'notice'],
-            'initiated' => ['word' => 'Payment started', 'long' => null, 'icon' => 'clock', 'tone' => 'notice'],
+            'initiated' => ['word' => 'Attempt started', 'long' => null, 'icon' => 'clock', 'tone' => 'notice'],
             'paid' => ['word' => 'Paid', 'long' => null, 'icon' => 'check-circle', 'tone' => 'live'],
             'payment_overdue' => ['word' => 'Payment overdue', 'long' => null, 'icon' => 'alert', 'tone' => 'urgent'],
-            'failed' => ['word' => 'Payment failed', 'long' => null, 'icon' => 'x-circle', 'tone' => 'urgent'],
+            'failed' => ['word' => 'Attempt failed', 'long' => null, 'icon' => 'x-circle', 'tone' => 'urgent'],
             'unmatched' => ['word' => 'Needs a person', 'long' => null, 'icon' => 'alert', 'tone' => 'urgent'],
-            'expired' => ['word' => 'Expired', 'long' => null, 'icon' => 'ban', 'tone' => 'muted'],
+            'expired' => ['word' => 'Attempt expired', 'long' => null, 'icon' => 'ban', 'tone' => 'muted'],
         ];
     }
 
