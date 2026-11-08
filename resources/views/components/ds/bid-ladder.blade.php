@@ -58,15 +58,15 @@
             @endphp
             <li class="ds-rung ds-rung--{{ $r['kind'] }} @if (! empty($r['you'])) is-you @endif">
                 @if ($press)
-                    {{-- The name says what pressing does, with the amount: "Bid R1,300.00 (next bid)". It fills the bid field; nothing is sent until the form is. --}}
-                    <button type="button" class="ds-rung__row" data-ds-rung="{{ $amount }}" aria-label="Bid {{ Auction::money($amount) }}{{ $r['kind'] === 'next' ? ', the next bid' : '' }}">
-                        <span class="ds-rung__label" aria-hidden="true">{{ $r['kind'] === 'next' ? 'Next bid' : 'Bid' }}</span>
+                    {{-- Its name is what it shows, "Bid R1,300.00" or "Next bid R1,300.00". Pressing fills the bid field; nothing is sent until the form is. --}}
+                    <button type="button" class="ds-rung__row" data-ds-rung="{{ $amount }}">
+                        <span class="ds-rung__label">{{ $r['kind'] === 'next' ? 'Next bid' : 'Bid' }}</span>
                         <x-ds.money :amount="$amount" :size="$r['kind'] === 'next' ? 'lg' : 'md'" />
                         <x-ds.icon name="arrow-right" :size="16" class="ds-rung__go" />
                     </button>
                 @else
                     <div class="ds-rung__row">
-                        <span class="ds-rung__label">{{ $r['label'] }}@if (! empty($r['you']) && $r['kind'] === 'current')<span class="sr-only">, you lead</span>@endif</span>
+                        <span class="ds-rung__label">{{ $r['label'] ?? 'Valid bid' }}@if (! empty($r['you']) && $r['kind'] === 'current')<span class="sr-only">, you lead</span>@endif</span>
                         <x-ds.money :amount="$amount" :size="$r['kind'] === 'current' ? 'xl' : 'md'" :muted="$r['kind'] === 'start'" />
                     </div>
                 @endif

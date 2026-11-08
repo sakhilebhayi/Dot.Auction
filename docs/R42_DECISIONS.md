@@ -243,3 +243,22 @@ Branch `feat/r42-uia`. Words for every state and viewer live in `App\Support\Lot
 | Q-A3 | When the seller rejects a below-reserve bid, the high bidder is told nothing by the system (decision 3). The page now shows "The seller did not accept your bid" to anyone who opens it, but a notice is still owed. Also: a decision deadline, and what happens at it. |
 | Q-A4 | May a bid be placed above the Buy Now price? Today the placer accepts it and Buy Now disappears once the price reaches it. |
 | Q-A5 | The first bid is the starting price plus one step, not the starting price. Is that intended? The page now says "Opening bid is at least R220.00" so it is at least stated. |
+
+
+## Polish round 1 (design jury 1, 2026-11-08)
+
+Decisions made while executing `docs/R42_DESIGN_JURY_1.md`. Rules were not changed; wording and presentation were.
+
+1. **One answer for "can this sale be paid".** `App\Support\SettlementPosition` reads the settlement row and `PaystackConfig::canTakePayments()` once. States: waiting (unpaid, payment closed), due, overdue (payment open and past the deadline), paid, cancelled. While payment is closed no page says "Pay now", "overdue", "You owe" or shows a deadline; they say "Payment opens soon" and "You will owe R3,700.00 once it opens". A recorded `payment_overdue` row with payment closed (the demo world, or a key removed later) is shown as waiting. The seller is not shown "Cancel this sale" or a late-buyer prompt in that case (the lifecycle service still allows it by rule; only the UI stops offering it). The sale history hides "payment opened" and "deadline passed" while payment is closed. The demo seeder only writes those events when payment is on.
+2. **Titles** are escaped once everywhere; the layout decodes a header slot once. Test matrix in `tests/Feature/R42/TitleEscapingTest.php`. Mail: only the team invitation is a Blade mail and carries no lot title; Dot.Notify events send `auction_title` raw to the service, which owns its own escaping.
+3. **Pages past the end** (`?page=99`) redirect to the last page for browse, watching, won, ended bids, payments, notifications and my lots (`App\Support\PageRange`). A truly empty list keeps its empty state.
+4. **A lot past its time with no recorded result** is "Closed, result pending" (state `closing`), not "Not sold". The browse tab "Not sold" still counts such lots (its filter is unchanged); flagged for the next browse pass.
+5. **Outbid notices** collapse: one unread notice per lot per person, rewritten with the newest price; opening the lot marks it read. A Buy Now sale tells the displaced bidder "Sold to another bidder by Buy Now".
+6. **Phone bar** (see DESIGN.md Shell): buying first, List a lot in More.
+7. **Browse**: one search (the shell's from 64rem, the page's below), sort applies on change with a no-JavaScript Apply button, and lots in their final hour get their own row and are left out of the grid.
+
+### Needs owner (polish round 1)
+
+* **Should signed-out visitors be able to browse lots?** The jury's reasoning: a stranger sees only an example ladder and "Sign in to bid" and cannot tell what is sold, so the first visit proves nothing. Their suggestion is a read-only `/auctions` with "Sign in to bid" on the lot panel and four live lots on the landing page. It is an access and privacy decision (lot photos, seller names and prices become public; scraping; reserve is never shown, so that part is safe), so it was **not built**. Today browse and lot pages require sign-in.
+* **Buy Now e-mail.** Dot.Notify has only the `auction.outbid` template, so the e-mail to a displaced bidder after a Buy Now sale still reads "outbid". The in-app notice is right. A `auction.lost_to_buy_now` event and template in Dot.Notify would fix it; until then it is a choice between a slightly wrong e-mail and none.
+* **Density controls on browse** (grid or list, 3 or 4 columns) from the jury's item 5 were not built: they add a feature, not a repair.
