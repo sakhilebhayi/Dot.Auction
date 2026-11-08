@@ -19,6 +19,10 @@ return [
     'platform' => env('NOTIFY_PLATFORM_KEY', 'auction'),
 
     // Seconds, for connecting and for the whole request.
+    // The reserve-not-met e-mail is sent only once Dot.Notify's catalogue has the `auction.reserve_not_met` event, or
+    // Notify answers 422 and the application log fills with refusals. The in-app notice is always sent.
+    'reserve_not_met_event' => (bool) env('NOTIFY_RESERVE_NOT_MET_EVENT', false),
+
     'timeout' => 5,
 
     // After `threshold` consecutive failed calls, stop calling for `pause_seconds`.
