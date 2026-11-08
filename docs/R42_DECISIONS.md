@@ -243,3 +243,14 @@ Branch `feat/r42-uia`. Words for every state and viewer live in `App\Support\Lot
 | Q-A3 | When the seller rejects a below-reserve bid, the high bidder is told nothing by the system (decision 3). The page now shows "The seller did not accept your bid" to anyone who opens it, but a notice is still owed. Also: a decision deadline, and what happens at it. |
 | Q-A4 | May a bid be placed above the Buy Now price? Today the placer accepts it and Buy Now disappears once the price reaches it. |
 | Q-A5 | The first bid is the starting price plus one step, not the starting price. Is that intended? The page now says "Opening bid is at least R220.00" so it is at least stated. |
+
+## Needs owner (found by the seller, operator, account and platform browser run, e2e B, 2026-11-08)
+
+Nothing below was decided or built; each is a rule or a fact only the owner has. Evidence is in `docs/R42_E2E_SELLER.md`.
+
+1. **Who creates categories on production?** The create-lot form needs one, nothing seeds them (migrations create none, the demo seeder is local only) and there is no page or command for it on this branch. The form now says so plainly instead of offering an empty select, but a real platform still needs an answer: a command that seeds a fixed list (feat/r42-sp may add `auction:seed-categories`), an operator page, or a deploy step. Which categories is also yours to say.
+2. **People who arrive through InfoDot have a random password they never see.** Deleting the account, enabling two-step sign-in and signing out other browsers all ask for "your password". For an InfoDot-only person that means going through "Forgot your password?" first. Options: confirm those actions by sending the person back to InfoDot, or accept the reset flow and say so on the profile page. (Read from `ProvisionUserFromInfoDot`; the reset flow itself was not run.)
+3. **Terms name "BluePin Inc" as operator.** The holding company elsewhere in the ecosystem is written "BluPin". Legal text is not mine to edit; please confirm the registered name and the "Last updated: 6 August 2026" date.
+4. **Does a paid seller get paid out, and where is it recorded?** Still manual and untracked (decision 1 above). The sale pages say so once; the delete-account rule lets a seller with a paid sale leave. Needs a `paid_out_at` rule when payouts are real.
+5. **Filtered lists share their page title** ("My lots" for Live, Drafts, Ended). Fine for a tab state; if you want "My lots: Drafts" in the tab title and history, say so.
+6. **Sign-in throttling copy and limits** (5 attempts a minute per e-mail and address, Fortify's default) were left as they are. Say if the numbers should change.
