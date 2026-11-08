@@ -17,8 +17,10 @@ use App\Models\ReserveNotMetProposal;
 use App\Models\Watchlist;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Http\Request;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -166,3 +168,33 @@ Route::middleware([
 if (! Features::enabled(Features::registration())) {
     Route::redirect('/register', '/login')->name('register');
 }
+
+// --- dev ---
+// Local convenience only: sign in as a seeded demo user without typing a password. The block is not even
+// registered unless the app is running in the "local" or "testing" environment, so production has no such route.
+if (app()->environment('local', 'testing')) {
+    // /dev/login/{id or email}[?to=/path]  The optional `to` must be a path on this site.
+    Route::get('/dev/login/{who}', function (Request $request, string $who) {
+        $user = ctype_digit($who)
+            ? \App\Models\User::find((int) $who)
+            : \App\Models\User::where('email', $who)->first();
+
+        abort_if($user === null, 404, 'No such user.');
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        $to = (string) $request->query('to', '/dashboard');
+
+        return redirect(str_starts_with($to, '/') && ! str_starts_with($to, '//') ? $to : '/dashboard');
+    })->where('who', '.+')->name('dev.login');
+
+    Route::get('/dev/logout', function (Request $request) {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/login');
+    })->name('dev.logout');
+}
+// --- /dev ---
