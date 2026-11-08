@@ -550,7 +550,7 @@ class AuctionDemoSeeder extends Seeder
                 'payment_due_at' => $s->created_at->copy()->addHours($window),
                 'paid_at' => $paidAt,
             ])->save();
-            SettlementPayment::create([
+            SettlementPayment::forceCreate([
                 'settlement_id' => $s->id, 'provider' => 'paystack', 'reference' => 'AUC-DEMO-PAID-'.($i + 1),
                 'amount_cents' => $s->amount_cents, 'currency' => $s->currency, 'status' => SettlementPayment::PAID,
                 'provider_transaction_id' => '90000000'.($i + 1), 'initiated_by' => $s->winner_id,
@@ -643,16 +643,16 @@ class AuctionDemoSeeder extends Seeder
         $s = $this->settlementFor(Auction::query()->where('title', 'Dell Latitude laptop, i5, 16 GB')->firstOrFail());
 
         // A started checkout, a failed attempt, and a payment event that matched no sale (needs an operator).
-        SettlementPayment::create([
+        SettlementPayment::forceCreate([
             'settlement_id' => $s->id, 'reference' => 'AUC-DEMO-INIT-1', 'amount_cents' => $s->amount_cents, 'currency' => $s->currency,
             'status' => SettlementPayment::INITIATED, 'initiated_by' => $s->winner_id, 'expires_at' => now()->addMinutes(20),
             'summary' => 'Checkout started (demo data).',
         ]);
-        SettlementPayment::create([
+        SettlementPayment::forceCreate([
             'settlement_id' => $s->id, 'reference' => 'AUC-DEMO-FAIL-1', 'amount_cents' => $s->amount_cents, 'currency' => $s->currency,
             'status' => SettlementPayment::FAILED, 'initiated_by' => $s->winner_id, 'summary' => 'Card declined (demo data).',
         ]);
-        SettlementPayment::create([
+        SettlementPayment::forceCreate([
             'settlement_id' => null, 'reference' => 'AUC-DEMO-UNMATCHED-1', 'amount_cents' => 125000, 'currency' => 'ZAR',
             'status' => SettlementPayment::UNMATCHED, 'reason' => 'unknown_reference',
             'provider_transaction_id' => '900000099', 'summary' => 'Money reported for a reference this app never issued (demo data).',
