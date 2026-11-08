@@ -10,7 +10,7 @@
             <ul class="lot-gallery__track" tabindex="0" data-gallery-track aria-label="{{ $count > 1 ? 'Photos, swipe or use the left and right arrow keys' : 'Photo' }}">
                 @foreach ($images as $photo)
                     <li class="lot-gallery__slide" data-gallery-slide>
-                        <img src="{{ $photo->url() }}" alt="{{ $auction->title }}, photo {{ $loop->iteration }} of {{ $count }}"
+                        <img src="{{ $auction->imageUrl($photo, 'medium') }}" alt="{{ $auction->title }}, photo {{ $loop->iteration }} of {{ $count }}"
                              width="{{ $photo->width ?: 1200 }}" height="{{ $photo->height ?: 900 }}"
                              @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif decoding="async" draggable="false">
                     </li>
@@ -27,7 +27,7 @@
                 @foreach ($images as $photo)
                     <li>
                         <button type="button" data-gallery-thumb="{{ $loop->index }}" @if ($loop->first) aria-current="true" @endif aria-label="Show photo {{ $loop->iteration }} of {{ $count }}">
-                            <img src="{{ $photo->url() }}" alt="" width="72" height="54" loading="lazy" decoding="async">
+                            <img src="{{ $auction->imageUrl($photo, 'thumb') }}" alt="" width="72" height="54" loading="lazy" decoding="async">
                         </button>
                     </li>
                 @endforeach
