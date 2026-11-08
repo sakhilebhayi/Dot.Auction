@@ -2,13 +2,13 @@
 
 use App\Http\Controllers\Auctions\AuctionController;
 use App\Http\Controllers\Auctions\AuctionImageController;
+use App\Http\Controllers\Auth\EcosystemAuthController;
 use App\Http\Controllers\Buyer\BidsController as BuyerBidsController;
 use App\Http\Controllers\Buyer\WatchlistController as BuyerWatchlistController;
 use App\Http\Controllers\Buyer\WonController as BuyerWonController;
+use App\Http\Controllers\CspReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\Auth\EcosystemAuthController;
-use App\Http\Controllers\CspReportController;
 use App\Http\Controllers\Operator\SettlementPaymentController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\RealtimeHealthController;
@@ -16,16 +16,17 @@ use App\Http\Controllers\Seller\ImageController;
 use App\Http\Controllers\Seller\ListingController;
 use App\Http\Controllers\Settlements\SettlementController;
 use App\Models\Auction;
-use App\Models\AuctionCategory;
 use App\Models\Bid;
-use App\Models\ReserveNotMetProposal;
-use App\Models\Watchlist;
+use App\Models\User;
+use App\Services\Paystack\E2eFakePaystackClient;
+use App\Support\KitData;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Http\Request;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -157,8 +158,8 @@ if (app()->environment('local', 'testing')) {
     // /dev/login/{id or email}[?to=/path]  The optional `to` must be a path on this site.
     Route::get('/dev/login/{who}', function (Request $request, string $who) {
         $user = ctype_digit($who)
-            ? \App\Models\User::find((int) $who)
-            : \App\Models\User::where('email', $who)->first();
+            ? User::find((int) $who)
+            : User::where('email', $who)->first();
 
         abort_if($user === null, 404, 'No such user.');
 
@@ -174,7 +175,7 @@ if (app()->environment('local', 'testing')) {
     Route::get('/dev/kit', function () {
         $now = now();
 
-        return view('dev.kit', ['lots' => \App\Support\KitData::lots($now), 'now' => $now]);
+        return view('dev.kit', ['lots' => KitData::lots($now), 'now' => $now]);
     })->name('dev.kit');
 
     // TESTING ONLY (the browser suite in tests/e2e/auction): a fake Paystack checkout and a switch for the fake gateway's mode.
@@ -182,13 +183,13 @@ if (app()->environment('local', 'testing')) {
     if (config('paystack.e2e_fake') === true) {
         Route::get('/dev/fake-paystack-mode/{mode}', function (string $mode) {
             abort_unless(in_array($mode, ['ok', 'unreachable', 'error'], true), 404);
-            \Illuminate\Support\Facades\Cache::put(\App\Services\Paystack\E2eFakePaystackClient::MODE_KEY, $mode, now()->addHour());
+            Cache::put(E2eFakePaystackClient::MODE_KEY, $mode, now()->addHour());
 
             return response('mode '.$mode);
         })->name('dev.fake-paystack.mode');
 
         Route::get('/dev/fake-paystack/{reference}', function (string $reference) {
-            $init = \Illuminate\Support\Facades\Cache::get(\App\Services\Paystack\E2eFakePaystackClient::ref($reference, 'init'));
+            $init = Cache::get(E2eFakePaystackClient::ref($reference, 'init'));
             abort_if($init === null, 404);
 
             return response('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Fake Paystack checkout</title></head><body>'
@@ -199,10 +200,10 @@ if (app()->environment('local', 'testing')) {
         })->name('dev.fake-paystack.checkout');
 
         Route::get('/dev/fake-paystack/{reference}/complete', function (Request $request, string $reference) {
-            $init = \Illuminate\Support\Facades\Cache::get(\App\Services\Paystack\E2eFakePaystackClient::ref($reference, 'init'));
+            $init = Cache::get(E2eFakePaystackClient::ref($reference, 'init'));
             abort_if($init === null, 404);
-            \Illuminate\Support\Facades\Cache::put(
-                \App\Services\Paystack\E2eFakePaystackClient::ref($reference, 'result'),
+            Cache::put(
+                E2eFakePaystackClient::ref($reference, 'result'),
                 in_array($request->query('result'), ['success', 'failed', 'abandoned', 'pending'], true) ? $request->query('result') : 'abandoned',
                 now()->addHour(),
             );

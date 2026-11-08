@@ -22,6 +22,7 @@ use App\Notifications\SettlementOverdueNotification;
 use App\Notifications\SettlementPaidNotification;
 use App\Notifications\SettlementPaymentOpenedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Jetstream\Mail\TeamInvitation;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -147,7 +148,7 @@ class OutputSafetyTest extends TestCase
         $team = Team::forceCreate(['user_id' => $owner->id, 'name' => '[Verify your account now](https://evil.example/phish)', 'personal_team' => false]);
         $invitation = $team->teamInvitations()->create(['email' => 'victim@example.test', 'role' => 'editor']);
 
-        $html = (string) (new \Laravel\Jetstream\Mail\TeamInvitation($invitation))->render();
+        $html = (string) (new TeamInvitation($invitation))->render();
 
         $this->assertDoesNotMatchRegularExpression('/href\s*=\s*["\']?[^"\'>]*evil\.example/i', $html, 'the team name became a clickable link in the invitation mail');
     }

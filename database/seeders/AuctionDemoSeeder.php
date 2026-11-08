@@ -13,7 +13,6 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Watchlist;
 use App\Notifications\AuctionEndingSoonNotification;
-use App\Notifications\SettlementOverdueNotification;
 use App\Notifications\SettlementPaidNotification;
 use App\Services\Auctions\AuctionImageManager;
 use App\Services\Auctions\AuctionSettler;
@@ -659,8 +658,7 @@ class AuctionDemoSeeder extends Seeder
             $settlement = $settlements->get($auctionId);
 
             $at = match (true) {
-                in_array($type, ['auction_won', 'auction_sold', 'reserve_not_met'], true) && isset($auctions[$auctionId])
-                    => Carbon::parse($auctions[$auctionId], 'UTC')->addMinutes(1 + $jitter % 8)->addSeconds($jitter % 50),
+                in_array($type, ['auction_won', 'auction_sold', 'reserve_not_met'], true) && isset($auctions[$auctionId]) => Carbon::parse($auctions[$auctionId], 'UTC')->addMinutes(1 + $jitter % 8)->addSeconds($jitter % 50),
                 $type === 'outbid' => $this->outbidAt((int) $auctionId, (int) $row->notifiable_id),
                 $type === 'auction_ending_soon' => now()->subMinutes(14 + $jitter % 19),
                 str_starts_with($type, 'settlement_paid') && $settlement?->paid_at => Carbon::parse($settlement->paid_at, 'UTC')->addMinutes(1 + $jitter % 3),

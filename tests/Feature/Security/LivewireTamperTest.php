@@ -12,6 +12,7 @@ use App\Models\Bid;
 use App\Models\ReserveNotMetProposal;
 use App\Models\User;
 use App\Models\Watchlist;
+use App\Services\Auctions\AuctionSnapshot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Str;
@@ -99,13 +100,13 @@ class LivewireTamperTest extends TestCase
         $draft = $this->lot($this->person(), ['status' => 'draft']);
 
         $this->actingAs($this->person());
-        $snap = app(\App\Services\Auctions\AuctionSnapshot::class)->for($draft->id, auth()->user());
+        $snap = app(AuctionSnapshot::class)->for($draft->id, auth()->user());
 
         $this->assertSame('missing', $snap['status'], 'a stranger can read a draft through the snapshot service');
         $this->assertArrayNotHasKey('current_price', $snap);
 
         $this->actingAs($draft->seller);
-        $this->assertSame('draft', app(\App\Services\Auctions\AuctionSnapshot::class)->for($draft->id, $draft->seller)['status']);
+        $this->assertSame('draft', app(AuctionSnapshot::class)->for($draft->id, $draft->seller)['status']);
     }
 
     public function test_hostile_values_in_the_bid_panels_own_fields_cannot_break_it_or_place_a_bid(): void

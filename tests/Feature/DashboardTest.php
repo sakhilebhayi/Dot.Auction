@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Auction;
 use App\Models\AuctionSettlement;
 use App\Models\SettlementPayment;
 use App\Models\User;
 use App\Models\Watchlist;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\Feature\Discover\BuildsDiscoverWorld;
 use Tests\TestCase;
 
@@ -307,11 +307,11 @@ class DashboardTest extends TestCase
         };
         $count = function () use ($user) {
             $this->actingAs($user)->get('/dashboard')->assertOk(); // warm: the first request of a user also settles their current team
-            \Illuminate\Support\Facades\DB::flushQueryLog();
-            \Illuminate\Support\Facades\DB::enableQueryLog();
+            DB::flushQueryLog();
+            DB::enableQueryLog();
             $this->actingAs($user)->get('/dashboard')->assertOk();
-            $n = count(\Illuminate\Support\Facades\DB::getQueryLog());
-            \Illuminate\Support\Facades\DB::disableQueryLog();
+            $n = count(DB::getQueryLog());
+            DB::disableQueryLog();
 
             return $n;
         };

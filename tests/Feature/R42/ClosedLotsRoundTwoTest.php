@@ -6,12 +6,13 @@ use App\Livewire\Auctions\WatchlistButton;
 use App\Livewire\Buyer\WatchToggle;
 use App\Models\Auction;
 use App\Models\AuctionSettlement;
-use App\Models\User;
+use App\Models\Bid;
 use App\Models\Watchlist;
 use App\Services\Auctions\AuctionSettler;
 use App\Services\Auctions\BidPlacer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\BuildsSettlements;
 use Tests\Feature\Discover\BuildsDiscoverWorld;
 use Tests\TestCase;
@@ -62,7 +63,7 @@ class ClosedLotsRoundTwoTest extends TestCase
         $other = $this->person();
         $proposal = $this->awaitingDecision($seller, $top);
         $proposal->auction->update(['title' => 'Not Mine Lamp']);
-        \App\Models\Bid::forceCreate(['auction_id' => $proposal->auction_id, 'bidder_id' => $other->id, 'amount' => '200.00', 'is_winning' => false]);
+        Bid::forceCreate(['auction_id' => $proposal->auction_id, 'bidder_id' => $other->id, 'amount' => '200.00', 'is_winning' => false]);
 
         $this->actingAs($other)->get('/dashboard')->assertOk()->assertDontSee('Not Mine Lamp');
     }
@@ -104,7 +105,7 @@ class ClosedLotsRoundTwoTest extends TestCase
         return $this->lot(array_merge(['title' => 'Closed Cabinet'], $attrs));
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('closedLots')]
+    #[DataProvider('closedLots')]
     public function test_the_lot_page_has_no_watch_button_on_a_closed_lot(array $attrs): void
     {
         $lot = $this->closedLot($attrs);
@@ -114,7 +115,7 @@ class ClosedLotsRoundTwoTest extends TestCase
             ->assertDontSeeHtml('class="lot-watch"');
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('closedLots')]
+    #[DataProvider('closedLots')]
     public function test_browse_cards_have_no_watch_toggle_on_a_closed_lot_even_one_already_watched(array $attrs): void
     {
         $lot = $this->closedLot($attrs);
@@ -135,7 +136,7 @@ class ClosedLotsRoundTwoTest extends TestCase
         $this->assertSame(2, substr_count($page->getContent(), 'class="ds-lot__watch"'));
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('closedLots')]
+    #[DataProvider('closedLots')]
     public function test_a_closed_lot_cannot_be_newly_watched_by_a_crafted_request(array $attrs): void
     {
         $lot = $this->closedLot($attrs);

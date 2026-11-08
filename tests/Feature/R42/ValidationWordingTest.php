@@ -4,6 +4,7 @@ namespace Tests\Feature\R42;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Jetstream\CreateTeam;
+use App\Livewire\Auctions\BidPanel;
 use App\Models\Auction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -176,7 +177,7 @@ class ValidationWordingTest extends TestCase
         $lot = Auction::factory()->create();
         $bidder = User::factory()->withPersonalTeam()->create();
 
-        $component = Livewire::actingAs($bidder)->test(\App\Livewire\Auctions\BidPanel::class, ['auction' => $lot])->set('bidAmount', '')->call('review');
+        $component = Livewire::actingAs($bidder)->test(BidPanel::class, ['auction' => $lot])->set('bidAmount', '')->call('review');
 
         $this->assertStringNotContainsString('field', strip_tags($component->html()));
         $component->assertSee('Enter the amount you want to bid.');

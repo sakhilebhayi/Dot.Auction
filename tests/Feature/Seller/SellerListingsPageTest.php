@@ -2,14 +2,17 @@
 
 namespace Tests\Feature\Seller;
 
+use App\Livewire\Auctions\ReserveDecisionPanel;
 use App\Models\Auction;
-use App\Models\AuctionSettlement;
+use App\Models\AuctionImage;
 use App\Models\Bid;
 use App\Models\ReserveNotMetProposal;
 use App\Models\User;
+use App\Support\Display;
 use App\Support\SellerLots;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 use Tests\Concerns\BuildsSettlements;
 use Tests\TestCase;
 
@@ -161,7 +164,7 @@ class SellerListingsPageTest extends TestCase
         $this->assertStringContainsString('reserve-decision-panel', $page->getContent());
 
         // The panel on the list decides the same way the dashboard's does.
-        \Livewire\Livewire::actingAs($seller)->test(\App\Livewire\Auctions\ReserveDecisionPanel::class, ['proposal' => $proposal])->call('reject');
+        Livewire::actingAs($seller)->test(ReserveDecisionPanel::class, ['proposal' => $proposal])->call('reject');
         $this->assertSame('rejected', $proposal->fresh()->status);
 
         // Another seller never sees it.
@@ -177,7 +180,7 @@ class SellerListingsPageTest extends TestCase
 
         $row = $this->actingAs($seller)->get(route('seller.auctions.index'))->assertOk()->viewData('auctions')->first();
 
-        $this->assertSame('unsold', \App\Support\Display::lotState($row));
+        $this->assertSame('unsold', Display::lotState($row));
         $this->actingAs($seller)->get(route('seller.auctions.index'))->assertSee('Not sold')->assertDontSee('Sold for');
     }
 
@@ -235,7 +238,7 @@ class SellerListingsPageTest extends TestCase
 
         foreach (range(1, 10) as $i) {
             $auction = Auction::factory()->create(['seller_id' => $seller->id]);
-            \App\Models\AuctionImage::create(['auction_id' => $auction->id, 'path' => "x/$i.jpg", 'original_name' => 'x.jpg', 'mime' => 'image/jpeg', 'size_bytes' => 1, 'width' => 4, 'height' => 3, 'position' => 0]);
+            AuctionImage::create(['auction_id' => $auction->id, 'path' => "x/$i.jpg", 'original_name' => 'x.jpg', 'mime' => 'image/jpeg', 'size_bytes' => 1, 'width' => 4, 'height' => 3, 'position' => 0]);
             Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => User::factory()->create()->id, 'amount' => '220.00', 'is_winning' => $i % 2 === 0]);
         }
         $many = $count();

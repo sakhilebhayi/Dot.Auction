@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Auctions\AuctionImageVariants;
 use App\Services\DisplayTime;
 use Database\Factories\AuctionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -66,7 +67,7 @@ class Auction extends Model
 
         static::deleted(function (Auction $auction): void {
             $paths = collect($auction->imagePathsToRemove)
-                ->flatMap(fn (string $path) => [$path, ...\App\Services\Auctions\AuctionImageVariants::allPaths($path)])
+                ->flatMap(fn (string $path) => [$path, ...AuctionImageVariants::allPaths($path)])
                 ->all();
 
             if ($paths !== []) {

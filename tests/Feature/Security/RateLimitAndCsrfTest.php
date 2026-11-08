@@ -5,8 +5,10 @@ namespace Tests\Feature\Security;
 use App\Livewire\Auctions\BidPanel;
 use App\Models\Auction;
 use App\Models\User;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
@@ -91,7 +93,7 @@ class RateLimitAndCsrfTest extends TestCase
         $this->actingAs($user);
         $middleware = app(PreventRequestForgery::class);
 
-        $request = \Illuminate\Http\Request::create('/notifications/read-all', 'POST');
+        $request = Request::create('/notifications/read-all', 'POST');
         $request->setLaravelSession(app('session.store'));
         $reflection = new \ReflectionMethod($middleware, 'handle');
         $this->assertTrue($reflection->isPublic());
@@ -134,7 +136,7 @@ class RateLimitAndCsrfTest extends TestCase
         $this->assertNotNull($limiter);
 
         // The configured ceiling is five calls a second, per person.
-        $limit = $limiter(\Illuminate\Http\Request::create('/livewire/update', 'POST'));
+        $limit = $limiter(Request::create('/livewire/update', 'POST'));
         $this->assertSame(300, $limit->maxAttempts);
 
         // A busy viewer: one tab polling the bid panel every 10 s and the bell every 30 s is 8 calls a minute.
@@ -146,7 +148,7 @@ class RateLimitAndCsrfTest extends TestCase
 
     public function test_the_livewire_endpoint_answers_429_once_a_person_is_over_the_limit_and_leaves_other_paths_alone(): void
     {
-        RateLimiter::for('livewire', fn () => \Illuminate\Cache\RateLimiting\Limit::perMinute(3)->by('test-livewire'));
+        RateLimiter::for('livewire', fn () => Limit::perMinute(3)->by('test-livewire'));
         RateLimiter::clear('test-livewire');
         $this->actingAs(User::factory()->withPersonalTeam()->create());
 

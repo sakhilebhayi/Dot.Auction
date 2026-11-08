@@ -3,6 +3,8 @@
 namespace Tests\Feature\Security;
 
 use App\Console\Commands\SeedCategories;
+use App\Events\AuctionSettled;
+use App\Listeners\RecordSettlementForPayment;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
 use App\Models\User;
@@ -10,6 +12,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -52,9 +55,9 @@ class OperationsTest extends TestCase
     {
         Log::spy();
         $lot = Auction::factory()->ended()->create();
-        $listener = app(\App\Listeners\RecordSettlementForPayment::class);
+        $listener = app(RecordSettlementForPayment::class);
 
-        $listener->failed(new \App\Events\AuctionSettled($lot, null), new \RuntimeException('database went away'));
+        $listener->failed(new AuctionSettled($lot, null), new \RuntimeException('database went away'));
 
         Log::shouldHaveReceived('error')->withArgs(fn ($message, $context = []) => str_contains((string) $message, 'auction:repair-unsettled') && ($context['auction_id'] ?? null) === $lot->id)->once();
     }
@@ -88,7 +91,7 @@ class OperationsTest extends TestCase
 
     public function test_the_default_categories_have_distinct_clean_slugs_and_a_listing_can_use_one(): void
     {
-        $slugs = array_map(fn ($n) => \Illuminate\Support\Str::slug($n), SeedCategories::DEFAULTS);
+        $slugs = array_map(fn ($n) => Str::slug($n), SeedCategories::DEFAULTS);
         $this->assertSame($slugs, array_values(array_unique($slugs)));
         foreach ($slugs as $slug) {
             $this->assertMatchesRegularExpression('/^[a-z0-9]+(-[a-z0-9]+)*$/', $slug);

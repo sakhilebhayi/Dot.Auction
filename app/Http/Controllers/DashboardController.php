@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Auction;
 use App\Models\AuctionSettlement;
 use App\Services\Auctions\ViewerActivity;
 use App\Services\Paystack\PaystackConfig;
@@ -81,7 +82,7 @@ class DashboardController extends Controller
      *
      * @param  Collection<int, SettlementPosition>  $positions  the winner's unpaid sales
      * @param  Collection<int, AuctionSettlement>  $lateBuyers
-     * @param  Collection<int, \App\Models\Auction>  $resultPending  lots bid on whose result has not landed
+     * @param  Collection<int, Auction>  $resultPending  lots bid on whose result has not landed
      * @return list<array{tone: string, icon: string, text: string, action: ?string, href: ?string}>
      */
     private function needs(int $decisions, $positions, int $outbid, int $leadingSoon, $lateBuyers, int $operatorQueue, $resultPending): array

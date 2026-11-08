@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -64,7 +65,7 @@ class UploadAttacksTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('refusedFiles')]
+    #[DataProvider('refusedFiles')]
     public function test_hostile_files_are_refused_and_nothing_is_stored(string $bytes, string $name, string $mime): void
     {
         $this->send($bytes, $name, $mime)->assertStatus(422);

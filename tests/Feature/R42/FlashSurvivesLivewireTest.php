@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\R42;
 
+use App\Livewire\NotificationBell;
 use App\Models\Watchlist;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\Feature\Discover\BuildsDiscoverWorld;
 use Tests\TestCase;
 
@@ -46,7 +48,7 @@ class FlashSurvivesLivewireTest extends TestCase
     {
         // The bell used to call close() on the server for every click outside it, panel open or not. That call raced the form
         // post of whatever was clicked (a redirect's flash message was overwritten by the call's stale copy of the session).
-        $html = \Livewire\Livewire::actingAs($this->person())->test(\App\Livewire\NotificationBell::class)->html();
+        $html = Livewire::actingAs($this->person())->test(NotificationBell::class)->html();
 
         $this->assertStringContainsString('@click.outside="if ($wire.open) { $wire.close() }"', html_entity_decode($html, ENT_QUOTES));
         $this->assertStringNotContainsString('@click.outside="$wire.close()"', html_entity_decode($html, ENT_QUOTES));

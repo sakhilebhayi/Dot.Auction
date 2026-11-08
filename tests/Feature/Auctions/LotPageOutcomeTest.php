@@ -4,6 +4,7 @@ namespace Tests\Feature\Auctions;
 
 use App\Livewire\Auctions\ReserveDecisionPanel;
 use App\Models\Auction;
+use App\Models\AuctionImage;
 use App\Models\AuctionSettlement;
 use App\Models\ReserveNotMetProposal;
 use App\Models\User;
@@ -278,7 +279,7 @@ class LotPageOutcomeTest extends TestCase
     {
         $a = $this->lot();
         foreach ([1, 2, 3] as $n) {
-            \App\Models\AuctionImage::query()->create(['auction_id' => $a->id, 'path' => "x/$n.png", 'original_name' => "$n.png", 'mime' => 'image/png', 'size_bytes' => 10, 'width' => 1280, 'height' => 960, 'position' => $n]);
+            AuctionImage::query()->create(['auction_id' => $a->id, 'path' => "x/$n.png", 'original_name' => "$n.png", 'mime' => 'image/png', 'size_bytes' => 10, 'width' => 1280, 'height' => 960, 'position' => $n]);
         }
 
         $html = $this->actingAs($this->stranger)->get(route('auctions.show', $a))->assertOk()->getContent();

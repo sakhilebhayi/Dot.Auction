@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\R42;
 
-use App\Models\AuctionSettlement;
 use App\Models\SettlementPayment;
 use App\Models\User;
 use App\Support\SettlementPosition;

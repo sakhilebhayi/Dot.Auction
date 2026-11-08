@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Auction;
+use App\Models\Bid;
 use App\Models\Team;
 use App\Models\User;
 use DOMDocument;
@@ -157,7 +158,7 @@ class ResponsiveShellTest extends TestCase
 
         // A bidder's dashboard shows its tables as the kit's stacked rows (below 40rem each cell prints its own label), not a sideways scroll.
         $lot = Auction::factory()->create(['title' => 'Hereford heifers, twelve head']);
-        \App\Models\Bid::forceCreate(['auction_id' => $lot->id, 'bidder_id' => $user->id, 'amount' => '240.00', 'is_winning' => true]);
+        Bid::forceCreate(['auction_id' => $lot->id, 'bidder_id' => $user->id, 'amount' => '240.00', 'is_winning' => true]);
         $lot->forceFill(['current_price' => '240.00'])->save();
 
         $dashboard = $this->xpath($this->actingAs($user)->get('/dashboard')->assertOk()->getContent());

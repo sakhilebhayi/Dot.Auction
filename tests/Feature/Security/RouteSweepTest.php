@@ -8,14 +8,19 @@ use App\Models\AuctionSettlement;
 use App\Models\Bid;
 use App\Models\ReserveNotMetProposal;
 use App\Models\User;
+use App\Services\Auctions\AccountDeletionBlocked;
 use App\Services\Auctions\AccountEraser;
 use App\Services\Auctions\AuctionImageManager;
+use App\Services\Auctions\AuctionImageVariants;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
+use Laravel\Jetstream\Jetstream;
 use Tests\Concerns\BuildsSettlements;
 use Tests\TestCase;
 
@@ -118,7 +123,7 @@ class RouteSweepTest extends TestCase
         $this->otherImage = $this->photo($this->otherLot);
 
         $this->leaderNote = DatabaseNotification::query()->create([
-            'id' => (string) \Illuminate\Support\Str::uuid(), 'type' => 'x', 'notifiable_type' => User::class, 'notifiable_id' => $w['leader']->id, 'data' => ['url' => '/auctions'],
+            'id' => (string) Str::uuid(), 'type' => 'x', 'notifiable_type' => User::class, 'notifiable_id' => $w['leader']->id, 'data' => ['url' => '/auctions'],
         ]);
     }
 
@@ -251,7 +256,7 @@ class RouteSweepTest extends TestCase
         $this->as('seller')->get('/user/api-tokens')->assertNotFound();
         $this->app['auth']->forgetGuards();
         $this->getJson('/api/user')->assertStatus(401);
-        $this->assertFalse(\Laravel\Jetstream\Jetstream::hasApiFeatures());
+        $this->assertFalse(Jetstream::hasApiFeatures());
     }
 
     public function test_dev_routes_exist_only_in_local_and_testing(): void
@@ -326,7 +331,7 @@ class RouteSweepTest extends TestCase
         $this->as('stranger');
         $r = $this->get(route('auctions.images.show', [$this->lot, $this->lotImage]))->assertOk();
         $this->assertSame('nosniff', $r->headers->get('X-Content-Type-Options'));
-        $this->assertSame(\App\Services\Auctions\AuctionImageVariants::format()[1], $r->headers->get('Content-Type'));
+        $this->assertSame(AuctionImageVariants::format()[1], $r->headers->get('Content-Type'));
         $this->assertStringStartsWith('inline', (string) $r->headers->get('Content-Disposition'));
         $this->assertStringContainsString('private', (string) $r->headers->get('Cache-Control'));
     }
@@ -525,7 +530,7 @@ class RouteSweepTest extends TestCase
 
         foreach ($hostile as $url) {
             $n = DatabaseNotification::query()->create([
-                'id' => (string) \Illuminate\Support\Str::uuid(), 'type' => 'x', 'notifiable_type' => User::class, 'notifiable_id' => $leader->id, 'data' => ['url' => $url],
+                'id' => (string) Str::uuid(), 'type' => 'x', 'notifiable_type' => User::class, 'notifiable_id' => $leader->id, 'data' => ['url' => $url],
             ]);
             $r = $this->as('leader')->post(route('notifications.open', $n->id));
             $location = (string) $r->headers->get('Location');
@@ -535,7 +540,7 @@ class RouteSweepTest extends TestCase
         }
 
         // And an honest one still works.
-        $n = DatabaseNotification::query()->create(['id' => (string) \Illuminate\Support\Str::uuid(), 'type' => 'x', 'notifiable_type' => User::class, 'notifiable_id' => $leader->id, 'data' => ['url' => '/auctions/'.$this->lot->id]]);
+        $n = DatabaseNotification::query()->create(['id' => (string) Str::uuid(), 'type' => 'x', 'notifiable_type' => User::class, 'notifiable_id' => $leader->id, 'data' => ['url' => '/auctions/'.$this->lot->id]]);
         $this->as('leader')->post(route('notifications.open', $n->id))->assertRedirect(url('/auctions/'.$this->lot->id));
     }
 
@@ -558,7 +563,7 @@ class RouteSweepTest extends TestCase
 
         // A correct signature accepts it for the signed-in person (Jetstream's own rule); nobody joins by guessing the id.
         $this->assertFalse($this->who['stranger']->belongsToTeam($team));
-        $this->as('guest')->get(\Illuminate\Support\Facades\URL::signedRoute('team-invitations.accept', $invitation))->assertRedirect();
+        $this->as('guest')->get(URL::signedRoute('team-invitations.accept', $invitation))->assertRedirect();
         $this->assertFalse($this->who['stranger']->fresh()->belongsToTeam($team->fresh()), 'a guest with a signed link joins nothing');
     }
 
@@ -595,7 +600,7 @@ class RouteSweepTest extends TestCase
     {
         $winner = $this->who['winner'];
         // Blocked while a sale is unpaid: erasing is refused, so nobody can shed a debt by deleting the account.
-        $this->expectException(\App\Services\Auctions\AccountDeletionBlocked::class);
+        $this->expectException(AccountDeletionBlocked::class);
 
         app(AccountEraser::class)->erase($winner);
     }

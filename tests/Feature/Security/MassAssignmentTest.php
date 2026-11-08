@@ -10,6 +10,8 @@ use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
 use App\Models\Watchlist;
+use Illuminate\Database\Eloquent\MassAssignmentException;
+use Illuminate\Database\Eloquent\Model;
 use Tests\TestCase;
 
 /**
@@ -40,7 +42,7 @@ class MassAssignmentTest extends TestCase
     {
         foreach (glob(app_path('Models/*.php')) as $file) {
             $class = 'App\\Models\\'.basename($file, '.php');
-            if (! class_exists($class) || ! is_subclass_of($class, \Illuminate\Database\Eloquent\Model::class)) {
+            if (! class_exists($class) || ! is_subclass_of($class, Model::class)) {
                 continue;
             }
             $fillable = (new $class)->getFillable();
@@ -63,12 +65,12 @@ class MassAssignmentTest extends TestCase
     }
 
     /** Fill a model with hostile attributes: Laravel either throws (strict mode) or silently drops them; neither may set them. */
-    private function hostileFill(\Illuminate\Database\Eloquent\Model $model, array $attributes): \Illuminate\Database\Eloquent\Model
+    private function hostileFill(Model $model, array $attributes): Model
     {
         foreach ($attributes as $key => $value) {
             try {
                 $model->fill([$key => $value]);
-            } catch (\Illuminate\Database\Eloquent\MassAssignmentException) {
+            } catch (MassAssignmentException) {
                 // refused loudly: exactly what strict mode is for
             }
         }

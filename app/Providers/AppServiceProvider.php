@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Services\DisplayTime;
 use App\Services\InfoDot\E2eFakeIdentityClient;
 use App\Services\InfoDot\IdentityClient;
+use App\Services\Paystack\E2eFakePaystackClient;
+use App\Services\Paystack\PaystackClient;
 use Carbon\Carbon as BaseCarbon;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Events\DiagnosingHealth;
@@ -13,8 +15,8 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
         // TESTING ONLY: the real-browser suite (tests/e2e/auction) cannot use Http::fake(), so it asks for a fake Paystack client.
         // Never bound in production: the environment must be local or testing AND the flag must be on.
         if ($this->app->environment('local', 'testing') && config('paystack.e2e_fake') === true) {
-            $this->app->singleton(\App\Services\Paystack\PaystackClient::class, \App\Services\Paystack\E2eFakePaystackClient::class);
+            $this->app->singleton(PaystackClient::class, E2eFakePaystackClient::class);
         }
 
         // Browser end-to-end suite only (tests/e2e/auction-b): a stand-in for InfoDot's redeem endpoint. Never bound in production.

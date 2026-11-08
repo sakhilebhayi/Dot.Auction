@@ -6,6 +6,7 @@ use App\Livewire\Buyer\WatchToggle;
 use App\Models\Bid;
 use App\Models\Watchlist;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -188,7 +189,7 @@ class BuyerPagesTest extends TestCase
 
         Livewire::actingAs($me)->test(WatchToggle::class, ['auctionId' => $own->id, 'title' => 'x', 'watching' => false])->call('toggle')->assertForbidden();
         Livewire::actingAs($me)->test(WatchToggle::class, ['auctionId' => $draft->id, 'title' => 'x', 'watching' => false])->call('toggle')->assertNotFound();
-        $this->expectException(\Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException::class);
+        $this->expectException(CannotUpdateLockedPropertyException::class);
         try {
             Livewire::actingAs($me)->test(WatchToggle::class, ['auctionId' => $own->id, 'title' => 'x', 'watching' => false])->set('auctionId', $draft->id);
         } finally {

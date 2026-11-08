@@ -85,7 +85,7 @@ class ImageVariantsTest extends TestCase
             $body = $response->streamedContent();
             [$w, $h] = getimagesizefromstring($body);
 
-            $this->assertSame($edge, max($w, $h), "size ".var_export($size, true));
+            $this->assertSame($edge, max($w, $h), 'size '.var_export($size, true));
             $this->assertLessThan($originalBytes, strlen($body));
             $sizes[(string) $size] = strlen($body);
         }

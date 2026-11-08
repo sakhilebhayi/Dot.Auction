@@ -5,8 +5,11 @@ namespace Tests\Feature\Discover;
 use App\Livewire\NotificationBell;
 use App\Models\User;
 use App\Support\Notifications\Destination;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Str;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -18,7 +21,7 @@ class NotificationsTest extends TestCase
     private function give(User $user, string $title, ?string $url, bool $read = false, string $message = 'Something happened.'): DatabaseNotification
     {
         return DatabaseNotification::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Str::uuid(),
             'type' => 'test',
             'notifiable_type' => User::class,
             'notifiable_id' => $user->id,
@@ -136,7 +139,7 @@ class NotificationsTest extends TestCase
     {
         $me = $this->user();
 
-        $this->expectException(\Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException::class);
+        $this->expectException(CannotUpdateLockedPropertyException::class);
         Livewire::actingAs($me)->test(NotificationBell::class)->set('userId', $me->id + 1);
     }
 
@@ -163,7 +166,7 @@ class NotificationsTest extends TestCase
         $other = $this->user();
         $this->give($me, 'Read long ago', '/dashboard', true);
         $new = $this->give($me, 'Fresh news', '/auctions/3', false, 'You were outbid.');
-        $new->forceFill(['created_at' => \Carbon\Carbon::parse('2026-11-14 16:30:00', 'UTC')])->save();
+        $new->forceFill(['created_at' => Carbon::parse('2026-11-14 16:30:00', 'UTC')])->save();
         $this->give($other, 'Not mine at all', '/dashboard');
 
         $response = $this->actingAs($me)->get(route('notifications.index'))->assertOk();

@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Support\Notifications\Destination;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -61,7 +62,7 @@ class NotificationBell extends Component
     /**
      * All unread (newest first, up to a limit) and then the most recent read ones.
      *
-     * @return Collection<int, \Illuminate\Notifications\DatabaseNotification>
+     * @return Collection<int, DatabaseNotification>
      */
     #[Computed]
     public function notifications(): Collection
