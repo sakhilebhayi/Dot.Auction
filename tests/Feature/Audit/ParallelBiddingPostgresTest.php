@@ -26,6 +26,9 @@ class ParallelBiddingPostgresTest extends TestCase
     /** @var array<int, int> */
     private array $auctionIds = [];
 
+    /** @var array<int, int> */
+    private array $categoryIds = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,6 +51,7 @@ class ParallelBiddingPostgresTest extends TestCase
         if (DB::connection()->getDriverName() === 'pgsql' && Schema::hasTable('auctions')) {
             DB::table('notifications')->whereIn('notifiable_id', $this->userIds)->delete();
             DB::table('auctions')->whereIn('id', $this->auctionIds)->delete();
+            DB::table('auction_categories')->whereIn('id', $this->categoryIds)->delete();
             DB::table('users')->whereIn('id', $this->userIds)->delete();
         }
 
@@ -67,6 +71,7 @@ class ParallelBiddingPostgresTest extends TestCase
         // Committed for real: the base class opened no transaction, so nothing to commit.
         $this->userIds = array_merge($this->userIds, [$seller->id], $users->pluck('id')->all());
         $this->auctionIds[] = $auction->id;
+        $this->categoryIds[] = $auction->category_id;
 
         return [$auction, $users->pluck('id')->all()];
     }
