@@ -144,6 +144,24 @@ class RateLimitAndCsrfTest extends TestCase
         Livewire::test(BidPanel::class, ['auction' => $lot])->call('snapshot')->assertOk();
     }
 
+    public function test_the_livewire_endpoint_answers_429_once_a_person_is_over_the_limit_and_leaves_other_paths_alone(): void
+    {
+        RateLimiter::for('livewire', fn () => \Illuminate\Cache\RateLimiting\Limit::perMinute(3)->by('test-livewire'));
+        RateLimiter::clear('test-livewire');
+        $this->actingAs(User::factory()->withPersonalTeam()->create());
+
+        $statuses = [];
+        for ($i = 0; $i < 5; $i++) {
+            $statuses[] = $this->postJson('/livewire/update', ['components' => []], ['X-Livewire' => '1'])->getStatusCode();
+        }
+
+        $this->assertNotContains(429, array_slice($statuses, 0, 3), 'the first three calls are counted, not refused: '.json_encode($statuses));
+        $this->assertSame([429, 429], array_slice($statuses, 3), json_encode($statuses));
+
+        // Other pages are not behind that limiter.
+        $this->get('/dashboard')->assertOk();
+    }
+
     public function test_the_bid_buy_now_and_pay_actions_are_limited_per_person(): void
     {
         $this->assertSame(20, config('auction.bid_rate_limit.max_attempts'), 'bids per person per window');

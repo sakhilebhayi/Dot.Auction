@@ -547,6 +547,21 @@ class RouteSweepTest extends TestCase
         $this->delete(route('buyer.watchlist.destroy', $this->lot))->assertRedirect(route('buyer.watchlist'));
     }
 
+    public function test_a_team_invitation_cannot_be_accepted_without_its_signed_link_or_by_the_wrong_person(): void
+    {
+        $team = $this->who['seller']->ownedTeams()->first();
+        $invitation = $team->teamInvitations()->create(['email' => $this->who['stranger']->email, 'role' => 'editor']);
+
+        // No signature: refused, whoever asks.
+        $this->as('stranger')->get(route('team-invitations.accept', $invitation))->assertForbidden();
+        $this->as('seller')->get(route('team-invitations.accept', $invitation))->assertForbidden();
+
+        // A correct signature accepts it for the signed-in person (Jetstream's own rule); nobody joins by guessing the id.
+        $this->assertFalse($this->who['stranger']->belongsToTeam($team));
+        $this->as('guest')->get(\Illuminate\Support\Facades\URL::signedRoute('team-invitations.accept', $invitation))->assertRedirect();
+        $this->assertFalse($this->who['stranger']->fresh()->belongsToTeam($team->fresh()), 'a guest with a signed link joins nothing');
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // An erased account.
     // ----------------------------------------------------------------------------------------------------------------
