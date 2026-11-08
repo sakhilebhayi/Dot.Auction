@@ -63,6 +63,9 @@
     background: transparent; color: var(--c-ink); border: 1px solid transparent; border-radius: var(--r-1);
     font: inherit; text-align: left;
 }
+.ds-rung__row .ds-money { margin-left: auto; }
+.ds-rung__go { align-self: center; color: var(--c-ink-3); flex: none; }
+button.ds-rung__row:hover .ds-rung__go, button.ds-rung__row:focus-visible .ds-rung__go { color: var(--c-ink); }
 .ds-rung__label { font-size: var(--t-sm); color: var(--c-ink-2); font-weight: 500; }
 button.ds-rung__row { cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out); }
 button.ds-rung__row:hover { background: var(--c-quiet-hover); }

@@ -260,7 +260,7 @@ final class LotOutcome
 
         if ($this->role === 'leader') {
             return $this->box('success', 'check-circle', 'You are leading',
-                'Your bid of '.$current.' is the highest. There is nothing to do: bidding higher against yourself would only raise your price. This page tells you when someone outbids you.',
+                'Your bid of '.$current.' is the highest. We will tell you if you are outbid.',
                 $reserve ?? '');
         }
 

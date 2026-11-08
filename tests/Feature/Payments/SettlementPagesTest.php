@@ -99,8 +99,8 @@ class SettlementPagesTest extends TestCase
         [$settlement, $winner] = $this->settlement(50000, ['payment_due_at' => '2026-11-10 07:00:00']);
 
         $this->enablePaystack();
-        $this->actingAs($winner)->get(route('settlements.show', $settlement))->assertSee('10 Nov 2026, 09:00 SAST');
-        $this->actingAs($winner)->get(route('settlements.index'))->assertSee('Pay by')->assertSee('10 Nov, 09:00');
+        $this->actingAs($winner)->get(route('settlements.show', $settlement))->assertSee('Tue 10 Nov, 09:00 SAST');
+        $this->actingAs($winner)->get(route('settlements.index'))->assertSee('Pay by')->assertSee('Tue 10 Nov, 09:00');
 
         $this->disablePaystack();
         $this->actingAs($winner)->get(route('settlements.show', $settlement))->assertDontSee('Pay by')->assertDontSee('09:00');

@@ -74,7 +74,7 @@ class OperatorPaymentsPageTest extends TestCase
 
         $this->assertMatchesRegularExpression('/<div class="ops-region" role="region" tabindex="0" aria-label="[^"]+"/', $html);
         $this->assertMatchesRegularExpression('/ds-table\s+is-stackable/', $html, 'a phone gets a card per payment');
-        $page->assertSeeText('R1,234.50')->assertSee('10 Nov 2026, 09:00 SAST');
+        $page->assertSeeText('R1,234.50')->assertSee('Tue 10 Nov, 09:00 SAST');
         $this->assertStringContainsString('<title>Payment operations | ', $html);
         $this->assertMatchesRegularExpression('/<h1[^>]*>\s*Payment operations\s*<\/h1>/', $html);
         $this->assertStringNotContainsString('UTC', $html);

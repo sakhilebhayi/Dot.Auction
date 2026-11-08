@@ -145,7 +145,7 @@ class DisplayTimezoneTest extends TestCase
 
         $html = $this->actingAs($winner)->get(route('settlements.show', $settlement))->assertOk()->getContent();
 
-        $this->assertStringContainsString('10 Nov 2026, 09:00 SAST', $html);
+        $this->assertStringContainsString('Tue 10 Nov, 09:00 SAST', $html);
         $this->assertStringNotContainsString('UTC', $html);
     }
 

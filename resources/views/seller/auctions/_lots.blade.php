@@ -76,10 +76,14 @@
                     @elseif ($lot === 'scheduled')
                         <x-ds.countdown :ends="$row->ends_at" :starts="$row->starts_at" size="sm" />
                     @elseif ($lot === 'draft')
-                        {{ Display::time($row->ends_at, 'j M Y, H:i') }}
+                        {{ Display::time($row->ends_at) }}
                         <span class="sl-sub">Planned close, not published</span>
+                    @elseif ($lot === 'cancelled')
+                        {{-- A cancelled lot never closed: show when it was cancelled (the row's last change), not the planned close. --}}
+                        {{ Display::time($row->updated_at) }}
+                        <span class="sl-sub">Cancelled</span>
                     @else
-                        {{ Display::time($row->ends_at, 'j M Y, H:i') }}
+                        {{ Display::time($row->ends_at) }}
                         <span class="sl-sub">Closed</span>
                     @endif
                 </td>

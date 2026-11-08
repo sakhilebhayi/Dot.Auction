@@ -35,7 +35,7 @@
         @if ($isWinner)
             <p class="lot-pay__text">
                 You won this lot at {{ $settlement->amount() }}.
-                @if ($settlement->payment_due_at) Pay by @localtime($settlement->payment_due_at, 'j M Y, H:i', true). @endif
+                @if ($settlement->payment_due_at) Pay by {{ \App\Support\Display::time($settlement->payment_due_at, null, true) }}. @endif
             </p>
             <x-ds.button :href="route('settlements.show', $settlement)" block>Pay now</x-ds.button>
         @else
