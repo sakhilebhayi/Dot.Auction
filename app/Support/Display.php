@@ -164,6 +164,16 @@ final class Display
     }
 
     /**
+     * Whether a lot can still be followed: not open yet, or taking bids. A lot that has closed (result pending, awaiting the seller, sold,
+     * not sold) or was cancelled has nothing left to watch for, so no page offers Watch on it. A person who already follows one can still
+     * remove it from the Watching page.
+     */
+    public static function isWatchable(Auction $auction): bool
+    {
+        return in_array(self::lotState($auction), ['scheduled', 'live', 'ending'], true);
+    }
+
+    /**
      * Word, long form, silhouette and hue for every state. The single table behind <x-ds.status> (DESIGN.md lists the same).
      * tone is a CSS modifier (ds-status--live and so on), not a colour: the colours are tokens.
      *

@@ -343,7 +343,7 @@ class BidPanel extends Component
         $this->error = null;
         $this->errorField = null;
         $this->success = 'You bought this lot for '.Auction::money($this->auction->current_price).'.';
-        $this->announcement = $this->success.' Payment and the next steps are on this page.';
+        $this->announcement = $this->success.' Where payment stands is on this page.';
         $this->seen = $this->fingerprint();
     }
 

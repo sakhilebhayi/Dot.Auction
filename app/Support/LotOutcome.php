@@ -313,7 +313,7 @@ final class LotOutcome
                 $this->isBuyNowSale ? 'You bought this lot with Buy Now' : 'You won this lot',
                 $this->isBuyNowSale ? 'You paid the Buy Now price of '.$current.' and bidding ended at once, on '.$when.'.' : 'You won it for '.$current.' when bidding closed on '.$when.'.',
                 $acceptedBelowReserve ? 'The seller accepted your bid, which was below the reserve.' : '',
-                'Payment and the next steps are below.'),
+                'Where payment stands is below.'),
             'loser' => $this->box('neutral', 'gavel', 'You did not win this lot',
                 ($this->isBuyNowSale ? 'Another bidder bought it with Buy Now for '.$current.'.' : 'It sold for '.$current.' on '.$when.'.').' Your highest bid was '.$this->money($this->viewerBidCents).'.'),
             'seller' => $this->box('success', 'gavel', $this->isBuyNowSale ? 'Sold with Buy Now' : 'Sold',

@@ -74,6 +74,28 @@ final class ViewerActivity
     }
 
     /**
+     * Lots this person bid on whose result has not landed: the clock has run out and the settle job has not recorded the result yet
+     * (state "closing"), or the lot ended below the reserve and this person's bid is on top, so the seller is deciding (state "pending").
+     * They stay on Home until the result is in, so a lot never drops out of sight between "live" and "won" or "not won". Most recent close first.
+     *
+     * @return Collection<int, Auction>
+     */
+    public function resultPending(User $user, ?CarbonInterface $now = null): Collection
+    {
+        $now ??= now();
+        $query = $this->lots->withViewerBid($this->lots->bidOnBy(Auction::query(), $user), $user);
+
+        $query->where(fn ($q) => $q
+            ->where(fn ($a) => $a->where('auctions.status', 'active')->where('auctions.ends_at', '<=', $now))
+            ->orWhere(fn ($p) => $p->where('auctions.status', 'pending_review')->whereExists(
+                fn ($b) => $b->selectRaw('1')->from('bids')->whereColumn('bids.auction_id', 'auctions.id')
+                    ->where('bids.bidder_id', $user->id)->where('bids.is_winning', true)
+            )));
+
+        return $query->orderByDesc('auctions.ends_at')->orderByDesc('auctions.id')->limit(self::SAFETY_CEILING)->get();
+    }
+
+    /**
      * Lots that ended below the reserve with this person's bid on top: nothing for them to do, the seller is deciding.
      *
      * @return Collection<int, Auction>

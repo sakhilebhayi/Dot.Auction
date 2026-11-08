@@ -81,7 +81,7 @@
     <x-ds.section title="Details" class="sl-section">
         <x-ds.dl>
             <div class="ds-dl__row"><dt>Lot</dt><dd><a class="sl-link" href="{{ route('auctions.show', $settlement->auction) }}">{{ $title }}</a></dd></div>
-            <div class="ds-dl__row"><dt>Your part</dt><dd>{{ $isWinner ? 'You won this lot' : 'You sold this lot' }}</dd></div>
+            <div class="ds-dl__row"><dt>Your role</dt><dd>{{ $isWinner ? 'Buyer' : 'Seller' }}</dd></div>
             <div class="ds-dl__row"><dt>Sale closed</dt><dd>{{ Display::time($settlement->auction->ends_at, 'j M Y, H:i', true) }}</dd></div>
             @if ($status === 'paid' && $settlement->paid_at)
                 <div class="ds-dl__row"><dt>Paid</dt><dd>{{ Display::time($settlement->paid_at, 'j M Y, H:i', true) }}</dd></div>

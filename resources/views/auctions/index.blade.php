@@ -116,7 +116,7 @@
                     $lotState = Display::lotState($auction);
                     $cue = ViewerCue::for($auction, $userId, $lotState);
                     $watching = (bool) $auction->viewer_watching;
-                    $canWatch = $cue !== 'own' && ($watching || in_array($lotState, ['live', 'ending', 'scheduled', 'pending'], true));
+                    $canWatch = $cue !== 'own' && in_array($lotState, ['live', 'ending', 'scheduled'], true);
                 @endphp
                 <li>
                     <x-ds.lot-card :auction="$auction" :viewer="$cue">

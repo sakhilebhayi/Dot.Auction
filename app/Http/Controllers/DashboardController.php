@@ -45,6 +45,7 @@ class DashboardController extends Controller
         $outbid = $openBids->filter(fn ($a) => ! $a->viewer_leads)->values();
         $leading = $openBids->filter(fn ($a) => (bool) $a->viewer_leads)->values();
         $leadingSoon = $leading->filter(fn ($a) => $a->ends_at->lte($now->copy()->addHours(ViewerActivity::SOON_HOURS)))->values();
+        $resultPending = $activity->resultPending($user, $now);
         $salesToPay = $activity->salesToPay($user);
         // One reading of every unpaid sale (payable now, late, or waiting for payment to open): the same one the sale page uses.
         $positions = SettlementPosition::many($salesToPay);
@@ -54,7 +55,7 @@ class DashboardController extends Controller
         $seller = $activity->sellerSummary($user, $now);
         $operatorQueue = $user->isPlatformOperator() ? $activity->paymentsNeedingAPerson() : 0;
 
-        $needs = $this->needs($decisions->count(), $positions, $outbid->count(), $leadingSoon->count(), $lateBuyers, $operatorQueue);
+        $needs = $this->needs($decisions->count(), $positions, $outbid->count(), $leadingSoon->count(), $lateBuyers, $operatorQueue, $resultPending);
 
         return view('dashboard', [
             'isNew' => false,
@@ -63,6 +64,7 @@ class DashboardController extends Controller
             'outbid' => $outbid,
             'leading' => $leading,
             'openBids' => $openBids,
+            'resultPending' => $resultPending,
             'salesToPay' => $positions,
             'decisions' => $decisions,
             'seller' => $seller,
@@ -79,9 +81,10 @@ class DashboardController extends Controller
      *
      * @param  Collection<int, SettlementPosition>  $positions  the winner's unpaid sales
      * @param  Collection<int, AuctionSettlement>  $lateBuyers
+     * @param  Collection<int, \App\Models\Auction>  $resultPending  lots bid on whose result has not landed
      * @return list<array{tone: string, icon: string, text: string, action: ?string, href: ?string}>
      */
-    private function needs(int $decisions, $positions, int $outbid, int $leadingSoon, $lateBuyers, int $operatorQueue): array
+    private function needs(int $decisions, $positions, int $outbid, int $leadingSoon, $lateBuyers, int $operatorQueue, $resultPending): array
     {
         $needs = [];
         $plural = fn (int $n, string $one, string $many) => $n === 1 ? $one : $many;
@@ -133,6 +136,32 @@ class DashboardController extends Controller
                     ? 'Waiting for payment to open on '.$first->settlement->auction->title.'. You will owe '.$first->settlement->amount().' once it does.'
                     : 'Waiting for payment to open on '.$waiting->count().' won lots. You will owe '.SettlementPosition::money((int) $waiting->sum(fn ($p) => $p->owedLaterCents())).' once it does.',
                 'action' => null, 'href' => null,
+            ];
+        }
+
+        // A lot the person bid on that has closed but has no result yet stays here until it does. Nothing to press, so they are quiet lines.
+        $settling = $resultPending->filter(fn ($a) => $a->status === 'active')->values();
+        $deciding = $resultPending->filter(fn ($a) => $a->status === 'pending_review')->values();
+
+        if ($deciding->isNotEmpty()) {
+            $needs[] = [
+                'tone' => 'info', 'icon' => 'pause',
+                'text' => $deciding->count() === 1
+                    ? 'The seller is deciding on '.$deciding->first()->title.', where you hold the top bid. Nothing to do yet.'
+                    : 'The seller is deciding on '.$deciding->count().' lots where you hold the top bid. Nothing to do yet.',
+                'action' => $deciding->count() === 1 ? 'Open lot' : 'See my bids',
+                'href' => $deciding->count() === 1 ? route('auctions.show', $deciding->first()) : auction_route('buyer.bids').'#waiting',
+            ];
+        }
+
+        if ($settling->isNotEmpty()) {
+            $needs[] = [
+                'tone' => 'info', 'icon' => 'clock',
+                'text' => $settling->count() === 1
+                    ? 'Bidding closed on '.$settling->first()->title.'. The result is being recorded and shows here within a few minutes.'
+                    : 'Bidding closed on '.$settling->count().' lots you bid on. The results are being recorded and show here within a few minutes.',
+                'action' => $settling->count() === 1 ? 'Open lot' : 'See my bids',
+                'href' => $settling->count() === 1 ? route('auctions.show', $settling->first()) : auction_route('buyer.bids').'#ended',
             ];
         }
 

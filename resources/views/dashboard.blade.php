@@ -67,32 +67,34 @@
         @endif
 
         {{-- ───────── My bids and sales to pay ───────── --}}
-        @if ($openBids->isNotEmpty() || $salesToPay->isNotEmpty())
+        @if ($openBids->isNotEmpty() || $resultPending->isNotEmpty() || $salesToPay->isNotEmpty())
             <div class="dc-split">
-                @if ($openBids->isNotEmpty())
-                    <x-ds.section title="My bids" id="my-bids" description="Lots still open that you have bid on. Outbid lots come first.">
+                @if ($openBids->isNotEmpty() || $resultPending->isNotEmpty())
+                    @php $myBids = $openBids->concat($resultPending)->values(); @endphp
+                    <x-ds.section title="My bids" id="my-bids" description="Lots you have bid on that are open or waiting for a result. Outbid lots come first.">
                         <x-ds.table caption="Open lots you have bid on">
                             <thead><tr><th scope="col">Lot</th><th scope="col" class="num">Your bid</th><th scope="col" class="num">Now</th><th scope="col">Closes</th></tr></thead>
                             <tbody>
-                                @foreach ($openBids->take(6) as $lot)
-                                    @php $leads = (bool) $lot->viewer_leads; @endphp
+                                @foreach ($myBids->take(6) as $lot)
+                                    @php $leads = (bool) $lot->viewer_leads; $waitingResult = $lot->status === 'pending_review' || ($lot->status === 'active' && $lot->ends_at->isPast()); @endphp
                                     <tr>
                                         <td data-label="Lot" class="dc-lotcell">
                                             <a class="dc-lotname" href="{{ route('auctions.show', $lot) }}">{{ $lot->title }}</a>
                                             <span class="dc-sub">
-                                                @if ($leads)<x-ds.badge tone="live" icon="check-circle" size="sm">You lead</x-ds.badge>
+                                                @if ($waitingResult)<x-ds.status :state="Display::lotState($lot)" size="sm" />
+                                                @elseif ($leads)<x-ds.badge tone="live" icon="check-circle" size="sm">You lead</x-ds.badge>
                                                 @else<x-ds.badge tone="urgent" icon="alert" size="sm">Outbid</x-ds.badge>@endif
                                             </span>
                                         </td>
                                         <td data-label="Your bid" class="num"><x-ds.money :amount="$lot->viewer_top_bid" /></td>
                                         <td data-label="Now" class="num"><x-ds.money :amount="$lot->current_price" /></td>
-                                        <td data-label="Closes"><x-ds.countdown :ends="$lot->ends_at" size="sm" label="" /></td>
+                                        <td data-label="Closes">@if ($waitingResult)<span class="dc-sub">Closed {{ Display::time($lot->ends_at, 'D j M, H:i') }}</span>@else<x-ds.countdown :ends="$lot->ends_at" size="sm" label="" />@endif</td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </x-ds.table>
-                        @if ($openBids->count() > 6)
-                            <p class="dc-more"><a class="ds-btn ds-btn--link ds-btn--sm" href="{{ auction_route('buyer.bids') }}"><span class="ds-btn__label">All {{ $openBids->count() }} open bids</span></a></p>
+                        @if ($myBids->count() > 6)
+                            <p class="dc-more"><a class="ds-btn ds-btn--link ds-btn--sm" href="{{ auction_route('buyer.bids') }}"><span class="ds-btn__label">All {{ $myBids->count() }} lots I have bid on</span></a></p>
                         @else
                             <p class="dc-more"><a class="ds-btn ds-btn--link ds-btn--sm" href="{{ auction_route('buyer.bids') }}"><span class="ds-btn__label">My bids, including ended lots</span></a></p>
                         @endif
