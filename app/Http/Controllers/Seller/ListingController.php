@@ -8,6 +8,7 @@ use App\Models\Auction;
 use App\Models\AuctionCategory;
 use App\Services\Auctions\ListingManager;
 use App\Services\Auctions\ListingRejected;
+use App\Services\DisplayTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -84,7 +85,7 @@ class ListingController extends Controller
         }
 
         return redirect()->route('seller.auctions.index')->with('status', $published->isScheduled()
-            ? "\"{$published->title}\" is scheduled and opens ".$published->starts_at->format('M j, Y H:i').'.'
+            ? "\"{$published->title}\" is scheduled and opens ".Auction::localTime($published->starts_at, 'M j, Y H:i', true).'.'
             : "\"{$published->title}\" is live.");
     }
 
@@ -117,7 +118,7 @@ class ListingController extends Controller
     private function form(Auction $auction): View
     {
         $money = fn (?string $amount) => $amount === null ? '' : Auction::fromCents(Auction::toCents($amount));
-        $moment = fn ($date) => $date?->format('Y-m-d\TH:i') ?? '';
+        $moment = fn ($date) => DisplayTime::inputValue($date);
 
         if ($auction->exists) {
             $auction->load('images');

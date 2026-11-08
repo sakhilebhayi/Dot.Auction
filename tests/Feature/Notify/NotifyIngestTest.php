@@ -146,7 +146,9 @@ class NotifyIngestTest extends TestCase
         $this->assertSame('240.00', $json['data']['your_bid']);
         $this->assertSame('300.50', $json['data']['current_price']);
         $this->assertSame('ZAR', $json['data']['currency']);
-        $this->assertSame($auction->fresh()->ends_at->toIso8601String(), $json['data']['ends_at']);
+        // The same instant as the stored UTC time, written with the display-zone offset (R-42 F-11).
+        $this->assertSame($auction->fresh()->ends_at->getTimestamp(), \Carbon\Carbon::parse($json['data']['ends_at'])->getTimestamp());
+        $this->assertStringEndsWith('+02:00', $json['data']['ends_at']);
         $this->assertSame('https://auction.test/auctions/'.$auction->id, $json['data']['url']);
         $this->assertSame('auction.outbid:'.$auction->id.':'.sha1($first->email).':'.$bid->id, $json['idempotency_key']);
         $this->assertStringNotContainsString($second->email, $body, 'the new high bidder is not told to anyone');
@@ -275,7 +277,8 @@ class NotifyIngestTest extends TestCase
         $this->assertSame(['email' => $watcher->email], $json['recipient']);
         $this->assertSame(['auction_title', 'current_price', 'currency', 'ends_at', 'url'], array_keys($json['data']));
         $this->assertSame('260.00', $json['data']['current_price']);
-        $this->assertSame(now()->addMinutes(30)->toIso8601String(), $json['data']['ends_at']);
+        $this->assertSame(now()->addMinutes(30)->getTimestamp(), \Carbon\Carbon::parse($json['data']['ends_at'])->getTimestamp());
+        $this->assertStringEndsWith('+02:00', $json['data']['ends_at']);
         $this->assertSame('https://auction.test/auctions/'.$auction->id, $json['data']['url']);
         $this->assertSame('auction.ending_soon:'.$auction->id.':'.sha1($watcher->email).':ending-soon', $json['idempotency_key']);
     }

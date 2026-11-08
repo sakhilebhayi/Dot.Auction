@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\DisplayTime;
 use Database\Factories\AuctionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -205,6 +206,15 @@ class Auction extends Model
     public static function money(string|int|float|null $amount): string
     {
         return config('auction.currency_symbol', 'R').number_format(self::toCents($amount) / 100, 2);
+    }
+
+    /**
+     * Print a stored (UTC) time the way people read it, in the display zone (config auction.display_timezone).
+     * `Auction::localTime($auction->ends_at, 'M j, Y H:i', true)` gives "Nov 8, 2026 18:00 SAST".
+     */
+    public static function localTime(?\DateTimeInterface $at, ?string $format = null, bool $withZone = false): string
+    {
+        return DisplayTime::format($at, $format, $withZone);
     }
 
     public function minimumBidCents(): int

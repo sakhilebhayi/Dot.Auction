@@ -29,7 +29,7 @@
             @if($isWinner)
                 <p class="dot-help" style="font-size:13px;">
                     You won this auction at {{ $settlement->amount() }}.
-                    @if($settlement->payment_due_at) Pay by {{ $settlement->payment_due_at->format('j M Y, H:i') }} {{ config('app.timezone') }}. @endif
+                    @if($settlement->payment_due_at) Pay by @localtime($settlement->payment_due_at, 'j M Y, H:i', true). @endif
                 </p>
                 <a href="{{ route('settlements.show', $settlement) }}" class="dot-btn dot-btn-primary">Pay now</a>
             @else

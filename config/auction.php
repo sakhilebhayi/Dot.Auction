@@ -15,6 +15,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Display timezone
+    |--------------------------------------------------------------------------
+    | Times are STORED in UTC (config app.timezone, never change it). People
+    | read and type times in this zone: listing forms, the bid panel,
+    | settlements, notifications and e-mail data. See App\Services\DisplayTime.
+    */
+    'display_timezone' => env('AUCTION_DISPLAY_TIMEZONE', 'Africa/Johannesburg'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Bid rate limit
     |--------------------------------------------------------------------------
     | Maximum bid submissions per user within the decay window (seconds).

@@ -50,7 +50,7 @@
                 <div><dt class="dot-label">Bid increment</dt><dd class="dot-mono" style="margin:0;">{{ \App\Models\Auction::money($auction->bid_increment) }}</dd></div>
                 <div><dt class="dot-label">Reserve price</dt><dd class="dot-mono" style="margin:0;">{{ $auction->reserve_price ? \App\Models\Auction::money($auction->reserve_price) : 'None' }}</dd></div>
                 <div><dt class="dot-label">Buy now price</dt><dd class="dot-mono" style="margin:0;">{{ $auction->buy_now_price ? \App\Models\Auction::money($auction->buy_now_price) : 'None' }}</dd></div>
-                <div><dt class="dot-label">Closes</dt><dd style="margin:0;">{{ $auction->ends_at->format('M j, Y H:i') }} ({{ config('app.timezone') }})</dd></div>
+                <div><dt class="dot-label">Closes</dt><dd style="margin:0;">@localtime($auction->ends_at, 'M j, Y H:i', true)</dd></div>
             </dl>
         </div>
     @endif
@@ -91,11 +91,11 @@
                     @if(! $auction->exists || $auction->status === 'draft' || $auction->isScheduled())
                         <x-seller.field name="starts_at" type="datetime-local" label="Opens"
                             :value="$values['starts_at']"
-                            help="Leave blank to open as soon as you publish. Times are in {{ config('app.timezone') }}." />
+                            help="Leave blank to open as soon as you publish. Times are in {{ \App\Services\DisplayTime::label() }}." />
                     @else
                         <div>
                             <span class="dot-label">Opened</span>
-                            <p style="margin:0;">{{ $auction->starts_at->format('M j, Y H:i') }}</p>
+                            <p style="margin:0;">@localtime($auction->starts_at, 'M j, Y H:i', true)</p>
                             <p class="dot-help">An auction that has opened keeps its opening time.</p>
                         </div>
                     @endif
@@ -183,7 +183,7 @@
                     </div>
                 @else
                     <p style="margin:0 0 1rem;">
-                        This auction is {{ $status === 'scheduled' ? 'scheduled to open '.$auction->starts_at->format('M j, Y H:i') : 'live' }}.
+                        This auction is {{ $status === 'scheduled' ? 'scheduled to open '.\App\Models\Auction::localTime($auction->starts_at, 'M j, Y H:i', true) : 'live' }}.
                         <a class="dot-link" href="{{ route('auctions.show', $auction) }}">View the public page</a>.
                     </p>
                     @if($locked)

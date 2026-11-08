@@ -149,7 +149,7 @@ class BidPanel extends Component
         $this->success = 'Bid placed successfully!';
 
         if ($closedAtBefore !== null && $this->auction->ends_at->greaterThan($closedAtBefore)) {
-            $this->success .= ' Closing time extended to '.$this->auction->ends_at->format('H:i:s').' because the bid came in the final minutes.';
+            $this->success .= ' Closing time extended to '.Auction::localTime($this->auction->ends_at, 'H:i:s', true).' because the bid came in the final minutes.';
         }
 
         $this->placing = false;

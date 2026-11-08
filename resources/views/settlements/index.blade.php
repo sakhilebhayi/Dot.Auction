@@ -35,7 +35,7 @@
                         <td>
                             <span class="dot-status dot-status-{{ $row->status }}">{{ $row->statusLabel() }}</span>
                             @if($row->isPayable() && $row->payment_due_at)
-                                <div class="dot-help" style="margin-top:2px;">{{ $row->status === 'payment_overdue' ? 'Was due' : 'Pay by' }} {{ $row->payment_due_at->format('j M, H:i') }}</div>
+                                <div class="dot-help" style="margin-top:2px;">{{ $row->status === 'payment_overdue' ? 'Was due' : 'Pay by' }} @localtime($row->payment_due_at, 'j M, H:i')</div>
                             @endif
                         </td>
                         <td>

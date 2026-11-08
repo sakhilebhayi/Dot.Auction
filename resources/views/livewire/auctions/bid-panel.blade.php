@@ -74,7 +74,7 @@
     @elseif($purchased)
     <div style="font-size:12px;color:#a1a1aa;margin-bottom:1.5rem;">Purchased through Buy Now.</div>
     @elseif($auction->isScheduled())
-    <div style="font-size:12px;color:#a1a1aa;margin-bottom:1.5rem;">Bidding opens {{ $auction->starts_at->format('M j, Y \a\t H:i') }}.</div>
+    <div style="font-size:12px;color:#a1a1aa;margin-bottom:1.5rem;">Bidding opens @localtime($auction->starts_at, 'M j, Y \a\t H:i', true).</div>
     @else
     <div style="font-size:12px;color:#52525b;margin-bottom:1.5rem;">This auction has ended.</div>
     @endif

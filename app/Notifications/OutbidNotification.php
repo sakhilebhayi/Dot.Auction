@@ -2,8 +2,10 @@
 
 namespace App\Notifications;
 
+use App\Models\Auction;
 use App\Models\Bid;
 use App\Notifications\Concerns\SendsNotifyEvent;
+use App\Services\DisplayTime;
 use App\Services\Notify\NotifyClient;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
@@ -62,7 +64,8 @@ class OutbidNotification extends Notification
                 'your_bid' => $notify->money($yourBid),
                 'current_price' => $notify->money($auction->current_price),
                 'currency' => (string) config('auction.currency_code', 'ZAR'),
-                'ends_at' => $auction->ends_at->toIso8601String(),
+                // Same instant as UTC, written with the display-zone offset (+02:00) for the e-mail's reader.
+                'ends_at' => DisplayTime::iso($auction->ends_at),
                 'url' => $notify->pageUrl('auctions.show', $auction),
             ],
         ];
@@ -83,7 +86,7 @@ class OutbidNotification extends Notification
         return [
             'type' => 'outbid',
             'title' => "You've been outbid",
-            'message' => "Someone placed a higher bid on \"{$auction->title}\" — new price R".number_format((float) $auction->current_price, 2).'.',
+            'message' => "Someone placed a higher bid on \"{$auction->title}\" — new price ".Auction::money($auction->current_price).'.',
             'auction_id' => $auction->id,
             'url' => route('auctions.show', $auction),
         ];
