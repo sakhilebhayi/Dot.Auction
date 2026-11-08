@@ -48,7 +48,7 @@ class DashboardTest extends TestCase
     {
         $user = User::factory()->withPersonalTeam()->create();
         $seller = User::factory()->create();
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Watched Lot',
             'starting_price' => 10,
@@ -73,7 +73,7 @@ class DashboardTest extends TestCase
         $user = User::factory()->withPersonalTeam()->create();
         $seller = User::factory()->create();
 
-        Auction::create([
+        Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Closing Soon Lot',
             'starting_price' => 10,
@@ -84,7 +84,7 @@ class DashboardTest extends TestCase
             'ends_at' => now()->addHours(2),
         ]);
 
-        Auction::create([
+        Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Far Future Lot',
             'starting_price' => 10,
@@ -118,7 +118,7 @@ class DashboardTest extends TestCase
     public function test_dashboard_uses_the_same_currency_symbol_as_the_bid_panel(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
-        Auction::create([
+        Auction::forceCreate([
             'seller_id' => $user->id,
             'title' => 'Priced Lot',
             'starting_price' => 1234.5,

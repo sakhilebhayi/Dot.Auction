@@ -35,6 +35,9 @@ class AuctionSettler
                 return false;
             }
 
+            // Whatever the outcome below, the cached polling snapshot of this auction is out of date once it commits.
+            DB::afterCommit(fn () => AuctionSnapshot::forget($locked->id));
+
             $topBid = Bid::query()
                 ->where('auction_id', $locked->id)
                 ->where('is_winning', true)
@@ -42,14 +45,14 @@ class AuctionSettler
                 ->first();
 
             if ($topBid === null) {
-                $locked->update(['status' => 'ended']);
+                $locked->forceFill(['status' => 'ended'])->save();
                 DB::afterCommit(fn () => event(new AuctionSettled($locked, null)));
 
                 return true;
             }
 
             if ($locked->reserveMet()) {
-                $locked->update(['status' => 'ended']);
+                $locked->forceFill(['status' => 'ended'])->save();
                 DB::afterCommit(function () use ($locked, $topBid) {
                     // The hand-off that creates the settlement goes first: the auction is already ended and committed, and
                     // nothing else will ever re-announce it, so a notice that fails to send must not be able to stop it.
@@ -65,9 +68,9 @@ class AuctionSettler
                 return true;
             }
 
-            $locked->update(['status' => 'pending_review']);
+            $locked->forceFill(['status' => 'pending_review'])->save();
 
-            $proposal = ReserveNotMetProposal::create([
+            $proposal = ReserveNotMetProposal::forceCreate([
                 'auction_id' => $locked->id,
                 'bid_id' => $topBid->id,
                 'reserve_price' => $locked->reserve_price,

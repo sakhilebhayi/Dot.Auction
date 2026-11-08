@@ -64,8 +64,8 @@ class ReserveDecisionPanel extends Component
 
             $auction = Auction::query()->lockForUpdate()->findOrFail($proposal->auction_id);
 
-            $auction->update(['status' => 'ended']);
-            $proposal->update(['status' => $outcome, 'decided_at' => now()]);
+            $auction->forceFill(['status' => 'ended'])->save();
+            $proposal->forceFill(['status' => $outcome, 'decided_at' => now()])->save();
 
             if ($afterDecision !== null) {
                 $afterDecision($auction, $proposal);

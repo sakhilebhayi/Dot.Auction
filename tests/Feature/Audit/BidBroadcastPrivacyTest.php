@@ -23,7 +23,7 @@ class BidBroadcastPrivacyTest extends TestCase
     {
         $auction = Auction::factory()->create();
         $bidder = User::factory()->create(['name' => $name]);
-        $bid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 220, 'is_winning' => true]);
+        $bid = Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 220, 'is_winning' => true]);
 
         return (new BidPlaced($bid->fresh()))->broadcastWith();
     }
@@ -58,7 +58,7 @@ class BidBroadcastPrivacyTest extends TestCase
     {
         // Documents the current design (public channel: anyone with the Reverb app key can listen), so a change to it is deliberate.
         $auction = Auction::factory()->create();
-        $bid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => User::factory()->create()->id, 'amount' => 220, 'is_winning' => true]);
+        $bid = Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => User::factory()->create()->id, 'amount' => 220, 'is_winning' => true]);
         $channels = (new BidPlaced($bid))->broadcastOn();
 
         $this->assertInstanceOf(Channel::class, $channels[0]);

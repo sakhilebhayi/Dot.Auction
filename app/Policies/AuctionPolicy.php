@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Auction;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\Response;
 
 /**
  * Added (platform-loop pass, 2026-08-01) alongside the new buyer-facing
@@ -28,10 +29,12 @@ class AuctionPolicy
      * this is a public marketplace listing. A draft auction is only
      * visible to its own seller.
      */
-    public function view(User $user, Auction $auction): bool
+    public function view(User $user, Auction $auction): bool|Response
     {
         if ($auction->status === 'draft') {
-            return $user->id === $auction->seller_id;
+            // 404, not 403: a draft's id must look exactly like an id that does not exist, or any signed-in user
+            // could count other sellers' drafts by walking the ids.
+            return $user->id === $auction->seller_id ? true : Response::denyAsNotFound();
         }
 
         return true;

@@ -23,10 +23,12 @@ class SettlementPayment extends Model
 
     public const UNMATCHED = 'unmatched';
 
-    protected $fillable = [
-        'settlement_id', 'provider', 'reference', 'amount_cents', 'currency', 'status', 'reason',
-        'provider_transaction_id', 'authorization_url', 'initiated_by', 'expires_at', 'paid_at', 'summary',
-    ];
+    /**
+     * Nothing is mass assignable: payment rows are written only by SettlementPayer and SettlementPaymentRecorder.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [];
 
     protected $hidden = ['authorization_url'];
 

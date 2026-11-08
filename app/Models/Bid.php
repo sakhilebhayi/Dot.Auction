@@ -7,7 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Bid extends Model
 {
-    protected $fillable = ['auction_id', 'bidder_id', 'amount', 'is_winning', 'is_auto_bid'];
+    /**
+     * Nothing is mass assignable: a bid is written only by BidPlacer and BuyNowPurchaser (forceCreate), inside the
+     * auction's row lock.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [];
 
     protected $casts = [
         'is_winning' => 'boolean',

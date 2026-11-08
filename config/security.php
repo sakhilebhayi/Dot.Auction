@@ -12,4 +12,16 @@ return [
     | Set SECURITY_CSP_REPORT_ONLY=false to enforce the same policy without a deploy, once the reports have been reviewed.
     */
     'csp_report_only' => (bool) env('SECURITY_CSP_REPORT_ONLY', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trusted hosts (Host header allowlist)
+    |--------------------------------------------------------------------------
+    | Comma separated host names this app answers for (TRUSTED_HOSTS). Empty means: the host of APP_URL. A request
+    | for any other Host gets a 400, so a forged Host header cannot make the app build links (password reset, Paystack
+    | callback, notification URLs) that point somewhere else. Add the www form or a second domain here when one exists.
+    | Not enforced while APP_URL is still the localhost default, in the local environment or in tests, and never for
+    | /up (a health probe sent to an IP address or with no Host must keep working).
+    */
+    'trusted_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_HOSTS', ''))))),
 ];

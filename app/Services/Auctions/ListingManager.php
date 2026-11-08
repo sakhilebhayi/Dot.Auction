@@ -38,7 +38,7 @@ class ListingManager
 
         $this->assertSound($data, $startsAt);
 
-        return Auction::create([
+        return Auction::forceCreate([
             'seller_id' => $seller->getKey(),
             'category_id' => $data['category_id'],
             'title' => $data['title'],
@@ -92,7 +92,7 @@ class ListingManager
             $terms = array_merge($this->currentTerms($locked), $data);
             $this->assertSound($terms, $startsAt);
 
-            $locked->update([
+            $locked->forceFill([
                 'category_id' => $terms['category_id'],
                 'title' => $terms['title'],
                 'description' => $terms['description'] ?? null,
@@ -103,7 +103,7 @@ class ListingManager
                 'bid_increment' => $terms['bid_increment'],
                 'starts_at' => $startsAt,
                 'ends_at' => $terms['ends_at'],
-            ]);
+            ])->save();
 
             return $locked;
         });
@@ -128,11 +128,11 @@ class ListingManager
 
             $this->assertSound($this->currentTerms($locked), $startsAt);
 
-            $locked->update([
+            $locked->forceFill([
                 'status' => 'active',
                 'starts_at' => $startsAt,
                 'current_price' => $locked->starting_price,
-            ]);
+            ])->save();
 
             return $locked;
         });
@@ -158,7 +158,7 @@ class ListingManager
                 throw new ListingRejected('An auction that has received bids cannot be cancelled.');
             }
 
-            $locked->update(['status' => 'cancelled']);
+            $locked->forceFill(['status' => 'cancelled'])->save();
 
             return $locked;
         });

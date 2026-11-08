@@ -56,7 +56,7 @@ class PayNowTest extends TestCase
     {
         $this->enablePaystack();
         [$settlement, $winner, $seller] = $this->settlement();
-        $settlement->update(['status' => AuctionSettlement::PAID, 'paid_at' => now()]);
+        $settlement->forceFill(['status' => AuctionSettlement::PAID, 'paid_at' => now()])->save();
 
         $page = $this->actingAs($seller)->get(route('settlements.show', $settlement))->assertOk()
             ->assertSee('payment received, settlement to seller is manual')

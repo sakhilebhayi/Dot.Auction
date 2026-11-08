@@ -35,7 +35,7 @@ class BidAtomicityTest extends TestCase
     {
         $seller = User::factory()->create();
 
-        return Auction::create(array_merge([
+        return Auction::forceCreate(array_merge([
             'seller_id' => $seller->id,
             'title' => 'Signed Guitar',
             'starting_price' => 200,
@@ -114,7 +114,7 @@ class BidAtomicityTest extends TestCase
 
         $panel = Livewire::actingAs($buyer)->test(BidPanel::class, ['auction' => $auction]);
         // Settlement has not run yet, but the window closed after the page loaded.
-        $auction->update(['ends_at' => now()->subMinute()]);
+        $auction->forceFill(['ends_at' => now()->subMinute()])->save();
 
         $panel->set('bidAmount', 220)->call('placeBid')
             ->assertSet('error', 'This auction is no longer active.');
@@ -129,7 +129,7 @@ class BidAtomicityTest extends TestCase
         $buyer = $this->buyer();
 
         $panel = Livewire::actingAs($buyer)->test(BidPanel::class, ['auction' => $auction]);
-        $auction->update(['status' => 'ended']);
+        $auction->forceFill(['status' => 'ended'])->save();
 
         $panel->set('bidAmount', 220)->call('placeBid')
             ->assertSet('error', 'This auction is no longer active.');
@@ -288,10 +288,10 @@ class BidAtomicityTest extends TestCase
         $auction = $this->makeAuction();
         [$a, $b] = [$this->buyer(), $this->buyer()];
 
-        Bid::create(['auction_id' => $auction->id, 'bidder_id' => $a->id, 'amount' => 220, 'is_winning' => true]);
+        Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $a->id, 'amount' => 220, 'is_winning' => true]);
 
         $this->expectException(QueryException::class);
-        Bid::create(['auction_id' => $auction->id, 'bidder_id' => $b->id, 'amount' => 240, 'is_winning' => true]);
+        Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $b->id, 'amount' => 240, 'is_winning' => true]);
     }
 
     public function test_many_non_winning_bids_per_auction_are_still_allowed(): void
@@ -300,7 +300,7 @@ class BidAtomicityTest extends TestCase
         $a = $this->buyer();
 
         foreach ([220, 240, 260] as $amount) {
-            Bid::create(['auction_id' => $auction->id, 'bidder_id' => $a->id, 'amount' => $amount, 'is_winning' => false]);
+            Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $a->id, 'amount' => $amount, 'is_winning' => false]);
         }
 
         $this->assertSame(3, Bid::count());

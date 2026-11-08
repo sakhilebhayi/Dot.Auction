@@ -16,7 +16,7 @@ class AuctionBrowseTest extends TestCase
     {
         $seller = User::factory()->create();
 
-        return Auction::create(array_merge([
+        return Auction::forceCreate(array_merge([
             'seller_id' => $seller->id,
             'title' => 'Vintage Camera',
             'description' => 'A well kept vintage camera.',

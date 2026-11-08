@@ -19,7 +19,7 @@ class BidPanelTest extends TestCase
     {
         $seller = User::factory()->create();
 
-        return Auction::create(array_merge([
+        return Auction::forceCreate(array_merge([
             'seller_id' => $seller->id,
             'title' => 'Signed Guitar',
             'starting_price' => 200,
@@ -88,13 +88,13 @@ class BidPanelTest extends TestCase
         $firstBuyer = User::factory()->withPersonalTeam()->create();
         $newBuyer = User::factory()->withPersonalTeam()->create();
 
-        Bid::create([
+        Bid::forceCreate([
             'auction_id' => $auction->id,
             'bidder_id' => $firstBuyer->id,
             'amount' => 220,
             'is_winning' => true,
         ]);
-        $auction->update(['current_price' => 220]);
+        $auction->forceFill(['current_price' => 220])->save();
 
         Livewire::actingAs($newBuyer)
             ->test(BidPanel::class, ['auction' => $auction])

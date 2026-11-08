@@ -3,15 +3,19 @@
 namespace App\Livewire\Auctions;
 
 use App\Models\Auction;
+use App\Models\Bid;
+use App\Services\Auctions\AuctionSnapshot;
 use App\Services\Auctions\BidPlacer;
 use App\Services\Auctions\BidRejected;
 use App\Services\Auctions\BuyNowPurchaser;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Renderless;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
@@ -24,7 +28,11 @@ class BidPanel extends Component
      * assignment throws a TypeError for text ("abc") and its snapshot cannot hold the INF that "1e400" becomes. The
      * value is judged by BidPlacer, which accepts only a finite amount of at most 2 decimals.
      */
-    #[Validate('required|numeric|min:0.01')]
+    #[Validate('required|numeric|min:0.01', message: [
+        'required' => 'Enter the amount you want to bid.',
+        'numeric' => 'Enter your bid as a number, for example 250 or 250.50.',
+        'min' => 'Your bid must be more than zero.',
+    ])]
     public string $bidAmount = '';
 
     /**
@@ -112,9 +120,18 @@ class BidPanel extends Component
      */
     public function placeBid(): void
     {
-        $this->validate();
         $this->error = null;
         $this->success = null;
+
+        try {
+            $this->validate();
+        } catch (ValidationException $e) {
+            // The same words in $error (what the panel prints today) and in the validation bag (for @error).
+            $this->error = $e->validator->errors()->first('bidAmount') ?: 'Enter your bid as a number, for example 250 or 250.50.';
+            $this->placing = false;
+
+            throw $e;
+        }
 
         $limit = config('auction.bid_rate_limit');
         $rateKey = 'bid:'.auth()->id();
@@ -161,6 +178,12 @@ class BidPanel extends Component
      */
     public function buyNow(): void
     {
+        // A second click (or a replayed request) after the purchase went through is not an error: the sale stands,
+        // so leave the success message in place instead of clearing it and then failing with "no longer active".
+        if ($this->purchased) {
+            return;
+        }
+
         $this->error = null;
         $this->success = null;
 
@@ -177,15 +200,61 @@ class BidPanel extends Component
         try {
             app(BuyNowPurchaser::class)->buy($this->auction, auth()->user());
         } catch (BidRejected $e) {
-            $this->error = $e->getMessage();
             $this->syncFromDatabase();
+
+            // Another tab or request of this same buyer got there first: the auction is theirs, say so.
+            if ($this->boughtByMeAlready()) {
+                $this->markPurchased();
+
+                return;
+            }
+
+            $this->error = $e->getMessage();
 
             return;
         }
 
-        $this->purchased = true;
         $this->syncFromDatabase();
+        $this->markPurchased();
+    }
+
+    private function markPurchased(): void
+    {
+        $this->purchased = true;
+        $this->error = null;
         $this->success = 'You bought this auction for '.Auction::money($this->auction->current_price).'. Payment is not open yet, so nothing is due now.';
+    }
+
+    /**
+     * Whether the signed-in user already holds the winning bid at exactly the Buy Now price of an auction that has
+     * ended (what a completed Buy Now looks like).
+     */
+    private function boughtByMeAlready(): bool
+    {
+        $auction = $this->auction;
+
+        if ($auction->buy_now_price === null || $auction->status === 'active') {
+            return false;
+        }
+
+        return Bid::query()
+            ->where('auction_id', $auction->getKey())
+            ->where('bidder_id', auth()->id())
+            ->where('is_winning', true)
+            ->get(['amount'])
+            ->contains(fn ($bid) => Auction::toCents($bid->amount) === Auction::toCents($auction->buy_now_price));
+    }
+
+    /**
+     * A small, cached picture of the auction for polling and for a client-side countdown (see AuctionSnapshot for
+     * the contract). Renderless: it returns data to `$wire.snapshot()` and does not re-render the panel.
+     *
+     * @return array<string, mixed>
+     */
+    #[Renderless]
+    public function snapshot(): array
+    {
+        return app(AuctionSnapshot::class)->for($this->auction->getKey(), auth()->user());
     }
 
     private function syncFromDatabase(): void

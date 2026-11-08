@@ -196,7 +196,7 @@ class NotifyIngestTest extends TestCase
         $winner = $this->member(self::BUYER_UUID);
         $auction = $this->auction($seller, ['starts_at' => now()->subDays(2), 'ends_at' => now()->addMinutes(10)]);
         $bid = app(BidPlacer::class)->place($auction, $winner, '1234.50');
-        $auction->update(['ends_at' => now()->subMinute()]);
+        $auction->forceFill(['ends_at' => now()->subMinute()])->save();
         $this->fakeNotify(Http::response([], 202));
 
         $this->artisan('auction:settle-ended')->assertSuccessful();
@@ -229,7 +229,7 @@ class NotifyIngestTest extends TestCase
         $winner = $this->member(self::BUYER_UUID);
         $auction = $this->auction($seller, ['starts_at' => now()->subDays(2), 'ends_at' => now()->addMinutes(10)]);
         app(BidPlacer::class)->place($auction, $winner, '300.00');
-        $auction->update(['ends_at' => now()->subMinute()]);
+        $auction->forceFill(['ends_at' => now()->subMinute()])->save();
         $this->fakeNotify(Http::response([], 202));
 
         $this->artisan('auction:settle-ended')->assertSuccessful();
@@ -243,12 +243,12 @@ class NotifyIngestTest extends TestCase
     {
         $seller = $this->member(self::SELLER_UUID, 'Seller');
         $bidder = $this->member(self::BUYER_UUID);
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id, 'title' => 'Rare Coin', 'starting_price' => 50, 'reserve_price' => 500,
             'current_price' => 300, 'bid_increment' => 10, 'status' => 'pending_review',
             'starts_at' => now()->subDay(), 'ends_at' => now()->subMinute(),
         ]);
-        $bid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 300, 'is_winning' => true]);
+        $bid = Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => 300, 'is_winning' => true]);
         $proposal = ReserveNotMetProposal::create(['auction_id' => $auction->id, 'bid_id' => $bid->id, 'reserve_price' => 500, 'status' => 'pending']);
 
         Livewire::actingAs($seller)->test(ReserveDecisionPanel::class, ['proposal' => $proposal])->call('accept');
@@ -357,7 +357,7 @@ class NotifyIngestTest extends TestCase
         $user = $this->member();
         $user->email = '';
         $auction = $this->auction($this->member(self::SELLER_UUID, 'Seller'));
-        $bid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $this->member(self::RIVAL_UUID)->id, 'amount' => 300, 'is_winning' => true]);
+        $bid = Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $this->member(self::RIVAL_UUID)->id, 'amount' => 300, 'is_winning' => true]);
 
         $user->notify(new OutbidNotification($bid));
 
@@ -399,7 +399,7 @@ class NotifyIngestTest extends TestCase
         $winner = $this->member(self::BUYER_UUID);
         $auction = $this->auction($seller, ['starts_at' => now()->subDays(2), 'ends_at' => now()->addMinutes(10)]);
         app(BidPlacer::class)->place($auction, $winner, '300.00');
-        $auction->update(['ends_at' => now()->subMinute()]);
+        $auction->forceFill(['ends_at' => now()->subMinute()])->save();
 
         $this->artisan('auction:settle-ended')->assertSuccessful();
 
@@ -596,8 +596,8 @@ class NotifyIngestTest extends TestCase
     {
         $first = $this->member(self::BUYER_UUID);
         $auction = $this->auction($this->member(self::SELLER_UUID, 'Seller'));
-        $bid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $first->id, 'amount' => 240, 'is_winning' => false]);
-        $newBid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $this->member(self::RIVAL_UUID)->id, 'amount' => 300, 'is_winning' => true]);
+        $bid = Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $first->id, 'amount' => 240, 'is_winning' => false]);
+        $newBid = Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $this->member(self::RIVAL_UUID)->id, 'amount' => 300, 'is_winning' => true]);
         Queue::fake();
         $this->fakeNotify();
 

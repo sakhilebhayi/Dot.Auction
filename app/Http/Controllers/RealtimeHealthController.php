@@ -24,6 +24,13 @@ class RealtimeHealthController extends Controller
 {
     public function check(): JsonResponse
     {
+        // Reverb is intentionally off (AUCTION_REALTIME_ENABLED=false, the documented production setup): the bid panel
+        // polls instead. That is a degraded but working mode, so say so with a 200, or an uptime monitor pointed at
+        // this URL would page for a state nobody means to fix.
+        if (! config('auction.realtime.enabled', true)) {
+            return response()->json(['status' => 'degraded', 'mode' => 'polling']);
+        }
+
         $checks = [
             'broadcasting_config' => $this->checkBroadcastingConfig(),
             'queue_connection' => $this->checkQueueConnection(),

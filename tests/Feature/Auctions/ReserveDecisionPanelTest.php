@@ -22,7 +22,7 @@ class ReserveDecisionPanelTest extends TestCase
         $seller = User::factory()->create();
         $bidder = User::factory()->create();
 
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Rare Coin',
             'starting_price' => 50,
@@ -34,7 +34,7 @@ class ReserveDecisionPanelTest extends TestCase
             'ends_at' => now()->subMinute(),
         ]);
 
-        $bid = Bid::create([
+        $bid = Bid::forceCreate([
             'auction_id' => $auction->id,
             'bidder_id' => $bidder->id,
             'amount' => 300,
@@ -103,7 +103,7 @@ class ReserveDecisionPanelTest extends TestCase
 
         // Decided elsewhere (second tab / double submit) after this component hydrated.
         $proposal->update(['status' => 'rejected', 'decided_at' => now()]);
-        $auction->update(['status' => 'ended']);
+        $auction->forceFill(['status' => 'ended'])->save();
 
         $panel->call('accept');
 

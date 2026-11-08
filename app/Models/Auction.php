@@ -17,10 +17,15 @@ class Auction extends Model
     /** @use HasFactory<AuctionFactory> */
     use HasFactory;
 
+    /**
+     * Only what a seller types on the listing form. Everything the system decides (seller_id, status, current_price,
+     * snipe_extensions, image_path) is written with forceFill()/forceCreate() inside the services that own it, so a
+     * request that reaches a model by mistake cannot move a price or a status.
+     */
     protected $fillable = [
-        'seller_id', 'category_id', 'title', 'description', 'image_path',
-        'starting_price', 'reserve_price', 'current_price', 'buy_now_price',
-        'bid_increment', 'status', 'starts_at', 'ends_at', 'snipe_extensions',
+        'category_id', 'title', 'description',
+        'starting_price', 'reserve_price', 'buy_now_price',
+        'bid_increment', 'starts_at', 'ends_at',
     ];
 
     protected $casts = [

@@ -25,6 +25,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Realtime
+    |--------------------------------------------------------------------------
+    | `enabled`: whether Reverb pushes live updates. Production runs without it
+    | (BROADCAST_CONNECTION=log): set AUCTION_REALTIME_ENABLED=false there so
+    | /up/realtime reports "polling mode" with a 200 instead of a 503, and
+    | clients poll BidPanel::snapshot() every `poll_seconds`.
+    */
+    'realtime' => [
+        'enabled' => (bool) env('AUCTION_REALTIME_ENABLED', true),
+        'poll_seconds' => (int) env('AUCTION_POLL_SECONDS', 10),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Bid rate limit
     |--------------------------------------------------------------------------
     | Maximum bid submissions per user within the decay window (seconds).

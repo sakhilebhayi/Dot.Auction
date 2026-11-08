@@ -423,7 +423,7 @@ class AuctionImageTest extends TestCase
         [$image] = $this->attach($draft);
 
         $this->actingAs($seller)->get(route('auctions.images.show', [$draft, $image]))->assertOk();
-        $this->actingAs($this->seller())->get(route('auctions.images.show', [$draft, $image]))->assertForbidden();
+        $this->actingAs($this->seller())->get(route('auctions.images.show', [$draft, $image]))->assertNotFound();
     }
 
     public function test_an_image_is_only_served_under_its_own_auction(): void
