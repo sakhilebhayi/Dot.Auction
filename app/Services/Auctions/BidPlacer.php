@@ -40,7 +40,9 @@ class BidPlacer
         $auctionId = $auction instanceof Auction ? $auction->getKey() : $auction;
         $amountCents = $this->parseCents($amount);
         $tokenKey = $submissionToken !== null && $submissionToken !== ''
-            ? "bid-token:{$auctionId}:{$bidder->getKey()}:{$submissionToken}"
+            // The token comes from the browser, so it is hashed: any length or character set stays a fixed-size cache key
+            // (the database cache's key column is 255 characters; a 10 kB token was a 500).
+            ? "bid-token:{$auctionId}:{$bidder->getKey()}:".hash('sha256', $submissionToken)
             : null;
         $tokenClaimed = false;
 

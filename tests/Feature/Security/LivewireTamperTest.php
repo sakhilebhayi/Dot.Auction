@@ -121,6 +121,8 @@ class LivewireTamperTest extends TestCase
         $this->assertSame(0, Bid::where('auction_id', $lot->id)->count(), 'a hostile amount was accepted as a bid');
 
         // A token the browser invents: huge, or full of cache-key characters. It must not 500 and must not skip the rules.
+        // Production caches in the database (key column 255 characters), so the tamper runs against that store.
+        config(['cache.default' => 'database']);
         foreach ([str_repeat('t', 10000), "a:b\n c\0d", '../../x', ''] as $token) {
             Livewire::test(BidPanel::class, ['auction' => $lot])->set('submissionToken', $token)->set('bidAmount', '1')->call('placeBid')->assertSet('success', null);
         }
