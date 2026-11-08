@@ -42,7 +42,7 @@
                     <span>{{ $o->priceLabel }}</span>
                     <span class="lot-price__meta">
                         @if (in_array($state, ['scheduled', 'draft'], true))
-                            steps of {{ $step }}
+                            bid step {{ $step }}
                         @elseif ($o->bidCount === 0)
                             No bids yet
                         @else

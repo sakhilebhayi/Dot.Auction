@@ -183,3 +183,34 @@ host pinning, fails on any authenticated route not listed (or explained in `SKIP
 `AUCTION_DISPLAY_TIMEZONE`, `AUCTION_REALTIME_ENABLED`, `AUCTION_POLL_SECONDS`, `AUCTION_SWEEP_LOOKBACK_DAYS`,
 `AUCTION_SWEEP_GRACE_MINUTES`, `TRUSTED_HOSTS`, `NOTIFY_RESERVE_NOT_MET_EVENT`. Migrations added:
 `2026_11_08_000002` (nullable column), `2026_11_08_000003` (foreign keys RESTRICT).
+
+## 9. The lot page and bidding (UI agent ui-auction, W4)
+
+Branch `feat/r42-uia`. Words for every state and viewer live in `App\Support\LotOutcome`; the page is `auctions/show` plus the Livewire
+`BidPanel`, `WatchlistButton` and `ReserveDecisionPanel` (names and public API unchanged). No auction rule was changed.
+
+### Taken
+
+| # | Decision | Why |
+|---|---|---|
+| A-1 | **A leading bidder gets no bid form.** They see "You are leading" and are told a higher bid from them would only raise their own price. `BidPlacer` still accepts a self-raise (rule untouched); the page does not invite it, and `BidPanel::review()` / `placeBid()` refuse with words if a stale tab sends one. There is no "Set a higher maximum" because there is no proxy or maximum bid to set. Buy Now stays available to the leader. | The brief: decide from `BidPlacer`'s real behaviour. A control that only costs the bidder money is not offered. |
+| A-2 | **Two steps for a binding bid.** "Place bid" judges the amount (empty, zero or negative, not a number, too low with the minimum stated, more than 2 decimals, above the platform ceiling) and prints the reason under the field; only a valid amount opens the confirm dialog ("Place a bid of R1,300.00?", Enter confirms, Esc or "Change amount" cancels). The browser's `min` attribute is gone and the form is `novalidate`, so the server's sentence is never hidden. | Terms say a bid is binding and cannot be withdrawn; the audit found fat-finger and silent failures. |
+| A-3 | **Outbid viewers get one tap to the minimum**: "Bid R1,350.00" puts the lowest valid bid in the field and goes to the same confirm step (it never skips it). The sentence states the gap to the minimum from their own last bid. | Brief item 2. |
+| A-4 | **Live without Reverb:** `resources/js/auction-live.js` calls the renderless `snapshot()` every `poll_seconds` (3 s in the last two minutes, 30 s when Reverb is present), only while the tab is visible, and re-renders (`refreshState`) only when the snapshot differs from the markup (`data-sig`). The clock is corrected from `server_now_ms`; at zero the panel asks the server and never decides the result from the client clock. A lot whose `ends_at` has passed but is not settled yet reads "Bidding has closed. The result is being recorded" and keeps polling until the settlement job has run. Default `AUCTION_POLL_SECONDS` is now **4** (was 10; the brief asked for 3 to 5 s). The Reverb listener is registered only when `broadcasting.default` is `reverb` with a key, so Livewire no longer warns "Laravel Echo cannot be found" for this component. | F-04 and the audit's "real time is a claim". |
+| A-5 | **`$wire.call('snapshot')`, not `$wire.snapshot()`**: `snapshot` is a reserved property on Livewire's `$wire`, so the documented call in section 8 does not work from JavaScript. The PHP method name is unchanged. | Found by running it. |
+| A-6 | **A repeat press is not an error.** A second request of the same confirm button after the bid went through leaves the success message standing; a replay with the old token that finds the viewer leading is read as the bid that succeeded. | Double-submit was already safe server-side; the UI no longer reports it as a failure. |
+| A-7 | **A reserve-rejected lot is "Not sold".** `is_winning` stays on the rejected bid, so anything that reads `winningBid` alone says "Sold". `LotOutcome` and `Auction::reserveProposal()` (new relation) decide; `Display::lotState()` (shell, used by browse cards) still has the old reading and should call the same check. | Verified on the demo's rejected lot. |
+| A-8 | **Buy now detection for the words** ("bought with Buy Now"): the winning bid equals the Buy Now price and was placed within 5 seconds of `ends_at` (BuyNowPurchaser pulls the close to now). Only wording depends on it. | No stored flag exists. |
+| A-9 | **Seller view:** no Watch button on your own lot; "Edit lot" / "Edit draft" (policy `update`) and "Manage your lots" in the header; a pending reserve decision appears in the bid column with confirm dialogs for accept and reject, and the page refreshes when it is decided (`reserve-decided` event). The decision panel names the bidder with `maskedName()` (it used the full name). | Brief items 2 and 7; bidder privacy matches the bid history. |
+| A-10 | **Amount input** accepts "R 1 300", "R1,300.50" and "1 300.50" (symbol, spaces and thousands commas dropped, nothing else guessed). A decimal comma is not read. | South African typing habits without guessing. |
+| A-11 | **The page shows no stale figure:** the bid column is the only place that carries the price, the clock and the result; the facts column holds only things that cannot change while the lot is live. | The audit's stale price. |
+
+### Questions for the owner (rules, not decided here)
+
+| # | Question |
+|---|---|
+| Q-A1 | Should `BidPlacer` refuse a bid from the person who already leads? Today it accepts it and raises their own price. The UI hides the form either way. |
+| Q-A2 | Should a leading bidder be able to set a **maximum** (proxy bidding)? It would need its own design inside the placer's lock; the page has no such control. |
+| Q-A3 | When the seller rejects a below-reserve bid, the high bidder is told nothing by the system (decision 3). The page now shows "The seller did not accept your bid" to anyone who opens it, but a notice is still owed. Also: a decision deadline, and what happens at it. |
+| Q-A4 | May a bid be placed above the Buy Now price? Today the placer accepts it and Buy Now disappears once the price reaches it. |
+| Q-A5 | The first bid is the starting price plus one step, not the starting price. Is that intended? The page now says "Opening bid is at least R220.00" so it is at least stated. |
