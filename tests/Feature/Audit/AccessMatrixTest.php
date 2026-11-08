@@ -176,7 +176,7 @@ class AccessMatrixTest extends TestCase
         $buyer = User::factory()->withPersonalTeam()->create();
 
         $this->actingAs($buyer)->get(route('auctions.show', $auction))->assertOk()
-            ->assertDontSee('987654')->assertDontSee('987 654')->assertSee('Reserve not yet met');
+            ->assertDontSee('987654')->assertDontSee('987 654')->assertSee('Reserve not met');
         $this->get(route('auctions.index'))->assertOk()->assertDontSee('987654');
         $this->assertArrayNotHasKey('reserve_price', $auction->toArray());
     }

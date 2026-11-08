@@ -88,18 +88,18 @@ class BidAtomicityTest extends TestCase
         $panelB = Livewire::actingAs($b)->test(BidPanel::class, ['auction' => $auction]);
 
         $this->actingAs($a);
-        $panelA->set('bidAmount', 220)->call('placeBid')->assertSet('success', 'Bid placed successfully!');
+        $panelA->set('bidAmount', 220)->call('placeBid')->assertSet('success', 'Your bid of R220.00 is in.');
         $this->actingAs($b);
         // B's component was hydrated at price 200 and still believes 220 is legal.
         $panelB->set('bidAmount', 220)->call('placeBid')
             ->assertSet('success', null)
-            ->assertSet('error', 'Minimum bid is R240.00');
+            ->assertSet('error', 'Your bid is too low. The next valid bid is R240.00.');
 
         $this->assertSame(1, Bid::count());
         $this->assertSame(1, $this->winnerCount($auction));
         $this->assertEquals(220, $auction->fresh()->current_price);
 
-        $panelB->set('bidAmount', 240)->call('placeBid')->assertSet('success', 'Bid placed successfully!');
+        $panelB->set('bidAmount', 240)->call('placeBid')->assertSet('success', 'Your bid of R240.00 is in.');
 
         $this->assertSame(2, Bid::count());
         $this->assertSame(1, $this->winnerCount($auction));
@@ -117,7 +117,7 @@ class BidAtomicityTest extends TestCase
         $auction->forceFill(['ends_at' => now()->subMinute()])->save();
 
         $panel->set('bidAmount', 220)->call('placeBid')
-            ->assertSet('error', 'This auction is no longer active.');
+            ->assertSet('error', 'This lot has closed. Your bid was not placed.');
 
         $this->assertSame(0, Bid::count());
         $this->assertEquals(200, $auction->fresh()->current_price);
@@ -132,7 +132,7 @@ class BidAtomicityTest extends TestCase
         $auction->forceFill(['status' => 'ended'])->save();
 
         $panel->set('bidAmount', 220)->call('placeBid')
-            ->assertSet('error', 'This auction is no longer active.');
+            ->assertSet('error', 'This lot has closed. Your bid was not placed.');
 
         $this->assertSame(0, Bid::count());
     }
@@ -278,7 +278,7 @@ class BidAtomicityTest extends TestCase
         $first = $panel->get('submissionToken');
         $this->assertNotEmpty($first);
 
-        $panel->set('bidAmount', 220)->call('placeBid')->assertSet('success', 'Bid placed successfully!');
+        $panel->set('bidAmount', 220)->call('placeBid')->assertSet('success', 'Your bid of R220.00 is in.');
 
         $this->assertNotSame($first, $panel->get('submissionToken'));
     }

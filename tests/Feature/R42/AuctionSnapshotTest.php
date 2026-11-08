@@ -58,7 +58,7 @@ class AuctionSnapshotTest extends TestCase
         $this->assertSame(5400, $snap['seconds_remaining']);
         $this->assertSame('2026-11-08T12:00:00Z', $snap['server_now']);
         $this->assertSame(now()->getTimestamp() * 1000, $snap['server_now_ms']);
-        $this->assertSame(10, $snap['poll_seconds']);
+        $this->assertSame(4, $snap['poll_seconds']);
         $this->assertFalse($snap['leading_bidder_is_me']);
     }
 

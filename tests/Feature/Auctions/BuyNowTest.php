@@ -212,7 +212,7 @@ class BuyNowTest extends TestCase
             ->test(BidPanel::class, ['auction' => $auction])
             ->assertSee('Buy now for R500.00')
             ->call('buyNow')
-            ->assertSee('You bought this auction')
+            ->assertSee('You bought this lot')
             ->assertDontSee('Buy now for');
 
         $this->assertSame('ended', $auction->fresh()->status);

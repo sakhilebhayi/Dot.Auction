@@ -52,8 +52,8 @@ class BidHistoryOrderTest extends TestCase
 
         $viewer = User::factory()->withPersonalTeam()->create();
 
-        Livewire::actingAs($viewer)
-            ->test(BidPanel::class, ['auction' => $auction])
-            ->assertSeeInOrder(['R230.00', 'R220.00', 'R210.00']);
+        $text = preg_replace('/\s+/', ' ', strip_tags(Livewire::actingAs($viewer)->test(BidPanel::class, ['auction' => $auction])->html()));
+        // The money component sets symbol, whole and cents in separate spans; as text they read R230.00.
+        $this->assertTrue(strpos($text, 'R230.00') < strpos($text, 'R220.00', strpos($text, 'R230.00')) && strpos($text, 'R220.00') < strpos($text, 'R210.00'));
     }
 }

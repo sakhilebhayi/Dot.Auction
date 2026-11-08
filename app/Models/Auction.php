@@ -107,6 +107,17 @@ class Auction extends Model
         return $this->hasOne(Bid::class)->where('is_winning', true);
     }
 
+    /**
+     * The seller's reserve decision for this lot, if it ever ended below its reserve (pending, accepted or rejected).
+     * A rejected proposal keeps the `is_winning` flag on its bid, so a lot is only "sold" when this is not rejected.
+     *
+     * @return HasOne<ReserveNotMetProposal, $this>
+     */
+    public function reserveProposal(): HasOne
+    {
+        return $this->hasOne(ReserveNotMetProposal::class)->latestOfMany();
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(AuctionItem::class);

@@ -72,8 +72,9 @@ class ReserveDecisionPanel extends Component
             }
         });
 
-        // Show the real, current state (including a decision made elsewhere).
+        // Show the real, current state (including a decision made elsewhere), and tell the lot page it can stop saying "deciding".
         $this->proposal = $this->proposal->fresh() ?? $this->proposal;
+        $this->dispatch('reserve-decided', auctionId: $this->proposal->auction_id);
     }
 
     public function render(): View

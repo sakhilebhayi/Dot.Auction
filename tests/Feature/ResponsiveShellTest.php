@@ -168,14 +168,19 @@ class ResponsiveShellTest extends TestCase
         $this->assertSame(1, $dashboard->query('//div[contains(@class,"dot-module-grid")]')->length);
     }
 
-    public function test_the_auction_page_stat_grid_and_two_column_layout_stack_on_phones(): void
+    public function test_the_lot_page_puts_the_bidding_column_before_the_photos_so_a_phone_sees_the_bid_first(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $auction = Auction::factory()->create(['title' => 'Massey Ferguson 290 tractor']);
 
-        $xpath = $this->xpath($this->actingAs($user)->get(route('auctions.show', $auction))->assertOk()->getContent());
+        $html = $this->actingAs($user)->get(route('auctions.show', $auction))->assertOk()->getContent();
+        $xpath = $this->xpath($html);
 
-        $this->assertSame(1, $xpath->query('//div[contains(@class,"dot-two-col")]')->length);
-        $this->assertSame(1, $xpath->query('//div[contains(@class,"dot-stat-grid")]')->length);
+        // One container-query layout (single column on a phone, two columns from 56rem of page width) and no fixed grid.
+        $this->assertSame(1, $xpath->query('//div[contains(@class,"lot-wrap")]/div[contains(@class,"lot")]')->length);
+        $this->assertSame(0, $xpath->query('//div[contains(@class,"dot-two-col")]')->length);
+        // Source order is the phone order: the bid form and the price come before the gallery and the description.
+        $this->assertLessThan(strpos($html, 'lot__gallery'), strpos($html, 'data-ds-bid-input'));
+        $this->assertLessThan(strpos($html, 'lot__details'), strpos($html, 'lot-price__amount'));
     }
 }

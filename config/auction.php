@@ -34,7 +34,7 @@ return [
     */
     'realtime' => [
         'enabled' => (bool) env('AUCTION_REALTIME_ENABLED', true),
-        'poll_seconds' => (int) env('AUCTION_POLL_SECONDS', 10),
+        'poll_seconds' => (int) env('AUCTION_POLL_SECONDS', 4),
     ],
 
     /*
