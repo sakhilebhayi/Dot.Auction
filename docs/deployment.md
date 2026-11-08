@@ -121,6 +121,9 @@ SESSION_SECURE_COOKIE=true
 CACHE_STORE=database
 QUEUE_CONNECTION=database
 BROADCAST_CONNECTION=log      # not reverb: see "Reverb does not run here"
+AUCTION_REALTIME_ENABLED=false  # Reverb is off: /up/realtime answers 200 "polling mode" (R-42 F-26); panels poll
+AUCTION_DISPLAY_TIMEZONE=Africa/Johannesburg   # what people read and type; storage stays UTC (F-11)
+TRUSTED_HOSTS=                # empty = the APP_URL host only; add the www form here if it is ever served (F-19)
 FILESYSTEM_DISK=local
 
 MAIL_MAILER=smtp
