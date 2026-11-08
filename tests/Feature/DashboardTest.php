@@ -149,7 +149,7 @@ class DashboardTest extends TestCase
             ->assertSee('href="#decisions"', false)
             ->assertSee('id="decisions"', false)
             ->assertSee('Awaiting your decision')
-            ->assertSee('Accept top bid');
+            ->assertSee('Reject the bid');
     }
 
     public function test_a_seller_sees_only_their_real_numbers_and_no_zeros(): void

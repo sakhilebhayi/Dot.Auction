@@ -156,7 +156,7 @@ class SellerListingsPageTest extends TestCase
 
         $page = $this->actingAs($seller)->get(route('seller.auctions.index'))->assertOk()
             ->assertSee('Your decision')
-            ->assertSee('Accept top bid')
+            ->assertSee('Reject the bid')
             ->assertSee('Bea Bidder');
         $this->assertStringContainsString('reserve-decision-panel', $page->getContent());
 
