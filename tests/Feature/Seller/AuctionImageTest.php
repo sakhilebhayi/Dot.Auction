@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Seller;
 
+use App\Actions\Jetstream\DeleteUser;
 use App\Models\Auction;
 use App\Models\AuctionImage;
 use App\Models\Bid;
@@ -24,6 +25,12 @@ class AuctionImageTest extends TestCase
         parent::setUp();
         Storage::fake(self::DISK);
         Storage::fake('public');
+    }
+
+    /** The uploaded files on the disk, without the smaller copies that are made next to them. */
+    private function sourceFiles(): array
+    {
+        return array_values(array_filter(Storage::disk(self::DISK)->allFiles(), fn (string $f) => ! preg_match('/-(thumb|medium|large)\.[a-z]+$/', $f)));
     }
 
     private function seller(): User
@@ -127,7 +134,7 @@ class AuctionImageTest extends TestCase
             ->assertSessionHasErrors('images');
 
         $this->assertSame(6, $auction->images()->count());
-        $this->assertCount(6, Storage::disk(self::DISK)->allFiles());
+        $this->assertCount(6, $this->sourceFiles());
     }
 
     public function test_an_upload_that_would_pass_the_limit_is_refused_whole(): void
@@ -141,7 +148,7 @@ class AuctionImageTest extends TestCase
         ])->assertSessionHasErrors('images');
 
         $this->assertSame(4, $auction->images()->count(), 'all-or-nothing: no partial save');
-        $this->assertCount(4, Storage::disk(self::DISK)->allFiles());
+        $this->assertCount(4, $this->sourceFiles());
     }
 
     public function test_seven_files_in_one_request_are_refused(): void
@@ -385,17 +392,24 @@ class AuctionImageTest extends TestCase
         Storage::disk(self::DISK)->assertExists($keep->path);
     }
 
-    public function test_deleting_the_seller_account_removes_their_files(): void
+    public function test_leaving_removes_the_photos_of_unpublished_drafts_and_keeps_those_of_a_published_auction(): void
     {
         $seller = $this->seller();
-        $mine = $this->auctionFor($seller);
-        $path = $this->attach($mine)[0]->path;
+        $draft = Auction::factory()->draft()->create(['seller_id' => $seller->id]);
+        $draftPath = $this->attach($draft)[0]->path;
+        $cancelled = Auction::factory()->create(['seller_id' => $seller->id, 'status' => 'cancelled']);
+        $keptPath = $this->attach($cancelled)[0]->path;
         $other = $this->attach($this->auctionFor($this->seller()))[0];
 
-        $seller->delete();
+        // Account deletion anonymises (R-42 F-02): published auctions are other people's records and stay with their
+        // photos, a draft nobody has seen goes with its files.
+        app(DeleteUser::class)->delete($seller);
 
-        Storage::disk(self::DISK)->assertMissing($path);
+        Storage::disk(self::DISK)->assertMissing($draftPath);
+        Storage::disk(self::DISK)->assertExists($keptPath);
         Storage::disk(self::DISK)->assertExists($other->path);
+        $this->assertNull(Auction::find($draft->id));
+        $this->assertNotNull(Auction::find($cancelled->id));
     }
 
     // ----------------------------------------------------------------- serving
@@ -409,7 +423,8 @@ class AuctionImageTest extends TestCase
 
         foreach ([$seller, $buyer] as $viewer) {
             $response = $this->actingAs($viewer)->get(route('auctions.images.show', [$auction, $image]))->assertOk();
-            $this->assertSame('image/jpeg', $response->headers->get('Content-Type'));
+            // A re-encoded copy (WebP where GD can write it); the stored file only when no copy could be made.
+            $this->assertContains($response->headers->get('Content-Type'), ['image/jpeg', 'image/webp']);
             $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
             $this->assertStringContainsString('private', $response->headers->get('Cache-Control'));
             $this->assertStringStartsWith('inline', $response->headers->get('Content-Disposition'));
@@ -423,7 +438,7 @@ class AuctionImageTest extends TestCase
         [$image] = $this->attach($draft);
 
         $this->actingAs($seller)->get(route('auctions.images.show', [$draft, $image]))->assertOk();
-        $this->actingAs($this->seller())->get(route('auctions.images.show', [$draft, $image]))->assertForbidden();
+        $this->actingAs($this->seller())->get(route('auctions.images.show', [$draft, $image]))->assertNotFound();
     }
 
     public function test_an_image_is_only_served_under_its_own_auction(): void
@@ -487,7 +502,8 @@ class AuctionImageTest extends TestCase
         $this->assertStringContainsString('enctype="multipart/form-data"', $html);
         $this->assertStringContainsString('1 of 6', $html);
         $this->assertStringContainsString(route('seller.auctions.images.destroy', [$auction, $image]), $html);
-        $this->assertStringContainsString('Remove photo 1', $html);
+        // The visible word is "Remove"; "photo 1" is the screen-reader part of the same button, so the text is checked with tags stripped.
+        $this->assertStringContainsString('Remove photo 1', preg_replace('/\s+/', ' ', strip_tags($html)));
     }
 
     public function test_the_upload_control_disappears_at_the_limit(): void
@@ -506,7 +522,7 @@ class AuctionImageTest extends TestCase
     {
         $html = $this->actingAs($this->seller())->get(route('seller.auctions.create'))->assertOk()->getContent();
 
-        $this->assertStringContainsString('after you save the draft', strtolower($html));
+        $this->assertStringContainsString('save the draft first, then add up to 6 photos', strtolower($html));
         $this->assertStringNotContainsString('id="images"', $html);
     }
 }

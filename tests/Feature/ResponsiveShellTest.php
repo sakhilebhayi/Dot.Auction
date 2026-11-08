@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Auction;
+use App\Models\Bid;
 use App\Models\Team;
 use App\Models\User;
 use DOMDocument;
@@ -12,9 +13,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * The phone shell: below 860px the sidebar is an off-canvas drawer opened from a labelled Menu
- * button. These tests pin the markup hooks (see the "Responsive shell" section of the README);
- * the layout itself is CSS and is checked by eye, not here.
+ * The signed-in shell (R-42): a rail from 64rem up, a top bar everywhere, and a bottom bar plus a menu sheet on phones. These
+ * tests pin the markup hooks (landmarks, skip link, one h1, titles, navigation, bell, theme); the layout itself is CSS and is
+ * checked by eye and in a browser, not here.
  */
 class ResponsiveShellTest extends TestCase
 {
@@ -45,51 +46,63 @@ class ResponsiveShellTest extends TestCase
     }
 
     #[DataProvider('shellPages')]
-    public function test_every_shell_page_has_the_labelled_menu_button_drawer_and_backdrop(string $url): void
+    public function test_every_shell_page_has_the_skip_link_landmarks_one_h1_a_title_and_both_navigations(string $url): void
     {
         $user = User::factory()->withPersonalTeam()->create();
 
         $html = $this->actingAs($user)->get($url)->assertOk()->getContent();
         $xpath = $this->xpath($html);
 
-        $button = $xpath->query('//header[contains(@class,"topbar")]//button[@id="shell-menu-button"]');
-        $this->assertSame(1, $button->length, 'Menu button must live in the top bar');
-        $this->assertSame('false', $button->item(0)->getAttribute('aria-expanded'));
-        $this->assertSame('shell-drawer', $button->item(0)->getAttribute('aria-controls'));
-        $label = '';
-        foreach ($xpath->query('.//text()[not(ancestor::span[@aria-hidden="true"])]', $button->item(0)) as $text) {
-            $label .= $text->textContent;
+        // Reason for the rewrite (R-42 shell): the old fixed sidebar and off-canvas drawer are replaced by a rail on wide screens and a
+        // bottom bar plus a menu sheet on phones. The hooks pinned here are the new ones.
+        $skip = $xpath->query('//a[contains(@class,"skip-link")][@href="#main"]');
+        $this->assertSame(1, $skip->length, 'a skip link comes first');
+        $this->assertSame(1, $xpath->query('//main[@id="main"]')->length, 'one main landmark, the skip link target');
+        $this->assertSame(1, $xpath->query('//header[contains(@class,"sh-top")]')->length, 'one top bar');
+        $this->assertSame(1, $xpath->query('//h1')->length, 'exactly one h1 per page');
+        $this->assertNotSame('', trim($xpath->query('//h1')->item(0)->textContent));
+
+        $title = $xpath->query('//title')->item(0)->textContent;
+        $this->assertStringEndsWith('| Dot.Auction', $title, 'every page title names the page first');
+        $this->assertNotSame('Dot.Auction', $title);
+
+        $rail = $xpath->query('//nav[contains(@class,"sh-side")][@aria-label="Main"]//a[@href="'.route('auctions.index').'"]');
+        $this->assertSame(1, $rail->length, 'the rail lists Browse');
+        $bar = $xpath->query('//nav[contains(@class,"sh-bar")]//a[@href="'.route('auctions.index').'"]');
+        $this->assertSame(1, $bar->length, 'the phone bar lists Browse');
+        $this->assertSame(0, $xpath->query('//nav[contains(@class,"sh-bar")]//a[@href="'.route('seller.auctions.create').'"]')->length, 'selling does not outrank buying in the phone bar');
+        $this->assertSame(0, $xpath->query('//nav[contains(@class,"sh-bar")]//a[contains(@class,"is-accent")]')->length, 'the bar has no primary action: the page owns it');
+        foreach (['dashboard', 'buyer.bids'] as $name) {
+            $this->assertSame(1, $xpath->query('//nav[contains(@class,"sh-bar")]//a[@href="'.route($name).'"]')->length, "the phone bar lists $name");
         }
-        $this->assertSame('Menu', trim(preg_replace('/\s+/', ' ', $label) ?? ''), 'The button carries a visible text label, not just an icon');
-        $this->assertSame('', $button->item(0)->getAttribute('aria-label'), 'The visible text is the accessible name');
-
-        $drawer = $xpath->query('//aside[@id="shell-drawer"]');
-        $this->assertSame(1, $drawer->length);
-        $this->assertNotSame('', $drawer->item(0)->getAttribute('aria-label'));
-        $this->assertSame(1, $xpath->query('//aside[@id="shell-drawer"]//nav//a[@href="'.route('auctions.index').'"]')->length, 'The nav lives inside the drawer');
-        $this->assertSame(1, $xpath->query('//aside[@id="shell-drawer"]//button[@id="shell-close"][@aria-label="Close menu"]')->length);
-
-        $this->assertSame(1, $xpath->query('//div[@id="shell-backdrop"][contains(@class,"shell-backdrop")]')->length);
+        $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"]//a[@href="'.route('seller.auctions.create').'"]')->length, 'List a lot is in the menu sheet');
+        $this->assertSame(1, $xpath->query('//nav[contains(@class,"sh-bar")]//button[@data-dialog-open="shell-menu"]')->length, 'More opens the menu sheet');
+        $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"][@aria-labelledby="shell-menu-title"]')->length);
         $this->assertSame(1, $xpath->query('//meta[@name="viewport"][contains(@content,"width=device-width")]')->length);
+
+        // Nothing from a CDN, and no icon font.
+        foreach (['cdn.tailwindcss.com', 'fonts.googleapis.com', 'material-symbols', 'unpkg.com'] as $gone) {
+            $this->assertStringNotContainsString($gone, $html, "$gone is not loaded any more");
+        }
+        $this->assertSame(0, $xpath->query('//*[@id="shell-drawer"]')->length, 'the old drawer is gone');
     }
 
-    public function test_the_sidebar_carries_the_team_switcher_and_log_out_at_every_width_and_the_legacy_bar_is_always_hidden(): void
+    public function test_the_rail_and_the_phone_menu_carry_the_account_links_team_switcher_and_log_out(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
 
         $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
         $xpath = $this->xpath($html);
 
-        $this->assertSame(1, $xpath->query('//aside[@id="shell-drawer"]//div[contains(@class,"shell-account")]//a[@href="'.route('teams.show', $user->currentTeam->id).'"]')->length);
-        $this->assertSame(1, $xpath->query('//aside[@id="shell-drawer"]//form[@action="'.route('logout').'"]//button[@type="submit"]')->length);
-        // The legacy Jetstream bar sits under the fixed top bar at every width, so it is hidden outright
-        // (not only under 860px) and its links live in the sidebar instead.
-        $this->assertSame(1, $xpath->query('//div[contains(@class,"shell-legacy-nav")]/nav')->length);
-        $this->assertMatchesRegularExpression('/\.shell-legacy-nav\s*\{\s*display:\s*none;\s*\}/', $html);
-        $this->assertDoesNotMatchRegularExpression('/\.shell-menu-btn[^{]*\.shell-account[^{]*\{\s*display:\s*none/', $html, 'The account section is not hidden on desktop');
+        $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"]//a[@href="'.route('teams.show', $user->currentTeam->id).'"]')->length);
+        $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"]//form[@action="'.route('logout').'"]//button[@type="submit"]')->length);
+        $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"]//button[@data-theme-toggle]')->length);
+        // Desktop: the account menu in the top bar holds profile, team and log out.
+        $this->assertSame(1, $xpath->query('//header[contains(@class,"sh-top")]//div[@data-ds-dropdown]//form[@action="'.route('logout').'"]')->length);
+        $this->assertSame(0, $xpath->query('//div[contains(@class,"shell-legacy-nav")]')->length, 'the hidden legacy Jetstream bar is no longer rendered');
     }
 
-    public function test_the_drawer_lists_every_team_to_switch_to_when_the_user_has_several(): void
+    public function test_the_menu_lists_every_team_to_switch_to_when_the_user_has_several(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $other = Team::factory()->create(['user_id' => $user->id, 'name' => 'Boerdery Naledi', 'personal_team' => false]);
@@ -97,72 +110,76 @@ class ResponsiveShellTest extends TestCase
         $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
         $xpath = $this->xpath($html);
 
-        $forms = $xpath->query('//aside[@id="shell-drawer"]//form[@action="'.route('current-team.update').'"]');
-        $this->assertSame(2, $forms->length);
-        $this->assertSame(1, $xpath->query('//aside[@id="shell-drawer"]//form[@action="'.route('current-team.update').'"][input[@name="team_id"][@value="'.$other->id.'"]]//button[contains(.,"Boerdery Naledi")]')->length);
+        $forms = $xpath->query('//header[contains(@class,"sh-top")]//form[@action="'.route('current-team.update').'"]');
+        $this->assertSame(2, $forms->length, 'the account menu lists both teams');
+        $this->assertSame(1, $xpath->query('//header[contains(@class,"sh-top")]//form[@action="'.route('current-team.update').'"][input[@name="team_id"][@value="'.$other->id.'"]]//button[contains(.,"Boerdery Naledi")]')->length);
     }
 
-    public function test_the_notification_bell_is_labelled_and_reachable_in_the_top_bar(): void
+    public function test_the_notification_bell_and_theme_toggle_are_named_and_reachable_in_the_top_bar(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
 
         $xpath = $this->xpath($this->actingAs($user)->get('/dashboard')->assertOk()->getContent());
 
-        $this->assertSame(1, $xpath->query('//header[contains(@class,"topbar")]//button[@aria-label="Notifications"]')->length);
-        $this->assertSame(1, $xpath->query('//header[contains(@class,"topbar")]//button[@aria-label="Toggle dark mode"]')->length);
+        $bell = $xpath->query('//header[contains(@class,"sh-top")]//button[contains(@class,"ds-iconbtn")][.//*[contains(@class,"sr-only")][contains(.,"Notifications")]]');
+        $this->assertSame(1, $bell->length, 'the bell is named by its own text, so the visible count is part of the name');
+        $this->assertSame(0, $xpath->query('//header[contains(@class,"sh-top")]//button[@aria-label="Notifications"]')->length, 'no aria-label that differs from the visible text');
+        $this->assertSame(1, $xpath->query('//header[contains(@class,"sh-top")]//button[@data-theme-toggle]')->length);
     }
 
-    public function test_the_shell_script_wires_escape_backdrop_and_the_breakpoint(): void
+    public function test_the_theme_choice_is_applied_before_first_paint_and_the_bundle_wires_the_behaviour(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
 
         $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
 
-        $this->assertStringContainsString("getElementById('shell-menu-button')", $html);
-        $this->assertStringContainsString("'Escape'", $html);
-        $this->assertStringContainsString('(min-width: 860px)', $html);
-        $this->assertStringContainsString('max-width: 859.98px', $html);
-        $this->assertStringContainsString('prefers-reduced-motion', $html);
-    }
+        $this->assertStringContainsString("localStorage.getItem('dot-theme')", $html, 'the head script restores the saved theme');
+        $this->assertStringContainsString('prefers-color-scheme: dark', $html);
 
-    public function test_the_dashboard_and_seller_tables_scroll_inside_their_own_container(): void
-    {
-        $user = User::factory()->withPersonalTeam()->create();
-        Auction::factory()->create(['seller_id' => $user->id, 'title' => 'Hereford heifers, twelve head']);
-
-        foreach (['/dashboard', '/seller/auctions'] as $url) {
-            $xpath = $this->xpath($this->actingAs($user)->get($url)->assertOk()->getContent());
-
-            $wrapped = $xpath->query('//div[contains(@class,"table-scroll")]//table[contains(@class,"dot-table")]');
-            $this->assertSame(1, $wrapped->length, "$url: the auctions table sits in a .table-scroll wrapper");
-            $this->assertSame(0, $xpath->query('//table[not(ancestor::div[contains(@class,"table-scroll")])]')->length, "$url: no bare table");
-            $region = $xpath->query('//div[contains(@class,"table-scroll")]')->item(0);
-            $this->assertSame('0', $region->getAttribute('tabindex'), 'A scroll region must be keyboard-focusable');
+        $source = (string) file_get_contents(dirname(__DIR__, 2).'/resources/js/ds.js');
+        foreach (["'Escape'", 'data-theme-toggle', 'data-ds-countdown', 'showModal', 'prefers-reduced-motion'] as $hook) {
+            $this->assertStringContainsString($hook, $source, "ds.js handles $hook");
         }
+        $css = (string) file_get_contents(dirname(__DIR__, 2).'/resources/css/ds-core.css').(string) file_get_contents(dirname(__DIR__, 2).'/resources/css/base.css');
+        $this->assertStringContainsString('prefers-reduced-motion', $css);
     }
 
-    public function test_browse_filters_and_the_dashboard_grids_use_the_stacking_classes(): void
+    // The dashboard no longer carries a table (it lists what needs the person, in words), and the seller list is a
+    // stacked table with its own tests (SellerListingsPageTest), so the old scroll-container check has nothing to test.
+
+    public function test_browse_filters_and_the_dashboard_tables_use_the_stacking_classes(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
+        Auction::factory()->create(['title' => 'Massey Ferguson 290 tractor']);
 
         $browse = $this->xpath($this->actingAs($user)->get('/auctions')->assertOk()->getContent());
-        $this->assertSame(1, $browse->query('//form[contains(@class,"dot-filter-form")]')->length);
-        $this->assertSame(1, $browse->query('//div[contains(@class,"dot-page")]')->length);
+        $this->assertSame(1, $browse->query('//form[contains(@class,"dc-filters")]')->length);
+        $this->assertSame(1, $browse->query('//ul[contains(@class,"ds-catalogue")]')->length, 'lots sit on the ruled catalogue sheet');
+
+        // A bidder's dashboard shows its tables as the kit's stacked rows (below 40rem each cell prints its own label), not a sideways scroll.
+        $lot = Auction::factory()->create(['title' => 'Hereford heifers, twelve head']);
+        Bid::forceCreate(['auction_id' => $lot->id, 'bidder_id' => $user->id, 'amount' => '240.00', 'is_winning' => true]);
+        $lot->forceFill(['current_price' => '240.00'])->save();
 
         $dashboard = $this->xpath($this->actingAs($user)->get('/dashboard')->assertOk()->getContent());
-        $this->assertSame(1, $dashboard->query('//div[contains(@class,"dot-kpi-grid")]')->length);
-        $this->assertSame(5, $dashboard->query('//div[contains(@class,"dot-kpi-grid")]/div[contains(@class,"dot-kpi")]')->length);
-        $this->assertSame(1, $dashboard->query('//div[contains(@class,"dot-module-grid")]')->length);
+        $this->assertSame(1, $dashboard->query('//table[contains(@class,"is-stackable")]')->length);
+        $this->assertGreaterThanOrEqual(1, $dashboard->query('//table//td[@data-label]')->length);
+        $this->assertSame(0, $dashboard->query('//*[contains(@class,"dot-kpi") or contains(@class,"dot-module-grid")]')->length, 'the old metric tiles and farming modules are gone');
     }
 
-    public function test_the_auction_page_stat_grid_and_two_column_layout_stack_on_phones(): void
+    public function test_the_lot_page_puts_the_bidding_column_before_the_photos_so_a_phone_sees_the_bid_first(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $auction = Auction::factory()->create(['title' => 'Massey Ferguson 290 tractor']);
 
-        $xpath = $this->xpath($this->actingAs($user)->get(route('auctions.show', $auction))->assertOk()->getContent());
+        $html = $this->actingAs($user)->get(route('auctions.show', $auction))->assertOk()->getContent();
+        $xpath = $this->xpath($html);
 
-        $this->assertSame(1, $xpath->query('//div[contains(@class,"dot-two-col")]')->length);
-        $this->assertSame(1, $xpath->query('//div[contains(@class,"dot-stat-grid")]')->length);
+        // One container-query layout (single column on a phone, two columns from 56rem of page width) and no fixed grid.
+        $this->assertSame(1, $xpath->query('//div[contains(@class,"lot-wrap")]/div[contains(@class,"lot")]')->length);
+        $this->assertSame(0, $xpath->query('//div[contains(@class,"dot-two-col")]')->length);
+        // Source order is the phone order: the bid form and the price come before the gallery and the description.
+        $this->assertLessThan(strpos($html, 'lot__gallery'), strpos($html, 'data-ds-bid-input'));
+        $this->assertLessThan(strpos($html, 'lot__details'), strpos($html, 'lot-price__amount'));
     }
 }

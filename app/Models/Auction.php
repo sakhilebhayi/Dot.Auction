@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\Auctions\AuctionImageVariants;
+use App\Services\DisplayTime;
 use Database\Factories\AuctionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,10 +18,15 @@ class Auction extends Model
     /** @use HasFactory<AuctionFactory> */
     use HasFactory;
 
+    /**
+     * Only what a seller types on the listing form. Everything the system decides (seller_id, status, current_price,
+     * snipe_extensions, image_path) is written with forceFill()/forceCreate() inside the services that own it, so a
+     * request that reaches a model by mistake cannot move a price or a status.
+     */
     protected $fillable = [
-        'seller_id', 'category_id', 'title', 'description', 'image_path',
-        'starting_price', 'reserve_price', 'current_price', 'buy_now_price',
-        'bid_increment', 'status', 'starts_at', 'ends_at', 'snipe_extensions',
+        'category_id', 'title', 'description',
+        'starting_price', 'reserve_price', 'buy_now_price',
+        'bid_increment', 'starts_at', 'ends_at',
     ];
 
     protected $casts = [
@@ -59,7 +66,9 @@ class Auction extends Model
         });
 
         static::deleted(function (Auction $auction): void {
-            $paths = $auction->imagePathsToRemove;
+            $paths = collect($auction->imagePathsToRemove)
+                ->flatMap(fn (string $path) => [$path, ...AuctionImageVariants::allPaths($path)])
+                ->all();
 
             if ($paths !== []) {
                 DB::afterCommit(fn () => Storage::disk(AuctionImage::DISK)->delete($paths));
@@ -88,7 +97,9 @@ class Auction extends Model
      */
     public function bids(): HasMany
     {
-        return $this->hasMany(Bid::class)->latest();
+        // created_at has one-second resolution (timestamp(0)), so two bids in the same second tie; id breaks the tie
+        // and keeps "latest first" the same on every request and every database.
+        return $this->hasMany(Bid::class)->latest()->latest('id');
     }
 
     /**
@@ -97,6 +108,17 @@ class Auction extends Model
     public function winningBid(): HasOne
     {
         return $this->hasOne(Bid::class)->where('is_winning', true);
+    }
+
+    /**
+     * The seller's reserve decision for this lot, if it ever ended below its reserve (pending, accepted or rejected).
+     * A rejected proposal keeps the `is_winning` flag on its bid, so a lot is only "sold" when this is not rejected.
+     *
+     * @return HasOne<ReserveNotMetProposal, $this>
+     */
+    public function reserveProposal(): HasOne
+    {
+        return $this->hasOne(ReserveNotMetProposal::class)->latestOfMany();
     }
 
     public function items(): HasMany
@@ -112,6 +134,16 @@ class Auction extends Model
     public function images(): HasMany
     {
         return $this->hasMany(AuctionImage::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * The address of one of this auction's photos at a given size: 'thumb' (480 px, lists and cards), 'medium' (1200 px,
+     * the gallery's main picture) or 'large' (2000 px, the default). Views should use this rather than building the route,
+     * so a card never downloads a full-size photo. The route applies the auction's visibility rule on every request.
+     */
+    public function imageUrl(AuctionImage $image, string $size = 'large'): string
+    {
+        return $image->url($size);
     }
 
     public function watchlists(): HasMany
@@ -203,6 +235,15 @@ class Auction extends Model
     public static function money(string|int|float|null $amount): string
     {
         return config('auction.currency_symbol', 'R').number_format(self::toCents($amount) / 100, 2);
+    }
+
+    /**
+     * Print a stored (UTC) time the way people read it, in the display zone (config auction.display_timezone).
+     * `Auction::localTime($auction->ends_at, 'M j, Y H:i', true)` gives "Nov 8, 2026 18:00 SAST".
+     */
+    public static function localTime(?\DateTimeInterface $at, ?string $format = null, bool $withZone = false): string
+    {
+        return DisplayTime::format($at, $format, $withZone);
     }
 
     public function minimumBidCents(): int

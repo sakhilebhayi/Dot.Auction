@@ -9,6 +9,7 @@ use App\Notifications\AuctionSoldNotification;
 use App\Services\Paystack\PaystackConfig;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * The hand-off seam to the payment platform. When an auction settles with a
@@ -34,6 +35,20 @@ class RecordSettlementForPayment implements ShouldQueue
         return [10, 60];
     }
 
+    /**
+     * After the last retry. The job is kept in failed_jobs, and it is logged at error level here (with the auction id) so it
+     * shows in the application log without anyone having to look at the queue. `auction:repair-unsettled` re-creates the
+     * missing sale within the hour (the unique index on auction_id makes that safe), so this is a warning that the normal
+     * route failed, not that money is lost.
+     */
+    public function failed(AuctionSettled $event, \Throwable $exception): void
+    {
+        Log::error('Recording the sale of an ended auction failed after every retry; auction:repair-unsettled will try again within the hour.', [
+            'auction_id' => $event->auction->getKey(),
+            'error' => class_basename($exception).': '.$exception->getMessage(),
+        ]);
+    }
+
     public function handle(AuctionSettled $event): void
     {
         if ($event->winningBid === null) {
@@ -44,7 +59,7 @@ class RecordSettlementForPayment implements ShouldQueue
         $payments = app(PaystackConfig::class);
 
         try {
-            $settlement = AuctionSettlement::firstOrCreate(
+            $settlement = AuctionSettlement::unguarded(fn () => AuctionSettlement::firstOrCreate(
                 ['auction_id' => $auction->id],
                 [
                     'winning_bid_id' => $event->winningBid->id,
@@ -55,7 +70,7 @@ class RecordSettlementForPayment implements ShouldQueue
                     'status' => AuctionSettlement::AWAITING_PAYMENT,
                     'payment_due_at' => $payments->canTakePayments() ? now()->addHours($payments->paymentWindowHours()) : null,
                 ],
-            );
+            ));
         } catch (UniqueConstraintViolationException) {
             return;
         }

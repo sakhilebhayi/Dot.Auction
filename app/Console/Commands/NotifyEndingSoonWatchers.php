@@ -58,7 +58,9 @@ class NotifyEndingSoonWatchers extends Command
                     $user->notify(new AuctionEndingSoonNotification($auction));
                     $sent++;
                 } catch (\Throwable $e) {
-                    // Give the claim back so the next run retries this one.
+                    // Give the claim back so the next run retries this one. Reported as well: the scheduler's output file
+                    // is overwritten every minute, so the printed line below would not survive.
+                    report($e);
                     $this->watch($auction->id, $userId)->update(['ending_soon_notified_at' => null]);
                     $this->error("Could not notify user #{$userId} about auction #{$auction->id}: {$e->getMessage()}");
                 }

@@ -108,7 +108,7 @@ class AntiSnipeTest extends TestCase
     {
         $auction = $this->auctionEndingIn(600);
         $stale = Auction::find($auction->id);
-        $auction->update(['ends_at' => $this->now->copy()->addSeconds(60)]); // seller-side change, e.g. earlier edit
+        $auction->forceFill(['ends_at' => $this->now->copy()->addSeconds(60)])->save(); // seller-side change, e.g. earlier edit
 
         $this->bid($stale, '220.00');
 

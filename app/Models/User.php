@@ -3,13 +3,12 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Services\Auctions\AccountEraser;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
@@ -87,30 +86,36 @@ class User extends Authenticatable
     }
 
     /**
-     * Photo files of this user's auctions, to remove once the account delete
-     * commits. The auction and image rows go through the database cascade,
-     * which fires no model events, so nothing else would clean the files.
-     *
-     * @var array<int, string>
+     * A person who deleted their account: the row stays (their bids, auctions and settlements belong to other people
+     * too) but holds no personal data. See AccountEraser.
      */
-    protected array $auctionImagePathsToRemove = [];
-
-    protected static function booted(): void
+    public function isAnonymised(): bool
     {
-        static::deleting(function (User $user): void {
-            $user->auctionImagePathsToRemove = AuctionImage::query()
-                ->whereHas('auction', fn ($auctions) => $auctions->where('seller_id', $user->id))
-                ->pluck('path')
-                ->all();
-        });
+        return str_ends_with(strtolower((string) $this->email), '@'.AccountEraser::PLACEHOLDER_DOMAIN);
+    }
 
-        static::deleted(function (User $user): void {
-            $paths = $user->auctionImagePathsToRemove;
+    /**
+     * How this person appears to other bidders: first name and the initial of the rest ("Sakhile B."), the same
+     * masking the bid history shows. Anything that leaves the server for a wider audience than the auction's own
+     * parties (a broadcast, for instance) must use this, never the full name.
+     */
+    public function maskedName(): string
+    {
+        if ($this->isAnonymised()) {
+            return AccountEraser::FORMER_NAME;
+        }
 
-            if ($paths !== []) {
-                DB::afterCommit(fn () => Storage::disk(AuctionImage::DISK)->delete($paths));
-            }
-        });
+        $parts = preg_split('/\s+/u', trim((string) $this->name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if ($parts === []) {
+            return 'A bidder';
+        }
+
+        $first = $parts[0];
+
+        return count($parts) === 1
+            ? $first
+            : $first.' '.mb_strtoupper(mb_substr($parts[1], 0, 1)).'.';
     }
 
     /**

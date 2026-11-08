@@ -317,9 +317,8 @@ class PublishMetricsCommandTest extends TestCase
         $seller->currentTeam->forceFill(['name' => 'SENTINEL-TEAM-NAME-'.str_repeat('x', 60)])->save();
         $bidder = User::factory()->withPersonalTeam()->create(['name' => $sentinels['bidder'], 'email' => $sentinels['bidder_email']]);
         $auction = $this->auction($seller, ['title' => $sentinels['title'], 'description' => $sentinels['description'], 'reserve_price' => '777.77']);
-        $bid = Bid::create(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => '222.22', 'is_winning' => true]);
-        $bid->forceFill(['created_at' => Carbon::parse('2026-11-02 10:00:00')])->save();
-        AuctionSettlement::create(['auction_id' => $auction->id, 'winning_bid_id' => $bid->id, 'seller_id' => $seller->id, 'winner_id' => $bidder->id,
+        $bid = Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => $bidder->id, 'amount' => '222.22', 'is_winning' => true, 'created_at' => Carbon::parse('2026-11-02 10:00:00')]);
+        AuctionSettlement::forceCreate(['auction_id' => $auction->id, 'winning_bid_id' => $bid->id, 'seller_id' => $seller->id, 'winner_id' => $bidder->id,
             'amount_cents' => 22222, 'currency' => 'ZAR', 'status' => 'awaiting_payment'])->forceFill(['created_at' => Carbon::parse('2026-11-02 10:05:00')])->save();
 
         $this->artisan('auction:publish-metrics')->assertSuccessful();

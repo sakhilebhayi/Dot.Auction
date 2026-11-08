@@ -1,22 +1,23 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-[x-cloak] {
-    display: none;
-}
-
 /*
- * Reduced motion (WCAG 2.3.3): people who ask the system for less motion get none of it from
- * transitions, animations or smooth scrolling, whichever file or utility class declares them.
+ * Hallmark custom run · see tokens.css for the stamp. Entry stylesheet for the signed-in app, the guest pages, the welcome page and Jetstream.
+ * Order: Tailwind's base (preflight, forms), then tokens, fonts, element defaults, the design system, Jetstream, legacy, then Tailwind's utilities last
+ * so a utility class on an element still wins over a component rule.
  */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
+@import "tailwindcss/base";
+@import "./tokens.css";
+@import "./fonts.css";
+@import "./base.css";
+@import "./ds-core.css";
+@import "./ds-forms.css";
+@import "./ds-ui.css";
+@import "./ds-auction.css";
+@import "./ds-lot.css";
+@import "./shell.css";
+@import "./guest.css";
+@import "./welcome.css";
+@import "./jetstream.css";
+@import "./seller.css";
+@import "./discover.css";
+@import "./legacy.css";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";

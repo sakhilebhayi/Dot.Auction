@@ -1,7 +1,8 @@
 /*
-Dot.Auction brand theme for Laravel's Markdown mail components. Matches welcome.blade.php /
-layouts/guest.blade.php's :root tokens (--ink, --gold, --red, --paper). Hardcoded hex throughout —
-email clients don't reliably support CSS custom properties.
+Dot.Auction theme for Laravel's Markdown mail components. The values below are the design-system tokens written as literals:
+Chalk ground #eef0ef, ink #1c2120, line #cfd5d2, muted #525d58, link #2b5a86, Gavel gold #f1c62e, Hammer red #d71016, Ring teal #0b6b5c.
+Email clients do not reliably support CSS custom properties or web fonts, so this file is the one place the tokens are repeated by value
+(see DESIGN.md, "Email"). Keep it in step with resources/css/tokens.css.
 */
 
 /* Base */
@@ -16,8 +17,8 @@ body *:not(html):not(style):not(br):not(tr):not(code) {
 
 body {
     -webkit-text-size-adjust: none;
-    background-color: #f4ece0;
-    color: #221a17;
+    background-color: #eef0ef;
+    color: #1c2120;
     height: 100%;
     line-height: 1.4;
     margin: 0;
@@ -34,7 +35,7 @@ blockquote {
 }
 
 a {
-    color: #b48a12;
+    color: #2b5a86;
 }
 
 a img {
@@ -44,7 +45,7 @@ a img {
 /* Typography */
 
 h1 {
-    color: #17110f;
+    color: #1c2120;
     font-size: 19px;
     font-weight: bold;
     margin-top: 0;
@@ -86,7 +87,7 @@ img {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 100%;
-    background-color: #f4ece0;
+    background-color: #eef0ef;
     margin: 0;
     padding: 0;
     width: 100%;
@@ -104,13 +105,14 @@ img {
 /* Header */
 
 .header {
-    background-color: #17110f;
-    padding: 32px 0;
+    background-color: #ffffff;
+    border-bottom: 1px solid #cfd5d2;
+    padding: 20px 0;
     text-align: center;
 }
 
 .header a {
-    color: #f4ece0;
+    color: #1c2120;
     font-size: 19px;
     font-weight: bold;
     text-decoration: none;
@@ -119,10 +121,10 @@ img {
 /* Logo */
 
 .logo {
-    height: 40px;
+    height: 72px;
     margin-top: 0;
     margin-bottom: 0;
-    max-height: 40px;
+    max-height: 72px;
     width: auto;
 }
 
@@ -132,9 +134,9 @@ img {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 100%;
-    background-color: #f4ece0;
-    border-bottom: 1px solid #f4ece0;
-    border-top: 1px solid #f4ece0;
+    background-color: #eef0ef;
+    border-bottom: 1px solid #eef0ef;
+    border-top: 1px solid #eef0ef;
     margin: 0;
     padding: 0;
     width: 100%;
@@ -145,8 +147,8 @@ img {
     -premailer-cellspacing: 0;
     -premailer-width: 570px;
     background-color: #ffffff;
-    border-color: #e5dbc9;
-    border-radius: 12px;
+    border-color: #cfd5d2;
+    border-radius: 4px;
     border-width: 1px;
     box-shadow: 0 1px 3px 0 rgba(23, 17, 15, 0.08), 0 1px 2px -1px rgba(23, 17, 15, 0.08);
     margin: 0 auto;
@@ -161,14 +163,14 @@ img {
 /* Subcopy */
 
 .subcopy {
-    border-top: 1px solid #e5dbc9;
+    border-top: 1px solid #cfd5d2;
     margin-top: 25px;
     padding-top: 25px;
 }
 
 .subcopy p {
     font-size: 14px;
-    color: #221a17;
+    color: #1c2120;
 }
 
 /* Footer */
@@ -184,13 +186,13 @@ img {
 }
 
 .footer p {
-    color: #c7b39c;
+    color: #525d58;
     font-size: 12px;
     text-align: center;
 }
 
 .footer a {
-    color: #c7b39c;
+    color: #525d58;
     text-decoration: underline;
 }
 
@@ -205,13 +207,13 @@ img {
 }
 
 .table th {
-    border-bottom: 1px solid #e5dbc9;
+    border-bottom: 1px solid #cfd5d2;
     margin: 0;
     padding-bottom: 8px;
 }
 
 .table td {
-    color: #221a17;
+    color: #1c2120;
     font-size: 15px;
     line-height: 18px;
     margin: 0;
@@ -252,16 +254,16 @@ img {
     border-left: 18px solid #f1c62e;
     border-right: 18px solid #f1c62e;
     border-top: 8px solid #f1c62e;
-    color: #17110f;
+    color: #1c2120;
 }
 
 .button-green,
 .button-success {
-    background-color: #16a34a;
-    border-bottom: 8px solid #16a34a;
-    border-left: 18px solid #16a34a;
-    border-right: 18px solid #16a34a;
-    border-top: 8px solid #16a34a;
+    background-color: #0b6b5c;
+    border-bottom: 8px solid #0b6b5c;
+    border-left: 18px solid #0b6b5c;
+    border-right: 18px solid #0b6b5c;
+    border-top: 8px solid #0b6b5c;
     color: #fff;
 }
 
@@ -278,18 +280,18 @@ img {
 /* Panels */
 
 .panel {
-    border-left: #f1c62e solid 4px;
+    border: 1px solid #cfd5d2;
     margin: 21px 0;
 }
 
 .panel-content {
-    background-color: #f4ece0;
-    color: #221a17;
+    background-color: #eef0ef;
+    color: #1c2120;
     padding: 16px;
 }
 
 .panel-content p {
-    color: #221a17;
+    color: #1c2120;
 }
 
 .panel-item {

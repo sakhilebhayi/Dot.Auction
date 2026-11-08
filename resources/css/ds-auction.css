@@ -1,0 +1,108 @@
+/* ds-auction: the pieces that only an auction has. The clock, the closing rail, the lot entry and the bid ladder. Tokens only. */
+
+/* ---------- Countdown: the sale-room clock ---------- */
+.ds-countdown { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2); color: var(--c-ink); }
+.ds-countdown.is-stacked { flex-direction: column; align-items: flex-start; gap: 2px; }
+.ds-countdown__label { font-size: var(--t-sm); color: var(--c-ink-3); font-weight: 500; }
+.ds-countdown__value { font-family: var(--f-mono); font-weight: 600; font-size: var(--t-lg); line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ds-countdown__at { flex-basis: 100%; font-size: var(--t-sm); color: var(--c-ink-3); }
+.ds-cd-n { font-variant-numeric: tabular-nums; }
+.ds-cd-u { margin: 0 0 0 0.12ch; font-family: var(--f-ui); font-size: max(0.7em, 0.75rem); font-weight: 600; color: var(--c-ink-3); letter-spacing: 0; }
+.ds-cd-word { font-family: var(--f-ui); font-size: 0.8em; font-weight: 650; letter-spacing: 0; }
+.ds-countdown.is-urgent .ds-countdown__value { color: var(--c-urgent); }
+.ds-countdown.is-urgent .ds-cd-u { color: var(--c-urgent); }
+.ds-countdown.is-over .ds-countdown__value { color: var(--c-ink-2); }
+.ds-countdown--sm .ds-countdown__value { font-size: var(--t-md); }
+.ds-countdown--lg .ds-countdown__value { font-size: var(--t-2xl); }
+.ds-countdown--xl .ds-countdown__value { font-size: var(--t-money); letter-spacing: -0.04em; }
+.ds-countdown--xl .ds-countdown__label, .ds-countdown--lg .ds-countdown__label { font-size: var(--t-md); }
+
+/* ---------- Rail: how much of the sale is gone ---------- */
+.ds-rail { position: relative; display: block; width: 100%; height: 4px; background: var(--c-rail-track); }
+.ds-rail.is-thick { height: 8px; }
+.ds-rail__fill { position: absolute; inset: 0; background: var(--c-ink-2); transform-origin: left center; transform: scaleX(var(--p, 0)); transition: transform 1s linear; }
+.ds-rail.is-urgent .ds-rail__fill { background: var(--c-urgent); }
+.ds-rail__hammer { position: absolute; right: 0; top: -3px; bottom: -3px; width: 2px; background: var(--c-ink); }
+.ds-rail__orig { position: absolute; left: calc(var(--o, 1) * 100%); top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--c-action); outline: 1px solid var(--c-action-edge); outline-offset: 0; }
+
+/* ---------- Catalogue: lots on a ruled sheet ---------- */
+.ds-catalogue { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); list-style: none; margin: 1px 0 0 1px; padding: 0; }
+.ds-catalogue > * { min-width: 0; border: 1px solid var(--c-line-strong); margin: -1px 0 0 -1px; background: var(--c-surface); }
+
+.ds-lot { position: relative; display: flex; flex-direction: column; background: var(--c-surface); min-width: 0; }
+.ds-lot:hover { background: var(--c-raised); }
+.ds-lot:has(.ds-lot__link:focus-visible) { outline: 2px solid var(--c-focus); outline-offset: -2px; }
+.ds-lot__media { position: relative; aspect-ratio: 4 / 3; background: var(--c-sunken); overflow: hidden; }
+.ds-lot__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ds-lot--cancelled .ds-lot__media img, .ds-lot--unsold .ds-lot__media img { opacity: 0.6; }
+.ds-lot__noimg { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: var(--s-2); color: var(--c-ink-3); font-size: var(--t-sm); font-weight: 600; }
+.ds-lot__noimg::before { content: ""; position: absolute; inset: var(--s-3); border: 1px dashed var(--c-line-strong); pointer-events: none; }
+.ds-lot__number { position: absolute; left: 0; top: 0; padding: 4px 10px; background: var(--c-ink); color: var(--c-ground); font-family: var(--f-mono); font-size: var(--t-sm); font-weight: 700; letter-spacing: 0.02em; line-height: 1.4; }
+.ds-lot__rail { position: absolute; left: 0; right: 0; bottom: 0; }
+.ds-lot__body { display: grid; align-content: start; gap: var(--s-2); padding: var(--s-4); flex: 1; }
+.ds-lot__tags { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); align-items: center; min-height: 1.5rem; }
+.ds-lot__watching { display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-xs); font-weight: 650; color: var(--c-ink-2); }
+.ds-lot__title { font-size: var(--t-md); font-stretch: 100%; font-weight: 650; line-height: 1.3; letter-spacing: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ds-lot__link { color: var(--c-ink); text-decoration: none; }
+.ds-lot__link::after { content: ""; position: absolute; inset: 0; }
+.ds-lot__link:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+.ds-lot__link:focus-visible { outline: none; box-shadow: none; }
+.ds-lot__price { display: grid; gap: 0; }
+.ds-lot__price-label { font-size: var(--t-sm); color: var(--c-ink-3); }
+.ds-lot__meta { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-1) var(--s-3); color: var(--c-ink-2); font-size: var(--t-sm); }
+.ds-lot__bids, .ds-lot__when { color: var(--c-ink-3); font-variant-numeric: tabular-nums; }
+
+/* ---------- Bid ladder: the real price steps ---------- */
+.ds-ladder-wrap { display: grid; gap: var(--s-3); }
+.ds-ladder { position: relative; list-style: none; margin: 0; padding: 0 0 0 var(--s-6); display: grid; gap: var(--s-1); }
+.ds-ladder::before { content: ""; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; background: var(--c-line-strong); }
+.ds-rung { position: relative; }
+.ds-rung::before { content: ""; position: absolute; left: calc(-1 * var(--s-6) + 8px); top: 50%; width: calc(var(--s-6) - 8px); height: 2px; margin-top: -1px; background: var(--c-line-strong); }
+.ds-rung__row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3);
+    width: 100%; min-height: var(--hit); padding: var(--s-2) var(--s-3);
+    background: transparent; color: var(--c-ink); border: 1px solid transparent; border-radius: var(--r-1);
+    font: inherit; text-align: left;
+}
+.ds-rung__row .ds-money { margin-left: auto; }
+/* A rung you can press ends in an arrow; one you cannot ends in the same width of nothing, so every figure shares one right edge. */
+div.ds-rung__row { padding-right: calc(var(--s-3) * 2 + 16px); }
+.ds-rung__go { align-self: center; color: var(--c-ink-3); flex: none; }
+button.ds-rung__row:hover .ds-rung__go, button.ds-rung__row:focus-visible .ds-rung__go { color: var(--c-ink); }
+.ds-rung__label { font-size: var(--t-sm); color: var(--c-ink-2); font-weight: 500; }
+button.ds-rung__row { cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out); }
+button.ds-rung__row:hover { background: var(--c-quiet-hover); }
+button.ds-rung__row:active { transform: translateY(1px); }
+.ds-rung--next .ds-rung__row { background: var(--c-raised); border-color: var(--c-line-strong); }
+.ds-rung--next .ds-rung__label { color: var(--c-ink); font-weight: 650; }
+.ds-rung--step .ds-money { color: var(--c-ink-2); }
+.ds-rung--buynow .ds-rung__row { background: var(--c-sunken); border: 1px dashed var(--c-line-strong); }
+.ds-rung--current { margin-block: var(--s-1); }
+.ds-rung--current::before { height: 4px; margin-top: -2px; background: var(--c-ink); }
+.ds-rung--current .ds-rung__row { padding-block: var(--s-3); background: var(--c-action); border-color: var(--c-action-edge); color: var(--c-on-action); }
+.ds-rung--current .ds-rung__label, .ds-rung--current .ds-money, .ds-rung--current .ds-money__sym, .ds-rung--current .ds-money__cents { color: var(--c-on-action); }
+.ds-rung--current .ds-rung__label { font-weight: 650; }
+.ds-rung--yours .ds-rung__row { background: var(--c-sunken); border: 1px dashed var(--c-line-strong); }
+.ds-rung--start .ds-rung__label { color: var(--c-ink-3); }
+.ds-rung__you { align-self: center; flex: none; padding: 0 8px; background: var(--c-ink); color: var(--c-ground); border-radius: var(--r-1); font-size: var(--t-xs); font-weight: 700; line-height: 1.6; }
+.ds-ladder__reserve { display: flex; align-items: center; gap: var(--s-2); margin: 0; padding-left: var(--s-6); font-size: var(--t-sm); font-weight: 600; color: var(--c-ink-2); }
+.ds-ladder__reserve.is-met { color: var(--c-ok); }
+
+/* ---------- Stat and definition list ---------- */
+.ds-stat { display: grid; gap: 2px; margin: 0; min-width: 0; }
+.ds-stat__label { font-size: var(--t-sm); color: var(--c-ink-3); font-weight: 500; }
+.ds-stat__value { margin: 0; font-size: var(--t-2xl); font-weight: 650; line-height: 1.1; letter-spacing: -0.02em; color: var(--c-ink); }
+.ds-stat--sm .ds-stat__value { font-size: var(--t-xl); }
+.ds-stat--lg .ds-stat__value { font-size: var(--t-money); letter-spacing: -0.03em; font-stretch: 106%; font-weight: 700; }
+.ds-stat--urgent .ds-stat__value { color: var(--c-urgent); }
+.ds-stat--ok .ds-stat__value { color: var(--c-ok); }
+.ds-stat__note { margin: 0; font-size: var(--t-xs); color: var(--c-ink-3); }
+
+.ds-dl { margin: 0; }
+.ds-dl dt { color: var(--c-ink-3); font-size: var(--t-sm); font-weight: 500; }
+.ds-dl dd { margin: 0; color: var(--c-ink); }
+.ds-dl--ledger .ds-dl__row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); }
+.ds-dl--ledger .ds-dl__row:first-child { border-top: 1px solid var(--c-line); }
+.ds-dl--ledger dd { text-align: right; font-weight: 550; font-variant-numeric: tabular-nums lining-nums; }
+.ds-dl--stacked { display: grid; gap: var(--s-4); }
+.ds-dl--inline { display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-8); }

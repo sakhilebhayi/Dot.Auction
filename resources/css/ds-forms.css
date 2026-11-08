@@ -1,0 +1,75 @@
+/* ds-forms: labels, controls, choices. 44px controls (48px on phones), 16px type so iOS never zooms. Tokens only. */
+
+.ds-field { display: block; min-width: 0; }
+.ds-field + .ds-field { margin-top: var(--s-5); }
+.ds-label { display: block; margin-bottom: var(--s-2); font-size: var(--t-sm); font-weight: 650; color: var(--c-ink); padding: 0; }
+.ds-label__opt { margin-left: var(--s-2); font-weight: 400; color: var(--c-ink-3); }
+.ds-hint { margin-top: var(--s-2); font-size: var(--t-sm); color: var(--c-ink-3); line-height: 1.45; }
+.ds-hint--top { margin: calc(-1 * var(--s-1)) 0 var(--s-2); }
+.ds-hint--indent { padding-left: 2.25rem; }
+.ds-error { display: flex; align-items: flex-start; gap: var(--s-2); margin-top: var(--s-2); font-size: var(--t-sm); font-weight: 600; color: var(--c-danger); line-height: 1.4; }
+.ds-error .ds-icon { margin-top: 2px; }
+
+.ds-control { position: relative; display: flex; align-items: center; }
+.ds-control input, .ds-control textarea, .ds-control select, .ds-select {
+    width: 100%; min-height: var(--hit); padding: var(--s-2) var(--s-3);
+    background: var(--c-raised); color: var(--c-ink);
+    border: 1px solid var(--c-line-strong); border-radius: var(--r-2);
+    font: inherit; font-size: var(--t-md); line-height: 1.4;
+    transition: border-color var(--dur-micro) var(--ease-out);
+    appearance: none; -webkit-appearance: none;
+}
+.ds-control textarea { resize: vertical; min-height: 7rem; line-height: 1.5; }
+.ds-control input::placeholder, .ds-control textarea::placeholder { color: var(--c-ink-3); opacity: 1; }
+.ds-control input:hover, .ds-control textarea:hover, .ds-control select:hover { border-color: var(--c-ink-2); }
+.ds-control input:focus-visible, .ds-control textarea:focus-visible, .ds-control select:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 0; border-color: var(--c-focus); }
+.ds-field.has-error .ds-control input, .ds-field.has-error .ds-control textarea, .ds-field.has-error .ds-control select { border-color: var(--c-danger); box-shadow: inset 0 0 0 1px var(--c-danger); }
+.ds-control input:disabled, .ds-control textarea:disabled, .ds-control select:disabled { background: var(--c-sunken); color: var(--c-ink-3); cursor: not-allowed; }
+.ds-control input[type="date"], .ds-control input[type="datetime-local"] { min-width: 0; }
+.ds-control input[type="file"] { padding: var(--s-2); }
+
+.ds-control.has-prefix input { padding-left: 2.25rem; }
+.ds-control.has-suffix input { padding-right: 3rem; }
+.ds-affix { position: absolute; top: 0; bottom: 0; display: inline-flex; align-items: center; color: var(--c-ink-2); font-weight: 600; pointer-events: none; }
+.ds-affix--pre { left: var(--s-3); }
+.ds-affix--post { right: var(--s-3); }
+.ds-control.is-money input { font-variant-numeric: tabular-nums lining-nums; font-weight: 600; letter-spacing: -0.01em; }
+
+.ds-control.is-select select { padding-right: 2.5rem; }
+.ds-control__caret { position: absolute; right: var(--s-3); pointer-events: none; color: var(--c-ink-2); }
+
+/* Checkbox and radio: the native input stays (focus, keyboard, form value); the box is drawn beside it. */
+.ds-check { position: relative; display: flex; align-items: flex-start; gap: var(--s-3); min-height: var(--hit); padding: 10px 0; cursor: pointer; }
+.ds-check input { position: absolute; opacity: 0; width: 1.5rem; height: 1.5rem; margin: 0; }
+.ds-check__box { flex: none; display: grid; place-items: center; width: 1.375rem; height: 1.375rem; margin-top: 1px; background: var(--c-raised); border: 1.5px solid var(--c-line-strong); border-radius: var(--r-1); color: transparent; transition: background-color var(--dur-micro) var(--ease-out); }
+.ds-check input:checked + .ds-check__box { background: var(--c-ink); border-color: var(--c-ink); color: var(--c-ground); }
+.ds-check input:focus-visible + .ds-check__box { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+.ds-check input:disabled + .ds-check__box { background: var(--c-sunken); }
+.ds-check__text { color: var(--c-ink); line-height: 1.4; padding-top: 1px; }
+.ds-check__hint { display: block; font-size: var(--t-sm); color: var(--c-ink-3); }
+.ds-check--radio .ds-check__box { border-radius: var(--r-round); position: relative; }
+.ds-check--radio input:checked + .ds-check__box { background: var(--c-raised); border-color: var(--c-ink); }
+.ds-check--radio input:checked + .ds-check__box::after { content: ""; position: absolute; inset: 4px; border-radius: var(--r-round); background: var(--c-ink); }
+.ds-radios { border: 0; margin: 0; padding: 0; min-width: 0; }
+.ds-radios legend { float: left; width: 100%; }
+.ds-radios legend + * { clear: both; }
+.ds-radios.is-inline { display: flex; flex-wrap: wrap; gap: 0 var(--s-6); }
+.ds-radios.is-inline legend { flex-basis: 100%; }
+
+/* Toggle: a switch with the state written out. */
+.ds-toggle { position: relative; display: flex; align-items: center; gap: var(--s-3); min-height: var(--hit); cursor: pointer; }
+.ds-toggle input { position: absolute; opacity: 0; width: 2.75rem; height: 1.5rem; margin: 0; }
+.ds-toggle__track { flex: none; position: relative; width: 2.75rem; height: 1.5rem; background: var(--c-sunken); border: 1.5px solid var(--c-line-strong); border-radius: var(--r-round); transition: background-color var(--dur-micro) var(--ease-out); }
+.ds-toggle__knob { position: absolute; left: 2px; top: 2px; width: 1.125rem; height: 1.125rem; background: var(--c-ink-2); border-radius: var(--r-round); transition: transform var(--dur-short) var(--ease-out); }
+.ds-toggle input:checked + .ds-toggle__track { background: var(--c-ink); border-color: var(--c-ink); }
+.ds-toggle input:checked + .ds-toggle__track .ds-toggle__knob { transform: translateX(1.25rem); background: var(--c-ground); }
+.ds-toggle input:focus-visible + .ds-toggle__track { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+.ds-toggle__text { color: var(--c-ink); }
+.ds-toggle__state { font-size: var(--t-sm); font-weight: 650; color: var(--c-ink-2); min-width: 2.5ch; }
+.ds-toggle__state .on { display: none; }
+.ds-toggle input:checked ~ .ds-toggle__state .on { display: inline; }
+.ds-toggle input:checked ~ .ds-toggle__state .off { display: none; }
+
+@media (max-width: 40rem) {
+    .ds-control input, .ds-control select { min-height: 3rem; }
+}

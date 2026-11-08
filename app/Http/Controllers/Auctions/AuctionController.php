@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Auctions;
 use App\Http\Controllers\Controller;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
-use App\Models\AuctionSettlement;
+use App\Notifications\OutbidNotification;
+use App\Services\Auctions\LotBrowser;
+use App\Support\PageRange;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
@@ -20,37 +22,80 @@ use Illuminate\View\View;
 class AuctionController extends Controller
 {
     /**
-     * Searchable, filterable auction marketplace. Draft auctions are
-     * excluded — they belong to AuctionPolicy::view()'s seller-only rule.
+     * Searchable, filterable, sortable auction marketplace. Draft auctions are excluded: they belong to
+     * AuctionPolicy::view()'s seller-only rule. State, category, search, sort and page all live in the query string, and
+     * every value in it is untrusted: anything that is not a known state, a positive id or a known sort key narrows to
+     * "no filter", never to a 500.
      */
-    public function index(Request $request): View
+    public function index(Request $request, LotBrowser $browser): View
     {
         Gate::authorize('viewAny', Auction::class);
 
-        $search = trim((string) $request->get('q', ''));
-        $category = $request->get('category');
-        $status = $request->get('status');
+        $user = $request->user();
+        $now = now();
 
-        $auctions = Auction::query()
-            ->browsable()
-            ->with(['category', 'images'])
-            ->when($search !== '', fn ($q) => $q->where('title', 'like', "%{$search}%"))
-            ->when($category, fn ($q) => $q->where('category_id', $category))
-            ->when($status, fn ($q) => $q->where('status', $status))
-            ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
-            ->orderBy('ends_at')
-            ->paginate(12)
-            ->withQueryString();
+        $rawSearch = $request->query('q');
+        $search = is_string($rawSearch) ? mb_substr(trim($rawSearch), 0, 100) : '';
+        $category = $this->positiveId($request->query('category'));
+        $state = LotBrowser::normaliseState($request->query('state') ?? $request->query('status'));
+        $sort = LotBrowser::normaliseSort($request->query('sort'));
 
-        $categories = AuctionCategory::withCount('auctions')->orderBy('name')->get();
+        // The lots about to close are promoted to a row of their own above the grid (the clock is the headline), and left out of the
+        // grid below so no lot is listed twice. Only on the plain list: a search, a category or another tab asks for something else.
+        $closingSoon = collect();
+        if ($search === '' && $category === null && in_array($state, [null, 'live'], true)) {
+            $closing = $browser->inState($browser->base(), 'ending', $now);
+            $closingSoon = $browser->withCardData($closing, $user)->orderBy('auctions.ends_at')->orderBy('auctions.id')->limit(3)->get();
+        }
+
+        $query = $browser->inState($browser->base($search, $category), $state, $now);
+        if ($closingSoon->isNotEmpty()) {
+            $query->whereNotIn('auctions.id', $closingSoon->modelKeys());
+        }
+        $browser->withCardData($query, $user);
+        $browser->sorted($query, $sort, $now);
+
+        $auctions = PageRange::within($query->paginate(12)->withQueryString());
+
+        // One grouped query each for the tab counts and the category chips, both for the same search the list answers.
+        $counts = $browser->counts($search, $category, $now);
+        $perCategory = $browser->inState($browser->base($search, null), $state, $now)
+            ->toBase()->whereNotNull('category_id')->selectRaw('category_id, count(*) as lots')->groupBy('category_id')
+            ->pluck('lots', 'category_id');
+        $categories = AuctionCategory::query()->orderBy('name')->get()
+            ->each(fn (AuctionCategory $c) => $c->setAttribute('lots', (int) ($perCategory[$c->id] ?? 0)))
+            ->filter(fn (AuctionCategory $c) => $c->lots > 0 || $c->id === $category)
+            ->values();
 
         return view('auctions.index', [
             'auctions' => $auctions,
+            'closingSoon' => $closingSoon,
             'categories' => $categories,
+            'counts' => $counts,
+            // The lots the page answers with, counted once: the closing-soon row and the grid below it. The header, the "other lots" line and
+            // the page summary all read these, so they cannot disagree.
+            'tally' => ['closing' => $closingSoon->count(), 'others' => $auctions->total(), 'all' => $auctions->total() + $closingSoon->count()],
             'search' => $search,
             'category' => $category,
-            'status' => $status,
+            'activeCategory' => $category !== null ? $categories->firstWhere('id', $category) ?? AuctionCategory::find($category) : null,
+            'state' => $state,
+            'sort' => $sort,
+            'userId' => $user->id,
         ]);
+    }
+
+    /**
+     * A database id from the query string: a positive integer that fits a bigint column, or null.
+     */
+    private function positiveId(mixed $value): ?int
+    {
+        if (! is_string($value) || ! ctype_digit($value) || strlen($value) > 18) {
+            return null;
+        }
+
+        $id = (int) $value;
+
+        return $id > 0 ? $id : null;
     }
 
     /**
@@ -58,26 +103,19 @@ class AuctionController extends Controller
      * AuctionPolicy. Reserve price is never passed to the view — only the
      * reserveMet() boolean — so the Blade template has no way to leak it.
      */
-    public function show(Auction $auction): View
+    public function show(Request $request, Auction $auction): View
     {
         Gate::authorize('view', $auction);
 
+        // Having opened the lot, an unread "you were outbid" notice about it has been answered.
+        if ($request->user() !== null) {
+            OutbidNotification::markReadFor($request->user(), $auction->id);
+        }
+
         $auction->load(['category', 'seller', 'items', 'images']);
 
-        // HasUserScope already restricts this relation query to the
-        // authenticated user's own watchlist rows.
-        $isWatching = auth()->check() && $auction->watchlists()->exists();
-
-        // Payment hand-off status is only for the two parties to the sale.
-        $settlement = AuctionSettlement::query()
-            ->where('auction_id', $auction->id)
-            ->where(fn ($q) => $q->where('winner_id', auth()->id())->orWhere('seller_id', auth()->id()))
-            ->first();
-
-        return view('auctions.show', [
-            'auction' => $auction,
-            'isWatching' => $isWatching,
-            'settlement' => $settlement,
-        ]);
+        // Everything that depends on the viewer (the payment panel, leading or outbid, the seller's decision) is worked
+        // out by the bid panel itself (App\Support\LotOutcome), so it stays right while the page is open.
+        return view('auctions.show', ['auction' => $auction]);
     }
 }

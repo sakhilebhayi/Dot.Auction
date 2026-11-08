@@ -1,0 +1,153 @@
+/* Element defaults for every page. Reads tokens only. Plain CSS: it loads after Tailwind's preflight in app.css and stands alone in errors.css. */
+html {
+    overflow-x: clip;
+    scrollbar-color: var(--c-line-strong) var(--c-ground);
+    caret-color: var(--c-ink);
+    accent-color: var(--c-ink);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    background: var(--c-ground);
+    scrollbar-gutter: stable;
+}
+
+body {
+    overflow-x: clip;
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--c-ground);
+    color: var(--c-ink);
+    font-family: var(--f-ui);
+    font-size: var(--t-md);
+    line-height: var(--lh-body);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+    background: var(--c-action);
+    color: var(--c-on-action);
+}
+
+h1, h2, h3, h4 {
+    margin: 0;
+    font-family: var(--f-ui);
+    font-stretch: 108%;
+    font-weight: 700;
+    line-height: var(--lh-tight);
+    letter-spacing: -0.012em;
+    color: var(--c-ink);
+    overflow-wrap: break-word;
+    min-width: 0;
+    text-wrap: balance;
+}
+h1 { font-size: var(--t-2xl); }
+h2 { font-size: var(--t-xl); }
+h3 { font-size: var(--t-lg); font-stretch: 100%; font-weight: 650; }
+h4 { font-size: var(--t-md); font-stretch: 100%; font-weight: 650; }
+
+p { margin: 0; }
+p, li, dd { text-wrap: pretty; }
+
+a {
+    color: var(--c-link);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+}
+a:hover { text-decoration-thickness: 2px; }
+
+img, svg, video { max-width: 100%; }
+
+code, kbd, samp, pre {
+    font-family: var(--f-mono);
+    font-size: 0.92em;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid var(--c-line);
+    margin: var(--s-6) 0;
+}
+
+table { border-collapse: collapse; }
+
+small { font-size: var(--t-sm); }
+
+/* Money and every figure that lines up: tabular, lining numerals. */
+.num, .ds-num {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* Focus: one ring, visible on every surface in both themes, appearing instantly. */
+:where(a, button, input, select, textarea, summary, [tabindex], [role="button"], [role="tab"], [role="menuitem"]):focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 5px var(--c-ground);
+    border-radius: var(--r-1);
+}
+:where(input, select, textarea):focus-visible {
+    outline-offset: 0;
+    box-shadow: none;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.skip-link {
+    position: absolute;
+    left: var(--s-3);
+    top: var(--s-3);
+    z-index: calc(var(--z-toast) + 10);
+    padding: var(--s-3) var(--s-4);
+    background: var(--c-action);
+    color: var(--c-on-action);
+    font-weight: 650;
+    text-decoration: none;
+    border: 1px solid var(--c-action-edge);
+    border-radius: var(--r-2);
+    transform: translateY(-200%);
+}
+.skip-link:focus { transform: none; }
+
+[x-cloak] { display: none !important; }
+[hidden] { display: none !important; }
+
+/* Theme-aware brand lockup: the dark file carries white lettering, the light file carries the logo's red. */
+.theme-light-only { display: block; }
+.theme-dark-only { display: none; }
+:root[data-theme="dark"] .theme-light-only,
+:root.dark .theme-light-only { display: none; }
+:root[data-theme="dark"] .theme-dark-only,
+:root.dark .theme-dark-only { display: block; }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .theme-light-only { display: none; }
+    :root:not([data-theme]) .theme-dark-only { display: block; }
+}
+/* A container can pin its own scheme (the /dev/kit gallery shows both themes side by side). */
+[data-scheme="light"] { color-scheme: light; background: var(--c-ground); color: var(--c-ink); }
+[data-scheme="dark"] { color-scheme: dark; background: var(--c-ground); color: var(--c-ink); }
+[data-scheme="light"] .theme-light-only { display: block; }
+[data-scheme="light"] .theme-dark-only { display: none; }
+[data-scheme="dark"] .theme-light-only { display: none; }
+[data-scheme="dark"] .theme-dark-only { display: block; }
+
+/* Reduced motion: people who ask for less motion get none from transitions, animations or smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

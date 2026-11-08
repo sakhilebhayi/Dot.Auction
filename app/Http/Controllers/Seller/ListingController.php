@@ -6,11 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Seller\SaveListingRequest;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
+use App\Models\AuctionSettlement;
+use App\Models\ReserveNotMetProposal;
 use App\Services\Auctions\ListingManager;
 use App\Services\Auctions\ListingRejected;
+use App\Services\DisplayTime;
+use App\Services\Paystack\PaystackConfig;
+use App\Support\PageRange;
+use App\Support\SellerLots;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
@@ -25,15 +32,50 @@ class ListingController extends Controller
 
     public function index(Request $request): View
     {
-        $auctions = Auction::query()
-            ->where('seller_id', $request->user()->id)
-            ->with('category')
-            ->withCount('bids')
-            ->orderByRaw("CASE status WHEN 'draft' THEN 0 WHEN 'active' THEN 1 WHEN 'pending_review' THEN 1 ELSE 2 END")
-            ->orderByDesc('id')
-            ->paginate(15);
+        $user = $request->user();
+        $now = now();
+        $endingSoon = (int) config('auction.ending_soon_window_minutes', 60);
+        $state = $request->query('state');
+        $state = is_string($state) && SellerLots::isState($state) ? $state : null;
 
-        return view('seller.auctions.index', ['auctions' => $auctions]);
+        $auctions = SellerLots::apply(
+            Auction::query()
+                ->where('seller_id', $user->id)
+                // Everything a row shows is loaded here, so the page costs the same number of queries for 1 lot or 15:
+                // the category, the cover photo, the winning bid (for the Sold or Not sold word) and the bid count.
+                ->with(['category', 'images', 'winningBid', 'reserveProposal'])
+                ->withCount('bids'),
+            $state,
+            $now,
+            $endingSoon,
+        )->paginate(15)->withQueryString();
+        PageRange::within($auctions);
+
+        $ids = $auctions->getCollection()->modelKeys();
+
+        // The reserve decision a row is waiting on, and the payment behind a sold row: one query each for the whole page.
+        $proposals = ReserveNotMetProposal::query()
+            ->whereIn('auction_id', $ids)
+            ->where('status', 'pending')
+            ->with('bid.bidder')
+            ->get()
+            ->keyBy('auction_id');
+        $byId = $auctions->getCollection()->keyBy('id');
+        $proposals->each(fn (ReserveNotMetProposal $proposal) => $proposal->setRelation('auction', $byId->get($proposal->auction_id)));
+
+        $settlements = AuctionSettlement::query()
+            ->whereIn('auction_id', $ids)
+            ->get()
+            ->keyBy('auction_id');
+
+        return view('seller.auctions.index', [
+            'auctions' => $auctions,
+            'state' => $state,
+            'counts' => SellerLots::counts($user->id, $now, $endingSoon),
+            'proposals' => $proposals,
+            'settlements' => $settlements,
+            'payments' => app(PaystackConfig::class),
+        ]);
     }
 
     public function create(): View
@@ -70,7 +112,13 @@ class ListingController extends Controller
             return back()->withInput()->withErrors(['listing' => $e->getMessage()]);
         }
 
-        return redirect()->route('seller.auctions.edit', $auction)->with('status', 'Changes saved.');
+        // A form opened before the first bid still carries the term fields. They are dropped (only the description may
+        // change once a bid exists), and the seller is told so instead of "Changes saved." for a price that did not move.
+        $droppedTerms = $request->termsLocked() && $request->hasAny(SaveListingRequest::TERM_FIELDS);
+
+        return redirect()->route('seller.auctions.edit', $auction)->with('status', $droppedTerms
+            ? 'Description saved. A bid arrived while this page was open, so the price, reserve, closing time and other terms were not changed.'
+            : 'Changes saved.');
     }
 
     public function publish(Auction $auction): RedirectResponse
@@ -84,7 +132,7 @@ class ListingController extends Controller
         }
 
         return redirect()->route('seller.auctions.index')->with('status', $published->isScheduled()
-            ? "\"{$published->title}\" is scheduled and opens ".$published->starts_at->format('M j, Y H:i').'.'
+            ? "\"{$published->title}\" is scheduled and opens ".Auction::localTime($published->starts_at, 'M j, Y H:i', true).'.'
             : "\"{$published->title}\" is live.");
     }
 
@@ -117,17 +165,24 @@ class ListingController extends Controller
     private function form(Auction $auction): View
     {
         $money = fn (?string $amount) => $amount === null ? '' : Auction::fromCents(Auction::toCents($amount));
-        $moment = fn ($date) => $date?->format('Y-m-d\TH:i') ?? '';
+        $moment = fn ($date) => DisplayTime::inputValue($date);
 
         if ($auction->exists) {
             $auction->load('images');
+        }
+
+        $categories = AuctionCategory::orderBy('name')->pluck('name', 'id')->all();
+
+        if ($categories === []) {
+            // A listing cannot be saved without a category. Make the cause findable instead of leaving an empty list.
+            Log::error('A seller opened the listing form but there are no auction categories. Run: php artisan auction:seed-categories');
         }
 
         return view('seller.auctions.form', [
             'auction' => $auction,
             'maxImages' => (int) config('auction.images.max_per_auction', 6),
             'termsLocked' => $auction->exists && $auction->hasBids(),
-            'categories' => AuctionCategory::orderBy('name')->pluck('name', 'id')->all(),
+            'categories' => $categories,
             'values' => [
                 'title' => $auction->title,
                 'description' => $auction->description,
@@ -137,7 +192,11 @@ class ListingController extends Controller
                 'reserve_price' => $money($auction->reserve_price),
                 'buy_now_price' => $money($auction->buy_now_price),
                 'starts_at' => $auction->exists && $auction->starts_at->isFuture() ? $moment($auction->starts_at) : '',
-                'ends_at' => $moment($auction->ends_at),
+                // A new lot starts with a closing time a week out at 18:00 local time: a suggestion the seller can change,
+                // inside the allowed duration, so the first save is not a date puzzle.
+                'ends_at' => $auction->exists
+                    ? $moment($auction->ends_at)
+                    : $moment(DisplayTime::toLocal(now())->addDays(7)->setTime(18, 0)),
             ],
         ]);
     }

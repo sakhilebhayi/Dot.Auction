@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Auction;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\Response;
 
 /**
  * Added (platform-loop pass, 2026-08-01) alongside the new buyer-facing
@@ -28,10 +29,12 @@ class AuctionPolicy
      * this is a public marketplace listing. A draft auction is only
      * visible to its own seller.
      */
-    public function view(User $user, Auction $auction): bool
+    public function view(User $user, Auction $auction): bool|Response
     {
         if ($auction->status === 'draft') {
-            return $user->id === $auction->seller_id;
+            // 404, not 403: a draft's id must look exactly like an id that does not exist, or any signed-in user
+            // could count other sellers' drafts by walking the ids.
+            return $user->id === $auction->seller_id ? true : Response::denyAsNotFound();
         }
 
         return true;
@@ -72,9 +75,15 @@ class AuctionPolicy
      * depends on bids that can land at any moment. Platform operators get
      * no override here: the operator flag opens the payment-operations pages only.
      */
-    public function update(User $user, Auction $auction): bool
+    public function update(User $user, Auction $auction): bool|Response
     {
-        return $this->manage($user, $auction) && in_array($auction->status, ['draft', 'active'], true);
+        $manage = $this->manage($user, $auction);
+
+        if ($manage !== true) {
+            return $manage;
+        }
+
+        return in_array($auction->status, ['draft', 'active'], true);
     }
 
     /**
@@ -82,8 +91,14 @@ class AuctionPolicy
      * reported to the seller as readable errors by ListingManager rather
      * than as a bare 403.
      */
-    public function manage(User $user, Auction $auction): bool
+    public function manage(User $user, Auction $auction): bool|Response
     {
-        return $user->id === $auction->seller_id;
+        if ($user->id === $auction->seller_id) {
+            return true;
+        }
+
+        // The edit, publish, cancel, delete and photo routes must not tell a stranger that somebody else's draft exists
+        // (R-42 security sweep): a draft answers 404 here exactly as it does on its page and photos.
+        return $auction->status === 'draft' ? Response::denyAsNotFound() : false;
     }
 }

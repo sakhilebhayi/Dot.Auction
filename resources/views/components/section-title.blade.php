@@ -1,13 +1,5 @@
-<div class="md:col-span-1 flex justify-between">
-    <div class="px-4 sm:px-0">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ $title }}</h3>
-
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {{ $description }}
-        </p>
-    </div>
-
-    <div class="px-4 sm:px-0">
-        {{ $aside ?? '' }}
-    </div>
+<div class="jf-intro">
+    <h2 class="jf-intro__title">{{ $title }}</h2>
+    <p class="jf-intro__text">{{ $description }}</p>
+    @if (! empty($aside ?? ''))<div class="jf-intro__aside">{{ $aside }}</div>@endif
 </div>

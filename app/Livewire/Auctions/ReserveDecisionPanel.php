@@ -26,10 +26,16 @@ class ReserveDecisionPanel extends Component
 
         $this->decide('accepted', function (Auction $auction, ReserveNotMetProposal $proposal) {
             DB::afterCommit(function () use ($auction, $proposal) {
-                $proposal->bid->bidder->notify(new AuctionWonNotification($auction, $proposal->bid));
                 // The sale is now settled just like a reserve-met one, so the
-                // payment hand-off listener must hear about it too.
+                // payment hand-off listener must hear about it too. It goes
+                // first: a notice that fails to send must not be able to stop it.
                 event(new AuctionSettled($auction, $proposal->bid));
+
+                try {
+                    $proposal->bid->bidder->notify(new AuctionWonNotification($auction, $proposal->bid));
+                } catch (\Throwable $e) {
+                    report($e);
+                }
             });
         });
     }
@@ -58,16 +64,17 @@ class ReserveDecisionPanel extends Component
 
             $auction = Auction::query()->lockForUpdate()->findOrFail($proposal->auction_id);
 
-            $auction->update(['status' => 'ended']);
-            $proposal->update(['status' => $outcome, 'decided_at' => now()]);
+            $auction->forceFill(['status' => 'ended'])->save();
+            $proposal->forceFill(['status' => $outcome, 'decided_at' => now()])->save();
 
             if ($afterDecision !== null) {
                 $afterDecision($auction, $proposal);
             }
         });
 
-        // Show the real, current state (including a decision made elsewhere).
+        // Show the real, current state (including a decision made elsewhere), and tell the lot page it can stop saying "deciding".
         $this->proposal = $this->proposal->fresh() ?? $this->proposal;
+        $this->dispatch('reserve-decided', auctionId: $this->proposal->auction_id);
     }
 
     public function render(): View

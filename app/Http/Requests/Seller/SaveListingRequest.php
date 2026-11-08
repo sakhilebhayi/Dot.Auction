@@ -5,11 +5,15 @@ namespace App\Http\Requests\Seller;
 use App\Models\Auction;
 use App\Rules\MoneyAmount;
 use App\Services\Auctions\ListingTerms;
+use App\Services\DisplayTime;
 use Carbon\CarbonInterface;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Create and edit share one form. For an edit, the rules depend on what the
@@ -18,15 +22,26 @@ use Illuminate\Validation\Validator;
  */
 class SaveListingRequest extends FormRequest
 {
-    private const DATE_FORMATS = ['Y-m-d\TH:i', 'Y-m-d\TH:i:s'];
+    /** Everything on the form except the description: what a bid locks. */
+    public const TERM_FIELDS = ['title', 'category_id', 'starting_price', 'reserve_price', 'buy_now_price', 'bid_increment', 'starts_at', 'ends_at'];
 
     public function authorize(): bool
     {
         $auction = $this->auction();
 
+        // Gate::inspect keeps the policy's own answer: a draft that is not the person's own is a 404, not a 403.
         return $auction !== null
-            ? $this->user()->can('update', $auction)
+            ? $this->allow(Gate::forUser($this->user())->inspect('update', $auction))
             : $this->user()->can('create', Auction::class);
+    }
+
+    private function allow(Response $response): bool
+    {
+        if ($response->denied() && $response->status() === 404) {
+            throw new NotFoundHttpException;
+        }
+
+        return $response->allowed();
     }
 
     public function auction(): ?Auction
@@ -184,21 +199,11 @@ class SaveListingRequest extends FormRequest
     }
 
     /**
-     * Interprets a datetime-local value in the application timezone.
-     * Rejects overflowing dates such as 31 February.
+     * Interprets a datetime-local value as wall-clock time in the display zone (Africa/Johannesburg by default) and
+     * returns it in UTC, which is what is stored. Rejects overflowing dates such as 31 February.
      */
     public static function parseDate(string $value): ?Carbon
     {
-        foreach (self::DATE_FORMATS as $format) {
-            if (Carbon::hasFormat($value, $format)) {
-                $date = Carbon::createFromFormat($format, $value, config('app.timezone'));
-
-                if ($date !== null && $date->format($format) === $value) {
-                    return $date;
-                }
-            }
-        }
-
-        return null;
+        return DisplayTime::parseInput($value);
     }
 }

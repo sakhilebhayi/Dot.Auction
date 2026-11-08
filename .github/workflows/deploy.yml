@@ -439,6 +439,19 @@ jobs:
             echo "== docroot build/ did not exist; linked to $APPDIR/public/build"
           fi
 
+          # ---- fonts (R-42): the page CSS asks for /fonts/*.woff2. public/fonts is tracked, so the checkout above refreshed it,
+          # but a docroot that is not <app>/public serves its own fonts/ (a link, or a stale copy). Same three cases as build/.
+          FONTLINK="$DOCROOT/fonts"
+          if [ -L "$FONTLINK" ]; then
+            echo "== docroot fonts/ is a symlink; nothing to copy"
+          elif [ -d "$FONTLINK" ]; then
+            rsync -a --delete public/fonts/ "$FONTLINK/"
+            echo "== docroot fonts/ is a real directory; mirrored from public/fonts"
+          else
+            ln -s "$APPDIR/public/fonts" "$FONTLINK"
+            echo "== docroot fonts/ did not exist; linked to $APPDIR/public/fonts"
+          fi
+
           # ---- database
           echo "== Pending migrations:"
           $PHP artisan migrate:status --pending 2>&1 | tail -25 || true
@@ -585,6 +598,14 @@ jobs:
           for ASSET in $(python3 -c "import json; m=json.load(open('public/build/manifest.json')); print(' '.join(sorted({v['file'] for v in m.values() if v.get('isEntry')} | {f for v in m.values() if v.get('isEntry') for f in v.get('css', [])})))"); do
             CODE=$(status "$SITE_URL/build/$ASSET")
             if [ "$CODE" = "200" ]; then echo "200 $SITE_URL/build/$ASSET"; else echo "::error::$SITE_URL/build/$ASSET answered ${CODE:-no response} (expected 200): the docroot is not serving the new build"; FAILED=1; fi
+          done
+          # Self-hosted fonts: the built CSS names these two files by absolute path. A docroot that does not serve /fonts/ leaves every
+          # page in the fallback face with a 200 for the page itself, so it is checked here the way the built CSS is. A real font file is
+          # tens of kilobytes; a few hundred bytes is an error page served with a 200.
+          for FONT in fonts/archivo-var-latin.woff2 fonts/chivo-mono-var-latin.woff2; do
+            CODE=$(status "$SITE_URL/$FONT")
+            SIZE=$(curl -s --max-time 30 -o /dev/null -w '%{size_download}' "$SITE_URL/$FONT" || echo 0)
+            if [ "$CODE" = "200" ] && [ "${SIZE:-0}" -gt 10000 ]; then echo "200 $SITE_URL/$FONT (${SIZE} bytes)"; else echo "::error::$SITE_URL/$FONT answered ${CODE:-no response}, ${SIZE:-0} bytes (expected 200 and a font file): the docroot is not serving public/fonts"; FAILED=1; fi
           done
           # A GET-only route answering POST is a harmless 405: ~1 KB in
           # production, an ~840 KB stack-trace page when APP_DEBUG is on.

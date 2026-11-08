@@ -72,17 +72,17 @@ class BuyNowPurchaser
                 ->where('is_winning', true)
                 ->update(['is_winning' => false]);
 
-            $bid = Bid::create([
+            $bid = Bid::forceCreate([
                 'auction_id' => $locked->id,
                 'bidder_id' => $buyer->getKey(),
                 'amount' => Auction::fromCents($buyNowCents),
                 'is_winning' => true,
             ]);
 
-            $locked->update([
+            $locked->forceFill([
                 'current_price' => Auction::fromCents($buyNowCents),
                 'ends_at' => now(),
-            ]);
+            ])->save();
             $bid->setRelation('auction', $locked);
 
             if (! $this->settler->settle($locked)) {
@@ -96,10 +96,11 @@ class BuyNowPurchaser
 
             $previousBidderId = $previousWinner?->bidder_id;
             DB::afterCommit(function () use ($bid, $previousBidderId) {
+                AuctionSnapshot::forget($bid->auction_id);
                 event(new BidPlaced($bid));
 
                 if ($previousBidderId !== null && $previousBidderId !== $bid->bidder_id) {
-                    User::find($previousBidderId)?->notify(new OutbidNotification($bid));
+                    User::find($previousBidderId)?->notify(new OutbidNotification($bid, buyNow: true));
                 }
             });
 

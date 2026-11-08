@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The same suite as phpunit.xml, on PostgreSQL (what production runs). SQLite hides real differences: LIKE is
+    case sensitive here, a composite-key insert asks for "id", numeric(12,2) overflows, FOR UPDATE really locks.
+
+    Run:  DB_HOST=127.0.0.1 DB_USERNAME=postgres DB_PASSWORD=secret DB_DATABASE=dot_auction_test \
+          vendor/bin/phpunit -c phpunit.pgsql.xml
+    On a local socket:  DB_HOST=/tmp DB_USERNAME=$USER DB_PASSWORD= ...
+    Use a throwaway database: the suite migrates it and the parallel bidding test commits (then removes) its rows.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null" force="true"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="DB_CONNECTION" value="pgsql" force="true"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="5432"/>
+        <env name="DB_USERNAME" value="postgres"/>
+        <env name="DB_PASSWORD" value=""/>
+        <env name="DB_DATABASE" value="dot_auction_test"/>
+        <env name="DB_URL" value="" force="true"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="ANTHROPIC_API_KEY" value=""/>
+        <env name="SECURITY_CSP_REPORT_ONLY" value="false" force="true"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
+            <env name="ALLOW_REGISTRATION" value="true"/>
+    </php>
+</phpunit>

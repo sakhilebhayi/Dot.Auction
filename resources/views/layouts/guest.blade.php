@@ -1,57 +1,54 @@
+{{--
+  The signed-out layout. Rendered by App\View\Components\GuestLayout (props: title, description, variant; slots: header, default).
+  variant 'card': an aside that says what Dot.Auction is (real figures from config only) beside one centred form card with the page's single h1.
+  variant 'document': a reading page (terms, privacy, cookies) with a back link.
+--}}
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<head>
+    @include('layouts.partials.head', ['title' => $title, 'description' => $description])
+</head>
+<body class="gx-body">
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <header class="gx-top">
+        <x-ds.brand :href="url('/')" :width="104" />
+        <x-ds.theme-toggle />
+    </header>
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+    @if ($variant === 'document')
+        <main id="main" class="gx-doc" tabindex="-1">
+            <a href="{{ url('/') }}" class="ds-pagehead__back"><x-ds.icon name="arrow-left" :size="16" /> Back to Dot.Auction</a>
+            <h1 class="gx-doc__title">{{ $title }}</h1>
+            <div class="ds-prose">{{ $slot }}</div>
+        </main>
+    @else
+        <div class="gx-split">
+            <aside class="gx-aside" aria-label="About Dot.Auction">
+                <p class="gx-aside__lead">Bid until the hammer falls.</p>
+                <p class="gx-aside__text">Every lot on Dot.Auction has a start price, a bid step and a closing time. The sale page always says where the lot stands.</p>
+                <ul class="gx-facts">
+                    <li>Closing times are shown in South African time.</li>
+                    <li>A bid in the last {{ config('auction.snipe_window_minutes') }} minutes moves the close out by {{ config('auction.snipe_extension_minutes') }} minutes, up to {{ config('auction.snipe_max_extensions') }} times.</li>
+                    <li>A reserve stays private. Bidders only see whether it has been met.</li>
+                </ul>
+            </aside>
+            <main id="main" class="gx-main" tabindex="-1">
+                <div class="gx-card">
+                    <h1 class="gx-card__title">{{ isset($header) ? strip_tags((string) $header) : $title }}</h1>
+                    {{ $slot }}
+                </div>
+            </main>
+        </div>
+    @endif
 
-        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
-        <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
-        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
-
-        <!-- Fonts: same family set as welcome.blade.php, for a consistent brand voice on guest pages -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-        <!-- Styles -->
-        @livewireStyles
-
-        {{-- Single fixed brand theme (ink/paper/gold/red), matching welcome.blade.php. Auth/guest
-             pages don't get a dark-mode toggle — that pre-existing infrastructure has been removed
-             from this layout so the guest scope stays on one deliberate look, same as the marketing page. --}}
-        <style>
-            :root {
-                --ink: #17110f;
-                --ink-soft: #221a17;
-                --paper: #f4ece0;
-                --stone: #c7b39c;
-                --gold: #f1c62e;
-                --gold-soft: #f8da68;
-                --red: #d71016;
-                --red-soft: #ea4348;
-                --line: rgba(244, 236, 224, 0.12);
-                --font-display: 'Fraunces', Georgia, serif;
-                --font-body: 'Work Sans', system-ui, sans-serif;
-                --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-            }
-            html { background: var(--ink); }
-            body { font-family: var(--font-body); background: var(--ink); color: var(--stone); }
-            .font-display { font-family: var(--font-display); font-optical-sizing: auto; }
-            .font-mono { font-family: var(--font-mono); }
-
-            .press { transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); }
-            .press:active { transform: scale(0.97); }
-        </style>
-    </head>
-    <body class="antialiased">
-        {{ $slot }}
-
-        @livewireScripts
-    </body>
+    <footer class="gx-foot">
+        <nav aria-label="Legal">
+            <a href="{{ route('terms.show') }}">Terms</a>
+            <a href="{{ route('policy.show') }}">Privacy</a>
+            <a href="{{ route('cookies') }}">Cookies</a>
+        </nav>
+        <p>Dot.Auction is part of the Dot ecosystem.</p>
+    </footer>
+    <x-ds.toasts />
+</body>
 </html>

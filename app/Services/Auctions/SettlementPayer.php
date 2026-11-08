@@ -76,7 +76,7 @@ class SettlementPayer
                 return $live;
             }
 
-            $payment = SettlementPayment::create([
+            $payment = SettlementPayment::forceCreate([
                 'settlement_id' => $locked->id,
                 'provider' => 'paystack',
                 'reference' => 'AUC-'.strtoupper((string) Str::ulid()),
@@ -92,7 +92,7 @@ class SettlementPayer
                 amountCents: $locked->amount_cents,
                 currency: $locked->currency,
                 reference: $payment->reference,
-                callbackUrl: route('settlements.payment.callback', $locked, true),
+                callbackUrl: $this->callbackUrl($locked),
                 metadata: ['settlement_id' => $locked->id, 'auction_id' => $locked->auction_id],
             );
 
@@ -100,10 +100,32 @@ class SettlementPayer
                 throw new PaymentGatewayException('Paystack sent an answer this app could not understand. Nothing was charged. Please try again later.', 'unexpected_response', true);
             }
 
-            $payment->update(['authorization_url' => $result->authorizationUrl]);
+            $payment->forceFill(['authorization_url' => $result->authorizationUrl])->save();
 
             return $payment;
         });
+    }
+
+    /**
+     * Where Paystack sends the winner back after paying. Built on the host configured as APP_URL, not the Host header of the
+     * request that started the payment: a forged Host header must never decide where a person who has just paid is sent.
+     * (TRUSTED_HOSTS already refuses such requests in production; this keeps the callback right where APP_URL is the host but
+     * the check is off, and in tests.) Where APP_URL is still the localhost default the request's own root is used.
+     */
+    private function callbackUrl(AuctionSettlement $settlement): string
+    {
+        $path = route('settlements.payment.callback', $settlement, false);
+        $app = parse_url((string) config('app.url'));
+        $host = is_array($app) ? (string) ($app['host'] ?? '') : '';
+
+        if ($host === '' || $host === 'localhost') {
+            return url($path);
+        }
+
+        // The scheme of the request that is paying (https in production, whatever APP_URL says), the host of APP_URL.
+        $scheme = request()->isSecure() ? 'https' : (string) ($app['scheme'] ?? 'https');
+
+        return $scheme.'://'.$host.(isset($app['port']) ? ':'.$app['port'] : '').$path;
     }
 
     /**

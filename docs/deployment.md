@@ -86,6 +86,7 @@ The pipeline updates a live install; it does not create one. Layout, as on the o
   index.php            shim: <?php require __DIR__.'/auction/public/index.php';
   .htaccess            Laravel rewrite rules
   build -> auction/public/build     (the deploy creates this link if it is missing)
+  fonts -> auction/public/fonts     (the self-hosted Archivo and Chivo Mono; the deploy creates the link, or mirrors the folder, and the smoke check requests both files)
   images -> auction/public/images ; apple-touch-icon.png, favicon-16x16.png, favicon-32x32.png, favicon.ico, robots.txt  (each -> auction/public/<name>)
   auction/                the app folder = DEPLOY_PATH (artisan is here)
 ```
@@ -121,6 +122,9 @@ SESSION_SECURE_COOKIE=true
 CACHE_STORE=database
 QUEUE_CONNECTION=database
 BROADCAST_CONNECTION=log      # not reverb: see "Reverb does not run here"
+AUCTION_REALTIME_ENABLED=false  # Reverb is off: /up/realtime answers 200 "polling mode" (R-42 F-26); panels poll
+AUCTION_DISPLAY_TIMEZONE=Africa/Johannesburg   # what people read and type; storage stays UTC (F-11)
+TRUSTED_HOSTS=                # empty = the APP_URL host only; add the www form here if it is ever served (F-19)
 FILESYSTEM_DISK=local
 
 MAIL_MAILER=smtp
@@ -220,5 +224,5 @@ Code and files only. Over SSH: put the site in maintenance mode, `tar xzf ~/dot-
 - One server, one crontab, one queue: the worker count is whatever `* * * * *` and `--max-time=50` give you.
 - `ci.yml` is the other PR's file and is not changed here. It runs PHPUnit only; it does not run Pint, PHPStan or an asset build, and it never touches Postgres or MySQL. No stacked PR reports a MySQL run.
 - Photos are stored as uploaded: EXIF, including GPS, is kept (PR #7 notes).
-- `AutoBidEngine` is dead code and is not wired in; proxy bidding does not exist in production.
+- Proxy bidding does not exist. The unsafe `AutoBidEngine` was deleted in R-42 (F-17); the `bids.is_auto_bid` column is kept, unused, for a future designed feature.
 - There is no payment provider: settlement records an `awaiting_payment` row and says so to the winner.

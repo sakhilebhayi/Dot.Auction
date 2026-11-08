@@ -10,6 +10,8 @@ use App\Services\Auctions\SettlementPayer;
 use App\Services\Auctions\SettlementPaymentRecorder;
 use App\Services\Paystack\PaymentGatewayException;
 use App\Services\Paystack\PaystackConfig;
+use App\Support\PageRange;
+use App\Support\SettlementPosition;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -27,21 +29,57 @@ class SettlementController extends Controller
     public function index(Request $request): View
     {
         $userId = $request->user()->getKey();
+        $role = $request->query('role');
+        $role = in_array($role, ['buying', 'selling'], true) ? $role : null;
+
+        $mine = fn ($q) => $q->where(fn ($q) => $q->where('winner_id', $userId)->orWhere('seller_id', $userId));
 
         $settlements = AuctionSettlement::query()
             ->with('auction')
-            ->where(fn ($q) => $q->where('winner_id', $userId)->orWhere('seller_id', $userId))
+            ->when($role === 'buying', fn ($q) => $q->where('winner_id', $userId))
+            ->when($role === 'selling', fn ($q) => $q->where('seller_id', $userId))
+            ->when($role === null, $mine)
             ->latest('created_at')
-            ->paginate(20);
+            ->latest('id')
+            ->paginate(20)
+            ->withQueryString();
+        PageRange::within($settlements);
 
-        return view('settlements.index', ['settlements' => $settlements, 'payments' => app(PaystackConfig::class)]);
+        $counts = AuctionSettlement::query()->tap($mine)->toBase()
+            ->selectRaw('count(*) as all_rows, coalesce(sum(case when winner_id = ? then 1 else 0 end), 0) as buying_rows, coalesce(sum(case when seller_id = ? then 1 else 0 end), 0) as selling_rows', [$userId, $userId])
+            ->first();
+
+        $payments = app(PaystackConfig::class);
+
+        return view('settlements.index', [
+            'settlements' => $settlements,
+            'payments' => $payments,
+            'role' => $role,
+            'counts' => ['all' => (int) $counts->all_rows, 'buying' => (int) $counts->buying_rows, 'selling' => (int) $counts->selling_rows],
+            // Winners' sales that can be paid right now (the one thing on this page that needs a person) and the ones that will be
+            // owed once payment opens: read through SettlementPosition so this page agrees with Home, Won and the sale page.
+            ...$this->owing($userId),
+        ]);
+    }
+
+    /**
+     * @return array{toPay: int, toPayLater: int, owedLater: int}
+     */
+    private function owing(int|string $userId): array
+    {
+        $unpaid = AuctionSettlement::query()->where('winner_id', $userId)
+            ->whereIn('status', [AuctionSettlement::AWAITING_PAYMENT, AuctionSettlement::PAYMENT_OVERDUE])
+            ->limit(500)->get();
+        $totals = SettlementPosition::totals(SettlementPosition::many($unpaid));
+
+        return ['toPay' => $totals['now_count'], 'toPayLater' => $totals['later_count'], 'owedLater' => $totals['later_cents']];
     }
 
     public function show(Request $request, AuctionSettlement $settlement): View
     {
         $this->partiesOnly($request, $settlement);
 
-        $settlement->load(['auction', 'winner', 'seller']);
+        $settlement->load(['auction', 'events' => fn ($q) => $q->orderBy('created_at')->orderBy('id')]);
 
         return view('settlements.show', [
             'settlement' => $settlement,
@@ -62,7 +100,7 @@ class SettlementController extends Controller
         } catch (SettlementActionRejected $e) {
             return $this->back($settlement)->withErrors(['payment' => $e->getMessage()]);
         } catch (PaymentGatewayException $e) {
-            return $this->back($settlement)->withErrors(['payment' => $e->getMessage()]);
+            return $this->back($settlement)->with('payment_state', 'gateway')->withErrors(['payment' => $e->getMessage()]);
         }
 
         // Off to Paystack's own page: card details never touch this app.
@@ -81,7 +119,7 @@ class SettlementController extends Controller
         try {
             $outcome = $payer->confirm($settlement);
         } catch (PaymentGatewayException $e) {
-            return $this->back($settlement)->withErrors([
+            return $this->back($settlement)->with('payment_state', 'unconfirmed')->withErrors([
                 'payment' => 'We could not confirm your payment with Paystack just now. Nothing has changed on this sale. '
                     .'If you were charged it will be confirmed automatically; you can also reload this page in a minute.',
             ]);
@@ -95,7 +133,16 @@ class SettlementController extends Controller
             default => 'No payment has been started for this sale yet.',
         };
 
-        return $this->back($settlement)->with('status', $message);
+        // Which Paystack return this was, so the page can title it (paid, pending, failed, held) instead of showing a bare line.
+        $state = match ($outcome) {
+            SettlementPaymentRecorder::PAID, SettlementPaymentRecorder::ALREADY_PAID => 'paid',
+            SettlementPaymentRecorder::PENDING => 'pending',
+            SettlementPaymentRecorder::FAILED => 'failed',
+            SettlementPaymentRecorder::HELD => 'held',
+            default => 'not_started',
+        };
+
+        return $this->back($settlement)->with('status', $message)->with('payment_state', $state);
     }
 
     public function cancel(Request $request, AuctionSettlement $settlement, SettlementLifecycle $lifecycle): RedirectResponse

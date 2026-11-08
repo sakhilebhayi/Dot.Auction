@@ -1,45 +1,21 @@
-<x-guest-layout>
-    <x-authentication-card>
-        <x-slot name="logo">
-            <x-authentication-card-logo />
-        </x-slot>
+<x-guest-layout title="Verify your email" description="Confirm your email address to continue to Dot.Auction.">
+    <p class="gx-card__alt">Before you continue, open the link we emailed you to verify your address. If it has not arrived, we can send another.</p>
 
-        <div class="mb-4 text-sm text-[var(--stone)]">
-            {{ __('Before continuing, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.') }}
-        </div>
+    @if (session('status') == 'verification-link-sent')
+        <x-ds.alert tone="success">A new verification link has been sent to the address on your profile.</x-ds.alert>
+    @endif
 
-        @if (session('status') == 'verification-link-sent')
-            <div class="mb-4 font-medium text-sm text-[var(--gold-soft)]">
-                {{ __('A new verification link has been sent to the email address you provided in your profile settings.') }}
-            </div>
-        @endif
-
-        <div class="mt-4 flex items-center justify-between">
-            <form method="POST" action="{{ route('verification.send') }}">
+    <div class="gx-card__row">
+        <form method="POST" action="{{ route('verification.send') }}">
+            @csrf
+            <x-ds.button type="submit">Resend verification email</x-ds.button>
+        </form>
+        <div class="gx-card__row">
+            <a href="{{ route('profile.show') }}" class="gx-card__alt-link">Edit profile</a>
+            <form method="POST" action="{{ route('logout') }}">
                 @csrf
-
-                <div>
-                    <x-button type="submit">
-                        {{ __('Resend Verification Email') }}
-                    </x-button>
-                </div>
+                <x-ds.button type="submit" variant="link">Log out</x-ds.button>
             </form>
-
-            <div>
-                <a
-                    href="{{ route('profile.show') }}"
-                    class="underline text-sm text-[var(--stone)] hover:text-[var(--paper)] rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--gold)] focus:ring-offset-[var(--ink-soft)]"
-                >
-                    {{ __('Edit Profile') }}</a>
-
-                <form method="POST" action="{{ route('logout') }}" class="inline">
-                    @csrf
-
-                    <button type="submit" class="underline text-sm text-[var(--stone)] hover:text-[var(--paper)] rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--gold)] focus:ring-offset-[var(--ink-soft)] ms-2">
-                        {{ __('Log Out') }}
-                    </button>
-                </form>
-            </div>
         </div>
-    </x-authentication-card>
+    </div>
 </x-guest-layout>

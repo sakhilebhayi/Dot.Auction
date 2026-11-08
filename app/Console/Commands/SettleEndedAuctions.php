@@ -19,6 +19,7 @@ class SettleEndedAuctions extends Command
             ->pluck('id');
 
         $settled = 0;
+        $failed = 0;
 
         foreach ($dueIds as $id) {
             try {
@@ -28,12 +29,16 @@ class SettleEndedAuctions extends Command
                     $settled++;
                 }
             } catch (\Throwable $e) {
+                // The scheduler's own output file is overwritten every minute, so a message printed here would
+                // vanish; reporting writes it to the application log where it can be found, and the next run retries.
+                report($e);
+                $failed++;
                 $this->error("Failed to settle auction #{$id}: {$e->getMessage()}");
             }
         }
 
         $this->info("Processed {$settled} ended auction(s).");
 
-        return self::SUCCESS;
+        return $failed === 0 ? self::SUCCESS : self::FAILURE;
     }
 }

@@ -40,7 +40,9 @@ class BidPlacer
         $auctionId = $auction instanceof Auction ? $auction->getKey() : $auction;
         $amountCents = $this->parseCents($amount);
         $tokenKey = $submissionToken !== null && $submissionToken !== ''
-            ? "bid-token:{$auctionId}:{$bidder->getKey()}:{$submissionToken}"
+            // The token comes from the browser, so it is hashed: any length or character set stays a fixed-size cache key
+            // (the database cache's key column is 255 characters; a 10 kB token was a 500).
+            ? "bid-token:{$auctionId}:{$bidder->getKey()}:".hash('sha256', $submissionToken)
             : null;
         $tokenClaimed = false;
 
@@ -93,7 +95,7 @@ class BidPlacer
                     ->where('is_winning', true)
                     ->update(['is_winning' => false]);
 
-                $bid = Bid::create([
+                $bid = Bid::forceCreate([
                     'auction_id' => $locked->id,
                     'bidder_id' => $bidder->getKey(),
                     'amount' => $this->decimal($amountCents),
@@ -103,14 +105,15 @@ class BidPlacer
                 // Anti-snipe: decided from the LOCKED row, and written in the
                 // same UPDATE as the new price, so the bid and the moved
                 // close commit (or roll back) together.
-                $locked->update(array_merge(
+                $locked->forceFill(array_merge(
                     ['current_price' => $this->decimal($amountCents)],
                     $this->snipeExtension($locked),
-                ));
+                ))->save();
                 $bid->setRelation('auction', $locked);
 
                 $previousBidderId = $previousWinner?->bidder_id;
                 DB::afterCommit(function () use ($bid, $previousBidderId) {
+                    AuctionSnapshot::forget($bid->auction_id);
                     event(new BidPlaced($bid));
 
                     if ($previousBidderId !== null && $previousBidderId !== $bid->bidder_id) {
@@ -160,23 +163,33 @@ class BidPlacer
     }
 
     /**
-     * @throws BidRejected when the amount is not a positive number of at most 2 decimals
+     * @throws BidRejected when the amount is not a positive, finite number of at most 2 decimals, or is above the
+     *                     platform price ceiling (the same one sellers are held to), which also keeps it inside decimal(12,2)
      */
-    private function parseCents(float|int|string $amount): int
+    public function parseCents(float|int|string $amount): int
     {
         if (! is_numeric($amount)) {
             throw new BidRejected('Enter a valid bid amount.');
         }
 
         $scaled = (float) $amount * 100;
+
+        // INF/NAN (typed, or an exponent such as 1e308 overflowing the multiplication) and anything that is not at
+        // least one cent never reach an int cast or the database.
+        if (! is_finite($scaled) || $scaled < 0.5) {
+            throw new BidRejected('Enter a valid bid amount.');
+        }
+
+        $ceilingCents = max(1, (int) config('auction.listing.max_price', 100000000)) * 100;
+
+        if ($scaled > $ceilingCents + 0.5) {
+            throw new BidRejected('Bids above '.Auction::money($ceilingCents / 100).' are not accepted.');
+        }
+
         $cents = (int) round($scaled);
 
         if (abs($scaled - $cents) > 1e-6) {
             throw new BidRejected('Bid amounts can have at most 2 decimal places.');
-        }
-
-        if ($cents <= 0) {
-            throw new BidRejected('Enter a valid bid amount.');
         }
 
         return $cents;

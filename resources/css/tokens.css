@@ -1,0 +1,176 @@
+/*
+ * Hallmark custom run · Dot.Auction "Rostrum" · idea: a price climbs a ladder while the clock runs down a rail
+ * Look: Chalk and Graphite grounds (cool neutral, green undertone) + Gavel gold (the logo disc), Hammer red (the logo chevron), Ring teal, Dusk blue
+ * Faces: Archivo (variable weight AND width, one family for UI, display and money) + Chivo Mono (the sale-room clock and lot numbers only)
+ * Waived: none. Source of truth for every colour, size and duration in the app: DESIGN.md names each token below.
+ *
+ * Tokens are defined ONCE, here. The neutral ramp and the four hue ramps are fixed; the semantic roles (--c-*) point at the ramp
+ * and are redefined for the dark theme. Components only ever read --c-*, --t-*, --s-*, --r-*, --dur-*. Tailwind's gray, indigo,
+ * red, green and yellow scales are mapped to these ramps in tailwind.config.js so Jetstream's stock classes follow the theme.
+ */
+
+:root {
+    /* Neutral ramp: cool grey with a green undertone. 900 is also the dark theme's ground. */
+    --n-0: #ffffff;
+    --n-50: #f7f8f7;
+    --n-100: #eef0ef;
+    --n-200: #e2e6e4;
+    --n-300: #cfd5d2;
+    --n-400: #a7b0ac;
+    --n-450: #7f8c86;
+    --n-500: #6b7772;
+    --n-600: #525d58;
+    --n-700: #363e3b;
+    --n-750: #2e3532;
+    --n-800: #262c2b;
+    --n-900: #1c2120;
+    --n-950: #131716;
+
+    /* Gavel gold: the logo's yellow disc. A fill and a marker, never body text on a light ground. */
+    --gold-100: #fcf3cf;
+    --gold-300: #f6d95c;
+    --gold-500: #f1c62e;
+    --gold-600: #dcb015;
+    --gold-700: #7c5d00;
+    --gold-900: #3a2f0b;
+
+    /* Hammer red: the logo's chevron. Closing soon, danger, destructive. */
+    --red-100: #fce6e5;
+    --red-300: #ff9b97;
+    --red-500: #d71016;
+    --red-600: #b80d12;
+    --red-700: #8f0a0e;
+    --red-900: #3d1717;
+
+    /* Ring teal: the floor is open. Live, leading, paid. */
+    --teal-100: #d8eee9;
+    --teal-300: #5ed3bb;
+    --teal-600: #0b6b5c;
+    --teal-700: #08554a;
+    --teal-900: #123029;
+
+    /* Dusk blue: not yet open, links inside Jetstream. */
+    --blue-100: #dde9f5;
+    --blue-300: #93bde6;
+    --blue-600: #2b5a86;
+    --blue-700: #1f4468;
+    --blue-900: #172a3d;
+
+    /* Type */
+    --f-ui: "Archivo", "Archivo Fallback", ui-sans-serif, system-ui, sans-serif;
+    --f-mono: "Chivo Mono", "Chivo Mono Fallback", ui-monospace, "SF Mono", Menlo, monospace;
+    --t-xs: 0.75rem;
+    --t-sm: 0.875rem;
+    --t-md: 1rem;
+    --t-lg: 1.1875rem;
+    --t-xl: 1.4375rem;
+    --t-2xl: 1.75rem;
+    --t-3xl: 2.125rem;
+    --t-money: 2.75rem;
+    --lh-tight: 1.15;
+    --lh-snug: 1.3;
+    --lh-body: 1.55;
+
+    /* Space: a 4px base. */
+    --s-1: 0.25rem;
+    --s-2: 0.5rem;
+    --s-3: 0.75rem;
+    --s-4: 1rem;
+    --s-5: 1.25rem;
+    --s-6: 1.5rem;
+    --s-8: 2rem;
+    --s-10: 2.5rem;
+    --s-12: 3rem;
+    --s-16: 4rem;
+    --gutter: 1rem;
+    --measure: 66ch;
+    --page-max: 80rem;
+    --page-narrow: 54rem;
+    --rail-w: 15rem;
+    --topbar-h: 3.5rem;
+    --bar-h: 4rem;
+    --hit: 2.75rem;
+
+    /* Shape: panels are flush (0), controls and chips 2-4px, dialogs 6px. */
+    --r-0: 0;
+    --r-1: 2px;
+    --r-2: 4px;
+    --r-3: 6px;
+    --r-round: 999px;
+
+    /* Motion: the verb is "strike", short and decisive, no bounce. */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --dur-micro: 120ms;
+    --dur-short: 180ms;
+    --dur-mid: 240ms;
+
+    /* Z */
+    --z-bar: 40;
+    --z-menu: 60;
+    --z-dialog: 80;
+    --z-toast: 90;
+
+}
+
+/*
+ * Semantic roles. Each is written once as light-dark(Chalk, Graphite); which one applies follows color-scheme, which is
+ * the system preference until the visitor chooses (data-theme on <html>, plus the .dark class Tailwind and Jetstream read).
+ * [data-scheme] is the same block for a container that pins its own scheme (the /dev/kit gallery): custom properties holding
+ * light-dark() resolve where they are declared, so the block has to be declared again on that element, not inherited.
+ */
+:root {
+    color-scheme: light dark;
+}
+:root[data-theme="light"] {
+    color-scheme: light;
+}
+:root[data-theme="dark"],
+:root.dark {
+    color-scheme: dark;
+}
+
+:root,
+[data-scheme] {
+    --c-ground: light-dark(var(--n-100), var(--n-900));
+    --c-surface: light-dark(var(--n-50), var(--n-800));
+    --c-raised: light-dark(var(--n-0), var(--n-750));
+    --c-sunken: light-dark(var(--n-200), var(--n-950));
+    --c-ink: light-dark(var(--n-900), var(--n-100));
+    --c-ink-2: light-dark(var(--n-700), var(--n-300));
+    --c-ink-3: light-dark(var(--n-600), var(--n-400));
+    --c-line: light-dark(var(--n-300), var(--n-700));
+    --c-line-strong: light-dark(var(--n-500), var(--n-450));
+    --c-focus: light-dark(var(--n-900), var(--n-100));
+    --c-scrim: light-dark(color-mix(in srgb, var(--n-900) 55%, transparent), color-mix(in srgb, var(--n-950) 72%, transparent));
+
+    /* Action: the gavel. Gold fill with ink text in both themes. */
+    --c-action: var(--gold-500);
+    --c-action-hover: var(--gold-300);
+    --c-action-edge: light-dark(var(--gold-700), var(--gold-300));
+    --c-on-action: var(--n-900);
+    --c-quiet-hover: light-dark(var(--n-200), var(--n-700));
+    --c-link: light-dark(var(--blue-600), var(--blue-300));
+
+    /* Status hues: always paired with a word and a shape, never colour alone. */
+    --c-live: light-dark(var(--teal-600), var(--teal-300));
+    --c-live-bg: light-dark(var(--teal-100), var(--teal-900));
+    --c-urgent: light-dark(var(--red-600), var(--red-300));
+    --c-urgent-bg: light-dark(var(--red-100), var(--red-900));
+    --c-notice: light-dark(var(--gold-700), var(--gold-300));
+    --c-notice-bg: light-dark(var(--gold-100), var(--gold-900));
+    --c-scheduled: light-dark(var(--blue-600), var(--blue-300));
+    --c-scheduled-bg: light-dark(var(--blue-100), var(--blue-900));
+    --c-danger: light-dark(var(--red-600), var(--red-300));
+    --c-danger-fill: var(--red-600);
+    --c-on-danger-fill: var(--n-0);
+    --c-danger-bg: light-dark(var(--red-100), var(--red-900));
+    --c-ok: light-dark(var(--teal-600), var(--teal-300));
+    --c-ok-bg: light-dark(var(--teal-100), var(--teal-900));
+    --c-rail-track: light-dark(var(--n-300), var(--n-700));
+    --c-you: var(--gold-500);
+
+    /* Only things that float get a shadow. */
+    --shadow-float: 0 12px 32px -8px light-dark(color-mix(in srgb, var(--n-900) 35%, transparent), color-mix(in srgb, var(--n-950) 80%, transparent)),
+        0 0 0 1px light-dark(transparent, var(--n-700));
+}

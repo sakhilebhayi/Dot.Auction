@@ -1,34 +1,17 @@
-<x-guest-layout>
-    <x-authentication-card>
-        <x-slot name="logo">
-            <x-authentication-card-logo />
-        </x-slot>
+<x-guest-layout title="Reset your password" description="Ask for a link to choose a new Dot.Auction password.">
+    <p class="gx-card__alt">Enter your email address and we will send you a link to choose a new password.</p>
 
-        <div class="mb-4 text-sm text-[var(--stone)]">
-            {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
+    @session('status')
+        <x-ds.alert tone="success">{{ $value }}</x-ds.alert>
+    @endsession
+
+
+    <form method="POST" action="{{ route('password.email') }}">
+        @csrf
+        <x-ds.input label="Email" name="email" type="email" :value="old('email')" required autofocus autocomplete="username" />
+        <div class="gx-card__row">
+            <a href="{{ route('login') }}" class="gx-card__alt-link">Back to sign in</a>
+            <x-ds.button type="submit" size="lg">Email me a reset link</x-ds.button>
         </div>
-
-        @session('status')
-            <div class="mb-4 font-medium text-sm text-[var(--gold-soft)]">
-                {{ $value }}
-            </div>
-        @endsession
-
-        <x-validation-errors class="mb-4" />
-
-        <form method="POST" action="{{ route('password.email') }}">
-            @csrf
-
-            <div class="block">
-                <x-label for="email" value="{{ __('Email') }}" />
-                <x-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            </div>
-
-            <div class="flex items-center justify-end mt-4">
-                <x-button>
-                    {{ __('Email Password Reset Link') }}
-                </x-button>
-            </div>
-        </form>
-    </x-authentication-card>
+    </form>
 </x-guest-layout>

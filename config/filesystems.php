@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Nothing here uses signed temporary URLs, so Laravel's /storage/{path} route (GET and PUT) is not registered.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

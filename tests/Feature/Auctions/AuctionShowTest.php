@@ -14,7 +14,7 @@ class AuctionShowTest extends TestCase
     public function test_guest_cannot_view_an_auction(): void
     {
         $seller = User::factory()->create();
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Antique Clock',
             'starting_price' => 50,
@@ -32,7 +32,7 @@ class AuctionShowTest extends TestCase
     {
         $seller = User::factory()->create();
         $buyer = User::factory()->withPersonalTeam()->create();
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Antique Clock',
             'starting_price' => 50,
@@ -55,7 +55,7 @@ class AuctionShowTest extends TestCase
     {
         $seller = User::factory()->create();
         $buyer = User::factory()->withPersonalTeam()->create();
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Unlisted Lot',
             'starting_price' => 50,
@@ -68,14 +68,14 @@ class AuctionShowTest extends TestCase
 
         $this->actingAs($buyer)
             ->get(route('auctions.show', $auction))
-            ->assertForbidden();
+            ->assertNotFound(); // 404, like an id that does not exist (R-42 F-24)
     }
 
     public function test_reserve_price_amount_is_never_rendered_to_a_non_seller(): void
     {
         $seller = User::factory()->create();
         $buyer = User::factory()->withPersonalTeam()->create();
-        $auction = Auction::create([
+        $auction = Auction::forceCreate([
             'seller_id' => $seller->id,
             'title' => 'Reserved Lot',
             'starting_price' => 50,
@@ -91,6 +91,6 @@ class AuctionShowTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('987.65');
-        $response->assertSee('Reserve not yet met');
+        $response->assertSee('Reserve not met');
     }
 }

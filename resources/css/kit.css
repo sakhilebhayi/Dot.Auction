@@ -1,0 +1,25 @@
+/* kit: the /dev/kit gallery only (local and testing). Tokens only. */
+.kit-top { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--c-line); background: var(--c-ground); position: sticky; top: 0; z-index: var(--z-bar); }
+.kit-top__note { margin-left: auto; color: var(--c-ink-3); font-size: var(--t-sm); }
+.kit-main { max-width: 110rem; margin: 0 auto; padding: var(--s-8) var(--s-4) var(--s-16); }
+.kit-h1 { font-size: var(--t-3xl); font-stretch: 112%; }
+.kit-lead { margin: var(--s-2) 0 var(--s-6); color: var(--c-ink-2); max-width: 60ch; }
+.kit-toc { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-bottom: var(--s-8); }
+.kit-toc a { display: inline-flex; align-items: center; min-height: var(--hit); padding: 0 var(--s-3); border: 1px solid var(--c-line-strong); border-radius: var(--r-1); color: var(--c-ink); text-decoration: none; font-weight: 600; }
+.kit-group { margin-top: var(--s-12); }
+.kit-h2 { font-size: var(--t-xl); margin-bottom: var(--s-4); padding-top: var(--s-4); border-top: 1px solid var(--c-line-strong); }
+.kit-panes { display: grid; gap: var(--s-4); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 80rem) { .kit-panes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kit-pane { padding: var(--s-5); border: 1px solid var(--c-line); min-width: 0; }
+.kit-pane__tag { margin-bottom: var(--s-4); font-size: var(--t-sm); font-weight: 700; color: var(--c-ink-3); }
+.kit-stack { display: grid; gap: var(--s-5); }
+.kit-stack--tight { gap: var(--s-4); }
+.kit-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.kit-row--top { align-items: flex-start; gap: var(--s-6); }
+.kit-cols { display: grid; gap: var(--s-6); grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+.kit-note { color: var(--c-ink-3); font-size: var(--t-sm); margin-bottom: var(--s-2); }
+.kit-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr)); gap: 1px; background: var(--c-line); border: 1px solid var(--c-line); }
+.kit-swatch { display: grid; align-items: end; min-height: 4rem; padding: var(--s-2); font-size: var(--t-xs); font-weight: 650; }
+.kit-statrow { display: grid; gap: var(--s-4); margin: 0; }
+.kit-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.kit-icons li { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2); border: 1px solid var(--c-line); font-size: var(--t-sm); color: var(--c-ink-2); }

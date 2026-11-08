@@ -1,0 +1,38 @@
+# R-42 decisions: design system and shell
+
+Written 2026-11-08 by the shell workstream (W2). Append this under its own heading in `docs/R42_DECISIONS.md` when the branches merge (it is a separate file only to avoid an add/add conflict with the backend workstream's file). The design itself is in `DESIGN.md`.
+
+## Taken
+
+| # | Decision | Why |
+|---|---|---|
+| S-1 | One concept, "Rostrum": a price climbs a ladder while the clock runs down a rail. Signature elements are `ds.bid-ladder`, `ds.rail` and `ds.countdown`, and all three draw real data only (valid next bids, start and end times, stored extension count). | Brief: derive from the auction world, time as protagonist, no fake activity. |
+| S-2 | Palette from the logo: Gavel gold `#f1c62e` (disc) and Hammer red `#d71016` (chevron) on Chalk (light) and Graphite (dark) neutrals, plus Ring teal and Dusk blue for live and scheduled. The primary action is a gold fill with ink text in both themes. | The logo must sit correctly on both grounds: `logo.png` on Chalk, `logo-light.png` (white lettering) on Graphite, swapped by theme. Hue roles are functional, so it is not one accent on near-black. |
+| S-3 | Archivo (variable weight and width) for UI, display and money; Chivo Mono only for the clock and lot numbers. Both self-hosted in `public/fonts` with their OFL licences; Latin subset only (Afrikaans, Zulu and Xhosa names fit; add the latin-ext files if a name ever shows in the fallback face). | Real tabular and lining figures, a zero narrower than the O, and a width axis that gives paddle-style numerals without a second family. No CDN. |
+| S-4 | Tokens are written once in `resources/css/tokens.css`. Roles are `light-dark()` pairs (system preference by default, `data-theme` and the `.dark` class when the visitor chooses; stored in `localStorage` key `dot-theme`, the key the old toggle already used). Tailwind scales are mapped to the tokens, gray 400 to 600 to the muted ink. | One definition per colour; Jetstream's stock classes follow the theme. `light-dark()` needs a 2024 browser (Chrome 123, Safari 17.5, Firefox 120). |
+| S-5 | Navigation: rail from 64rem, bottom bar below with one gold primary action ("List a lot"), a menu sheet for the rest. The page's bid action stays on the page. | A rail earns its place with eight destinations in three groups; a bottom bar is the phone idiom. |
+| S-6 | Buyer pages are linked through `auction_route()` and need these route names: `buyer.bids`, `buyer.watchlist`, `buyer.won`. Until registered the link is `#`, marked `data-pending-route`, and does nothing. | Brief item 3. |
+| S-7 | The theme preference is stored in `localStorage`, not a cookie, so it is not listed in `resources/markdown/cookies.md`. It is a functional preference with no personal data. | Owner may want a line in the cookie policy; legal text was not changed. |
+| S-8 | Time helper: `App\Support\Display::time()` delegates to `Auction::localTime()` when the backend branch provides it and otherwise converts to `config('auction.display_timezone')` itself. | The backend's helper was not in this tree. Swap point is one method. |
+| S-9 | CSP: nonce-based policy with no third party (`script-src 'self' 'nonce-..' 'unsafe-eval'`, `style-src 'self' 'nonce-..'`, `style-src-attr 'unsafe-inline'`, no `form-action` because the Paystack payment redirect would be blocked by it). **Report-only by default when this was written; enforced by default since the R-42 security pass (`docs/R42_SECURITY_PERF.md`, SP-03; `SECURITY_CSP_REPORT_ONLY=true` still switches it back).** A real-browser run (Chrome, 21 pages, desktop and 390px, with theme toggle, account menu and bell used) recorded **0** violations under `SECURITY_CSP_REPORT_ONLY=false`; the only findings of the first run were inline handlers and un-nonced inline blocks, which were removed (`data-confirm`, `data-autosubmit`, `data-ds-toast`, `data-autofocus`). The flip is left for the QA workstream because three more workstreams are about to rewrite most pages: re-run the check, then set `SECURITY_CSP_REPORT_ONLY=false` in the host `.env`. `DesignSystemTest::test_no_view_writes_a_colour...` fails any view that adds an inline handler or an un-nonced script or style, so the policy stays enforceable. | Brief item 7. |
+| S-10 | `config/livewire.php` sets only the progress bar colour to a token. `show_progress_bar` must stay `true`: with it `false` Livewire 3.6 calls `Alpine.navigate.disableProgressBar()` before Alpine exists and every page throws "Alpine is not defined". | Found by running the pages, not by reading. |
+| S-11 | `resources/js/bootstrap.js` no longer logs "No Reverb credentials configured" on every page. Livewire itself still warns "Laravel Echo cannot be found" because the notification bell listens for an Echo event; that belongs to the bell and the polling work (W3, W4). | Console noise audit item. |
+| S-12 | Deploy: the host script mirrors or links `public/fonts` into the docroot exactly as it does `build/`, and the smoke check requests both font files (200 and more than 10 kB). Nothing else in the deploy was changed. | Brief item 8. |
+| S-13 | The old fixed-dark shell, `layouts/app.blade.php` inline styles, the hidden Jetstream `navigation-menu` component and view, `components/welcome.blade.php` (an unused Jetstream demo), the Tailwind CDN script, both Google Fonts links, Material Symbols and ui-avatars (team pages now use initials) are gone. Tailwind scans only `resources/views` and `resources/js`. | Brief items 2 and 7; the vendor stubs it used to scan carried a thick left border class. |
+
+## Verification (2026-11-08)
+
+- `npm run build`; PHPUnit on SQLite 659 tests, 12 skipped (trunk baseline 635, 12 skipped; 24 added for the design system, 5 old shell tests rewritten for the new markup, reasons in the commits).
+- Contrast: script over 100+ role pairs on every surface in both themes, 0 failures (table in `DESIGN.md`).
+- axe-core 4.x, 20 pages x 4 configurations (1440 and 390, light and dark): 0 serious or critical. One moderate on `/dev/kit` only (two navigations share a landmark name in the gallery).
+- Impeccable detector on the rendered pages (both themes): only `flat-type-hierarchy` on the error pages, a false positive (the detector reads `var()` font sizes as 10 to 15px; the real sizes are 34, 19, 16, 14px). Earlier real findings (a thick left border class from scanned vendor stubs, Livewire's glow) were fixed.
+- Interactions driven in a browser: theme toggle persists across reload, countdown ticks, a ladder rung fills the bid field, dialog opens, traps focus, closes on Escape and returns focus, dropdown opens with arrow keys, tabset, toast, phone menu sheet.
+- `php artisan route:cache` with the signed-in pages: all 200.
+
+## Left for the UI agents
+
+- Pages still on legacy classes and inline styles (flagged, correct in both themes, not designed): dashboard, `auctions/index`, `auctions/show` and the bid panel, the reserve decision panel, the bell panel, `seller/*`, `settlements/*`, `operator/*`. Each carries `:title-visible="false"` on the layout and a demoted heading; remove both when you move the heading to the layout `header` slot. `resources/css/legacy.css` lists what to delete as the last user of a rule goes.
+- Inline-styled links under 44px on phones remain on those legacy pages ("Browse all", "Back to browse").
+- `ds.status` derives lot state from `winningBid`; eager load it (`with('winningBid')`) on lists.
+- `settlements/show` still prints "UTC": use `Display::time()`.
+- The bid ladder expects the bid field to carry `data-ds-bid-input`; a real bid form should also show the guard rails the UX audit asks for.

@@ -54,7 +54,7 @@ class SettlementLifecycle
                     return 0;
                 }
 
-                $settlement->update(['status' => AuctionSettlement::PAYMENT_OVERDUE, 'overdue_at' => now()]);
+                $settlement->forceFill(['status' => AuctionSettlement::PAYMENT_OVERDUE, 'overdue_at' => now()])->save();
 
                 SettlementEvent::create([
                     'settlement_id' => $settlement->id,
@@ -102,7 +102,7 @@ class SettlementLifecycle
                     return 0;
                 }
 
-                $settlement->update(['payment_due_at' => now()->addHours($this->config->paymentWindowHours())]);
+                $settlement->forceFill(['payment_due_at' => now()->addHours($this->config->paymentWindowHours())])->save();
 
                 SettlementEvent::create([
                     'settlement_id' => $settlement->id,
@@ -151,11 +151,11 @@ class SettlementLifecycle
                 throw new SettlementActionRejected('You can cancel a sale only once its payment is overdue.');
             }
 
-            $locked->update([
+            $locked->forceFill([
                 'status' => AuctionSettlement::CANCELLED,
                 'cancelled_at' => now(),
                 'cancelled_by' => $seller->getKey(),
-            ]);
+            ])->save();
 
             // Close any checkout still open so it cannot be used after the cancel.
             SettlementPayment::query()

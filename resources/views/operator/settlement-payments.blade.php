@@ -1,79 +1,87 @@
-<x-app-layout>
-<div class="dot-page">
+@php
+    use App\Models\Auction;
+    use App\Support\Display;
+    use App\Support\SettlementPosition;
+    $tabs = [['label' => 'All', 'href' => route('operator.settlement-payments.index'), 'current' => $status === null, 'count' => $allCount]];
+    $words = ['unmatched' => 'Needs a person', 'initiated' => 'Attempts started', 'paid' => 'Paid', 'failed' => 'Attempts failed', 'expired' => 'Attempts expired'];
+    foreach ($filters as $filter) {
+        $n = (int) ($counts[$filter] ?? 0);
+        if ($n > 0 || $status === $filter) {
+            $tabs[] = ['label' => $words[$filter], 'href' => route('operator.settlement-payments.index', ['status' => $filter]), 'current' => $status === $filter, 'count' => $n];
+        }
+    }
+@endphp
+<x-app-layout title="Payment operations" description="Every Paystack payment attempt, and every payment event that matched no sale. Read-only.">
+    <x-slot name="header">Payment operations</x-slot>
 
-    <div class="dot-row dot-row-between" style="margin-bottom:1.5rem;">
-        <div>
-            <h1 class="dot-title">Settlement payments</h1>
-            <div class="dot-subtitle">Every Paystack payment attempt and every payment event that matched nothing. Read-only.</div>
-        </div>
-        @include('settlements._mode', ['payments' => $config])
-    </div>
-
-    @if($config->isMisconfigured())
-        <div role="alert" class="dot-alert dot-alert-error">{{ $config->problem() }}</div>
-    @elseif(! $config->isConfigured())
-        <div class="dot-alert dot-alert-info">Online payment is not switched on (no Paystack key is set), so winners cannot pay.</div>
+    @if ($config->isMisconfigured())
+        <x-ds.alert tone="danger" title="Payments are switched off" class="sl-gap">{{ $config->problem() }}</x-ds.alert>
+    @elseif (! $config->isConfigured())
+        <x-ds.alert tone="info" title="Online payment is not switched on" class="sl-gap">No Paystack key is set, so winners cannot pay.</x-ds.alert>
     @endif
 
-    <div class="dot-alert {{ $attention > 0 ? 'dot-alert-error' : 'dot-alert-ok' }}" role="status">
-        @if($attention > 0)
-            <strong>{{ $attention === 1 ? '1 payment needs an operator' : $attention.' payments need an operator' }}.</strong>
-            Money was reported that could not be applied to a sale. Nothing was marked paid; decide in Paystack's dashboard whether to refund or reconcile by hand.
+    @if ($attention > 0)
+        <x-ds.alert tone="danger" :title="$attention === 1 ? '1 payment needs a person' : $attention.' payments need a person'" class="sl-gap">
+            Money was reported that could not be applied to a sale. Nothing was marked paid. Decide in Paystack's dashboard whether to refund or reconcile by hand.
+            @unless ($attentionOnly)<a class="sl-link" href="{{ route('operator.settlement-payments.index', ['status' => 'unmatched']) }}">Show only these</a>@endunless
+        </x-ds.alert>
+    @else
+        <x-ds.alert tone="success" class="sl-gap" role="status">No payments need a person.</x-ds.alert>
+    @endif
+
+    @if ($allCount > 0 && ! $config->canTakePayments())
+        <x-ds.alert tone="info" class="sl-gap" title="These rows are earlier records">While payment is switched off no new attempt can start, and winners owe nothing today.</x-ds.alert>
+    @endif
+
+    @if ($allCount === 0)
+        <x-ds.empty-state title="No payments have been recorded yet" icon="receipt" body="Every checkout a winner starts, and every payment event Paystack sends, will be listed here." />
+    @else
+        <x-ds.tabs :tabs="$tabs" label="Filter payments by status" />
+
+        @if ($payments->isEmpty())
+            <x-ds.empty-state class="sl-gap-top" :title="$attentionOnly ? 'Nothing needs attention' : 'No payments with this status'" icon="check-circle">
+                <x-ds.button :href="route('operator.settlement-payments.index')" variant="quiet">Show all payments</x-ds.button>
+            </x-ds.empty-state>
         @else
-            No payments need an operator.
+            <div class="ops-region" role="region" tabindex="0" aria-label="Payments, scrolls sideways when the table is wider than the screen">
+                <x-ds.table caption="Payments" class="ops-table sl-cards">
+                    <thead>
+                        <tr>
+                            <th scope="col">Reference</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" class="num">Amount</th>
+                            <th scope="col">Sale</th>
+                            <th scope="col">Recorded</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($payments as $payment)
+                            <tr @class(['ops-row--attention' => $payment->status === 'unmatched'])>
+                                <td data-label="Reference" class="ops-ref">{{ $payment->reference }}</td>
+                                <td data-label="Status" class="sl-span">
+                                    <x-ds.status :state="$payment->status" size="sm" />
+                                    @if ($payment->reason)<span class="ops-reason">{{ $payment->reasonLabel() }}</span>@endif
+                                    @if (in_array($payment->status, ['initiated', 'failed', 'expired'], true))<span class="sl-sub">Payment attempt, not completed</span>@endif
+                                    @if ($payment->summary)<span class="sl-sub">{{ $payment->summary }}</span>@endif
+                                </td>
+                                <td data-label="Amount" class="num">
+                                    @if ($payment->amount_cents === null)<span class="sl-sub">None</span>@else<x-ds.money :amount="$payment->amount_cents / 100" />@endif
+                                </td>
+                                <td data-label="Sale" class="sl-span">
+                                    @if ($payment->settlement)
+                                        {{ $payment->settlement->auction->title ?? 'Lot #'.$payment->settlement->auction_id }}
+                                        <span class="sl-sub">Sale: {{ strtolower(SettlementPosition::of($payment->settlement, $config)->listLabel(null)) }}</span>
+                                    @else
+                                        <span class="sl-sub">Matches no sale</span>
+                                    @endif
+                                </td>
+                                <td data-label="Recorded">{{ Display::time($payment->created_at, 'j M Y, H:i', true) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </x-ds.table>
+            </div>
+            <x-ds.pagination :paginator="$payments" noun="payments" />
         @endif
-    </div>
-
-    <div class="dot-row" style="margin-bottom:1rem;">
-        <a href="{{ route('operator.settlement-payments.index') }}" class="dot-btn dot-btn-small {{ $attentionOnly ? 'dot-btn-ghost' : 'dot-btn-primary' }}">All</a>
-        <a href="{{ route('operator.settlement-payments.index', ['show' => 'attention']) }}" class="dot-btn dot-btn-small {{ $attentionOnly ? 'dot-btn-primary' : 'dot-btn-ghost' }}">Needs attention</a>
-    </div>
-
-    <div class="dot-panel" style="overflow:hidden;">
-        @if($payments->count())
-        <div style="overflow-x:auto;">
-            <table class="dot-table">
-                <caption class="sr-only">Settlement payments</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Reference</th>
-                        <th scope="col">Status</th>
-                        <th scope="col" class="num">Amount</th>
-                        <th scope="col">Sale</th>
-                        <th scope="col">Recorded</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($payments as $payment)
-                    <tr>
-                        <td class="dot-mono" style="overflow-wrap:anywhere;max-width:240px;">{{ $payment->reference }}</td>
-                        <td>
-                            <span class="dot-status dot-status-{{ $payment->status }}">{{ ucfirst($payment->status === 'unmatched' ? 'needs an operator' : $payment->status) }}</span>
-                            @if($payment->reason)<div style="margin-top:4px;font-weight:600;color:#fca5a5;">{{ $payment->reasonLabel() }}</div>@endif
-                            @if($payment->summary)<div class="dot-help" style="max-width:320px;">{{ $payment->summary }}</div>@endif
-                        </td>
-                        <td class="num dot-mono">{{ $payment->amount_cents === null ? '—' : \App\Models\Auction::money($payment->amount_cents / 100) }}</td>
-                        <td>
-                            @if($payment->settlement)
-                                {{ $payment->settlement->auction->title ?? 'Auction #'.$payment->settlement->auction_id }}
-                                <div class="dot-help">Sale is {{ str_replace('_', ' ', $payment->settlement->status) }}</div>
-                            @else
-                                <span class="dot-muted">Matches no sale</span>
-                            @endif
-                        </td>
-                        <td>{{ $payment->created_at->format('j M Y, H:i') }} {{ config('app.timezone') }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        @else
-        <div style="padding:2.5rem 1.4rem;text-align:center;">
-            <p style="margin:0;font-family:'Syne',sans-serif;font-weight:700;color:#f4f4f5;">{{ $attentionOnly ? 'Nothing needs attention.' : 'No payments have been recorded yet.' }}</p>
-        </div>
-        @endif
-    </div>
-
-    <div style="margin-top:1.25rem;">{{ $payments->links() }}</div>
-</div>
+    @endif
 </x-app-layout>

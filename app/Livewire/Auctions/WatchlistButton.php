@@ -4,6 +4,7 @@ namespace App\Livewire\Auctions;
 
 use App\Models\Auction;
 use App\Models\Watchlist;
+use App\Support\Display;
 use Illuminate\View\View;
 use Livewire\Component;
 
@@ -12,6 +13,9 @@ class WatchlistButton extends Component
     public Auction $auction;
 
     public bool $watching = false;
+
+    /** Said to screen readers after a change. */
+    public string $message = '';
 
     public function mount(Auction $auction): void
     {
@@ -23,6 +27,11 @@ class WatchlistButton extends Component
 
     public function toggle(): void
     {
+        // A seller does not watch their own lot (the page does not offer the button; this closes the request path too).
+        if (auth()->id() === $this->auction->seller_id) {
+            return;
+        }
+
         // `watchlists` has a composite primary key (user_id, auction_id) and no
         // surrogate `id` column, so Eloquent's model-instance delete() (which
         // keys off getKey()/`id`) silently deletes zero rows. Delete via the
@@ -31,15 +40,24 @@ class WatchlistButton extends Component
         // user's own rows.
         $exists = Watchlist::where('auction_id', $this->auction->id)->exists();
 
+        // A lot that has closed or been cancelled has nothing left to watch for. (Removing a watch is always allowed.)
+        if (! $exists && ! Display::isWatchable($this->auction)) {
+            $this->message = 'This lot is closed, so it cannot be watched.';
+
+            return;
+        }
+
         if ($exists) {
             Watchlist::where('auction_id', $this->auction->id)->delete();
             $this->watching = false;
+            $this->message = 'Removed from your watchlist.';
         } else {
             Watchlist::create([
                 'user_id' => auth()->id(),
                 'auction_id' => $this->auction->id,
             ]);
             $this->watching = true;
+            $this->message = 'Added to your watchlist.';
         }
     }
 

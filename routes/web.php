@@ -3,7 +3,12 @@
 use App\Http\Controllers\Auctions\AuctionController;
 use App\Http\Controllers\Auctions\AuctionImageController;
 use App\Http\Controllers\Auth\EcosystemAuthController;
+use App\Http\Controllers\Buyer\BidsController as BuyerBidsController;
+use App\Http\Controllers\Buyer\WatchlistController as BuyerWatchlistController;
+use App\Http\Controllers\Buyer\WonController as BuyerWonController;
 use App\Http\Controllers\CspReportController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Operator\SettlementPaymentController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\RealtimeHealthController;
@@ -11,14 +16,17 @@ use App\Http\Controllers\Seller\ImageController;
 use App\Http\Controllers\Seller\ListingController;
 use App\Http\Controllers\Settlements\SettlementController;
 use App\Models\Auction;
-use App\Models\AuctionCategory;
 use App\Models\Bid;
-use App\Models\ReserveNotMetProposal;
-use App\Models\Watchlist;
+use App\Models\User;
+use App\Services\Paystack\E2eFakePaystackClient;
+use App\Support\KitData;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -82,48 +90,8 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/dashboard', function () {
-        // Jetstream's HasTeams::currentTeam() self-heals a null current_team_id
-        // by switching to the user's personal team — but that fallback itself
-        // resolves to null for a user who owns no team at all (e.g. a user
-        // provisioned outside App\Actions\Fortify\CreateNewUser, which is the
-        // only place a personal team gets created). The shared navigation
-        // partial dereferences currentTeam unconditionally, so send such users
-        // to team creation before they hit that instead of crashing there.
-        if (! auth()->user()->currentTeam) {
-            return redirect()->route('teams.create');
-        }
-
-        $userId = auth()->id();
-        $activeAuctions = Auction::where('seller_id', $userId)->where('status', 'active')
-            ->where('starts_at', '<=', now())->where('ends_at', '>', now())->count();
-        $totalAuctions = Auction::where('seller_id', $userId)->count();
-        $totalBids = Bid::whereHas('auction', fn ($q) => $q->where('seller_id', $userId))->count();
-        $recentAuctions = Auction::where('seller_id', $userId)
-            ->with('category')->withCount('bids')->latest('id')->limit(8)->get();
-        $categories = AuctionCategory::withCount([
-            'auctions' => fn ($q) => $q->where('seller_id', $userId),
-        ])->get();
-        // HasUserScope already restricts this query to the authenticated
-        // user's own watchlist rows.
-        $watchlistCount = Watchlist::count();
-        $endingSoon = Auction::query()
-            ->endingSoon(24)
-            ->with('category')
-            ->orderBy('ends_at')
-            ->limit(5)
-            ->get();
-        $pendingReserveProposals = ReserveNotMetProposal::whereHas(
-            'auction', fn ($q) => $q->where('seller_id', $userId)
-        )->where('status', 'pending')->with(['auction', 'bid.bidder'])->get();
-
-        return view('dashboard', compact(
-            'activeAuctions', 'totalAuctions', 'totalBids', 'recentAuctions',
-            'categories', 'watchlistCount', 'endingSoon', 'pendingReserveProposals'
-        ));
-    })->name('dashboard');
-
-    Route::get('/auctions', [AuctionController::class, 'index'])->name('auctions.index');
+    // Search and filtering are the heaviest read on the site (a scan on the title); the limit is per person, not per IP.
+    Route::get('/auctions', [AuctionController::class, 'index'])->middleware('throttle:browse')->name('auctions.index');
     Route::get('/auctions/{auction}', [AuctionController::class, 'show'])->name('auctions.show');
     // Listing photos sit on a private disk; this is the only way to read one.
     Route::get('/auctions/{auction}/images/{image}', [AuctionImageController::class, 'show'])
@@ -134,14 +102,15 @@ Route::middleware([
     Route::prefix('seller/auctions')->name('seller.auctions.')->group(function () {
         Route::get('/', [ListingController::class, 'index'])->name('index');
         Route::get('/create', [ListingController::class, 'create'])->name('create');
-        Route::post('/', [ListingController::class, 'store'])->name('store');
+        Route::post('/', [ListingController::class, 'store'])->middleware('throttle:writes')->name('store');
         Route::get('/{auction}/edit', [ListingController::class, 'edit'])->name('edit');
-        Route::put('/{auction}', [ListingController::class, 'update'])->name('update');
-        Route::post('/{auction}/publish', [ListingController::class, 'publish'])->name('publish');
-        Route::post('/{auction}/cancel', [ListingController::class, 'cancel'])->name('cancel');
-        Route::delete('/{auction}', [ListingController::class, 'destroy'])->name('destroy');
-        Route::post('/{auction}/images', [ImageController::class, 'store'])->name('images.store');
-        Route::delete('/{auction}/images/{image}', [ImageController::class, 'destroy'])->name('images.destroy')->scopeBindings();
+        Route::put('/{auction}', [ListingController::class, 'update'])->middleware('throttle:writes')->name('update');
+        Route::post('/{auction}/publish', [ListingController::class, 'publish'])->middleware('throttle:writes')->name('publish');
+        Route::post('/{auction}/cancel', [ListingController::class, 'cancel'])->middleware('throttle:writes')->name('cancel');
+        Route::delete('/{auction}', [ListingController::class, 'destroy'])->middleware('throttle:writes')->name('destroy');
+        // Decoding and re-encoding photos costs CPU and memory: a tighter limit than other writes.
+        Route::post('/{auction}/images', [ImageController::class, 'store'])->middleware('throttle:uploads')->name('images.store');
+        Route::delete('/{auction}/images/{image}', [ImageController::class, 'destroy'])->middleware('throttle:writes')->name('images.destroy')->scopeBindings();
     });
 
     // Paying for a won auction. Both parties see the page; only the winner pays; only the seller
@@ -159,6 +128,21 @@ Route::middleware([
     Route::get('/operator/settlement-payments', [SettlementPaymentController::class, 'index'])
         ->middleware('operator')
         ->name('operator.settlement-payments.index');
+
+    // --- discover ---
+    // Home, the buyer pages (my bids, watching, won) and the notification inbox. Everything here reads only the signed-in
+    // person's own rows. The shell links buyer.* through auction_route().
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('/bids', [BuyerBidsController::class, 'index'])->name('buyer.bids');
+    Route::get('/watchlist', [BuyerWatchlistController::class, 'index'])->name('buyer.watchlist');
+    Route::delete('/watchlist/{auction}', [BuyerWatchlistController::class, 'destroy'])->middleware('throttle:writes')->name('buyer.watchlist.destroy');
+    Route::get('/won', [BuyerWonController::class, 'index'])->name('buyer.won');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->middleware('throttle:writes')->name('notifications.read-all');
+    Route::post('/notifications/{notification}/open', [NotificationController::class, 'open'])->middleware('throttle:writes')->name('notifications.open');
+    // --- /discover ---
 });
 
 // Public sign-up is closed (accounts are created by InfoDot at first sign-in). Keep the named route so any link or
@@ -166,3 +150,74 @@ Route::middleware([
 if (! Features::enabled(Features::registration())) {
     Route::redirect('/register', '/login')->name('register');
 }
+
+// --- dev ---
+// Local convenience only: sign in as a seeded demo user without typing a password. The block is not even
+// registered unless the app is running in the "local" or "testing" environment, so production has no such route.
+if (app()->environment('local', 'testing')) {
+    // /dev/login/{id or email}[?to=/path]  The optional `to` must be a path on this site.
+    Route::get('/dev/login/{who}', function (Request $request, string $who) {
+        $user = ctype_digit($who)
+            ? User::find((int) $who)
+            : User::where('email', $who)->first();
+
+        abort_if($user === null, 404, 'No such user.');
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        $to = (string) $request->query('to', '/dashboard');
+
+        return redirect(str_starts_with($to, '/') && ! str_starts_with($to, '//') ? $to : '/dashboard');
+    })->where('who', '.+')->name('dev.login');
+
+    // The design-system gallery: every component in both themes, with invented, unsaved lots (App\Support\KitData).
+    Route::get('/dev/kit', function () {
+        $now = now();
+
+        return view('dev.kit', ['lots' => KitData::lots($now), 'now' => $now]);
+    })->name('dev.kit');
+
+    // TESTING ONLY (the browser suite in tests/e2e/auction): a fake Paystack checkout and a switch for the fake gateway's mode.
+    // Registered only when AUCTION_E2E_FAKE_PAYSTACK is on as well, in these two environments only.
+    if (config('paystack.e2e_fake') === true) {
+        Route::get('/dev/fake-paystack-mode/{mode}', function (string $mode) {
+            abort_unless(in_array($mode, ['ok', 'unreachable', 'error'], true), 404);
+            Cache::put(E2eFakePaystackClient::MODE_KEY, $mode, now()->addHour());
+
+            return response('mode '.$mode);
+        })->name('dev.fake-paystack.mode');
+
+        Route::get('/dev/fake-paystack/{reference}', function (string $reference) {
+            $init = Cache::get(E2eFakePaystackClient::ref($reference, 'init'));
+            abort_if($init === null, 404);
+
+            return response('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Fake Paystack checkout</title></head><body>'
+                .'<main><h1>Fake Paystack checkout</h1><p>Reference '.e($reference).' for '.e($init['currency']).' '.number_format($init['amount'] / 100, 2).'.</p>'
+                .'<p><a id="fake-pay" href="/dev/fake-paystack/'.e($reference).'/complete?result=success">Pay</a> '
+                .'<a id="fake-fail" href="/dev/fake-paystack/'.e($reference).'/complete?result=failed">Decline</a> '
+                .'<a id="fake-abandon" href="/dev/fake-paystack/'.e($reference).'/complete?result=abandoned">Close checkout</a></p></main></body></html>');
+        })->name('dev.fake-paystack.checkout');
+
+        Route::get('/dev/fake-paystack/{reference}/complete', function (Request $request, string $reference) {
+            $init = Cache::get(E2eFakePaystackClient::ref($reference, 'init'));
+            abort_if($init === null, 404);
+            Cache::put(
+                E2eFakePaystackClient::ref($reference, 'result'),
+                in_array($request->query('result'), ['success', 'failed', 'abandoned', 'pending'], true) ? $request->query('result') : 'abandoned',
+                now()->addHour(),
+            );
+
+            return redirect()->away($init['callback'].'?trxref='.$reference.'&reference='.$reference);
+        })->name('dev.fake-paystack.complete');
+    }
+
+    Route::get('/dev/logout', function (Request $request) {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/login');
+    })->name('dev.logout');
+}
+// --- /dev ---
