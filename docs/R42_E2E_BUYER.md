@@ -81,5 +81,5 @@ The one real finding of the merged run was a SQLite "database is locked" 500 on 
 several PHP workers at once). It reproduced on the second tree, so it is not only the stalled laptop. Production does not run SQLite, so it is a test-environment fix:
 `config/database.php` now reads `DB_TRANSACTION_MODE` and `DB_BUSY_TIMEOUT` (defaults unchanged: DEFERRED and none) and the suite sets IMMEDIATE and 20 s; b3 then passed 119 of 119.
 
-Full PHPUnit on the merged tree: 1,114 tests, 1,094 passed, 20 skipped (trunk baseline was 881 tests, 13 skipped; the extra tests are trunk's plus 12 mine in `tests/Feature/R42`:
-FlashSurvivesLivewire (3), LotTitleEscaping (1), LivewireFailureNotice (2), E2eFakePaystackGuard (4), and the notification-bell source check).
+Full PHPUnit on the merged tree: 1,114 tests, 1,094 passed, 20 skipped (trunk baseline was 881 tests, 13 skipped; the extra tests are trunk's plus 10 mine in `tests/Feature/R42`:
+FlashSurvivesLivewire (3, including the bell check), LotTitleEscaping (1), LivewireFailureNotice (2), E2eFakePaystackGuard (4)).
