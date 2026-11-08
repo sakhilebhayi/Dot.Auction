@@ -44,7 +44,7 @@ kept-honest breakdown of what's actually implemented vs. still roadmap.
 - Dark / light mode toggle (Tailwind class-based strategy, persisted per browser)
 - Ecosystem SSO from the Dot hub
 
-> **Not yet built:** auto-bid execution (the `is_auto_bid` column exists, no engine acts on it),
+> **Not yet built:** proxy (auto) bidding (the unused `is_auto_bid` column is kept for it; the old unsafe engine was removed in R-42 and any future one must be built inside `BidPlacer`'s lock),
 > an auction settlement job (nothing flips `status` to `ended` automatically when `ends_at`
 > passes), dispute resolution, and the Knowledge Pack publisher to Dot.Brain.
 > `AuctionWonNotification` and `AuctionEndingSoonNotification` classes exist but have no

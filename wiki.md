@@ -76,7 +76,7 @@ Nothing about an auction should publish until it settles (status reaches `ended`
 ## 6. Roadmap
 
 - [x] Buyer-facing live bidding UI (platform-loop pass, 2026-08-01): `/auctions` marketplace and `/auctions/{auction}` detail page now render `App\Livewire\Auctions\BidPanel`, which previously had no Blade view at all. Search/filter by title, category, status. Watchlist toggle and an outbid notification (real, live-triggered — not scheduled) were added alongside it. See §8 Change Log for the full list.
-- [ ] Auto-bid execution (the `is_auto_bid` column exists on `bids`; no engine acts on it yet)
+- [ ] Auto-bid execution (the `is_auto_bid` column exists on `bids`; no engine acts on it. The old `AutoBidEngine` was deleted in R-42, F-17: it was unlocked and float based)
 - [ ] Auction settlement job: on `ends_at` passing, resolve winner, flip `status` to `ended`, and emit a settlement event
 - [ ] `auction.reserve.not_met` event when a lot ends below reserve
 - [ ] Dispute resolution workflow (mentioned in the platform README, not yet modeled)
