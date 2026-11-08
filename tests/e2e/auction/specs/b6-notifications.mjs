@@ -32,6 +32,11 @@ export default () => runSpec('b6', 'Notifications: bell, inbox, destinations, po
     t.check('the panel fits the 1440 window', box.x >= 0 && box.x + box.width <= 1440, JSON.stringify(box));
     await t.shot(lerato, 'bell-open-1440', { full: false });
     await t.axe(lerato, 'bell open 1440');
+    await lerato.page.mouse.click(700, 500);
+    await lerato.page.waitForTimeout(500);
+    t.eq('a click outside the panel closes it', await lerato.page.locator('#nf-panel').count(), 0);
+    await lerato.page.locator('.nf > button').click();
+    await lerato.page.locator('#nf-panel').waitFor({ timeout: 5000 });
     await lerato.page.keyboard.press('Escape');
     await lerato.page.waitForTimeout(300);
     t.eq('Escape closes the panel', await lerato.page.locator('#nf-panel').count(), 0);

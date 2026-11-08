@@ -41,4 +41,14 @@ class FlashSurvivesLivewireTest extends TestCase
 
         $this->get(route('buyer.watchlist'))->assertOk()->assertDontSee('Stopped watching', false);
     }
+
+    public function test_a_click_anywhere_does_not_call_the_server_while_the_bell_is_closed(): void
+    {
+        // The bell used to call close() on the server for every click outside it, panel open or not. That call raced the form
+        // post of whatever was clicked (a redirect's flash message was overwritten by the call's stale copy of the session).
+        $html = \Livewire\Livewire::actingAs($this->person())->test(\App\Livewire\NotificationBell::class)->html();
+
+        $this->assertStringContainsString('@click.outside="if ($wire.open) { $wire.close() }"', html_entity_decode($html, ENT_QUOTES));
+        $this->assertStringNotContainsString('@click.outside="$wire.close()"', html_entity_decode($html, ENT_QUOTES));
+    }
 }

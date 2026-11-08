@@ -39,7 +39,7 @@ export default () => runSpec('b3', 'Lot page: every status, every viewer', async
         if (st === 'live') { headline = { seller: 'This is your lot', leader: 'You are leading', outbid: 'You were outbid' }[role] ?? null; }
         else if (st === 'scheduled') { headline = seller ? `Your lot opens on` : 'Not open yet'; }
         else if (st === 'sold') {
-            if (l.sale === 'cancelled') { headline = 'Sale cancelled'; }
+            if (l.sale === 'cancelled' && (role === 'winner' || role === 'seller')) { headline = 'Sale cancelled'; } // only the two parties can see the sale; everyone else sees "Sold"
             else { const bn = buyNowSale(l); headline = { winner: bn ? 'You bought this lot with Buy Now' : 'You won this lot', loser: 'You did not win this lot', seller: bn ? 'Sold with Buy Now' : 'Sold', visitor: 'Sold' }[role]; }
         } else if (st === 'unsold') {
             headline = l.nbids === 0 ? 'Not sold' : l.proposal === 'rejected' ? ({ seller: 'You ended this lot without a sale', leader: 'The seller did not accept your bid' }[role] ?? 'Not sold') : 'Not sold';
@@ -57,6 +57,7 @@ export default () => runSpec('b3', 'Lot page: every status, every viewer', async
     const reserveHits = [];
     const nameHits = [];
     const utcHits = [];
+    const voiceHits = [];
     const liveWordsOnDeadLots = [];
     const wrong = [];
     let pages = 0;
@@ -134,6 +135,9 @@ export default () => runSpec('b3', 'Lot page: every status, every viewer', async
                 if (!isLotSeller && last && new RegExp(`${first}\\s+${last}`).test(body)) { nameHits.push(`${tag}: ${first} ${last} in text`); }
             }
             if (/\bUTC\b/.test(body) || /\bGMT\b/.test(body)) { utcHits.push(tag); }
+            // Voice (DESIGN.md): no exclamation marks, no em or en dashes in what the interface itself says. Seller-written text (title, description, items) is left out.
+            const own = await page.evaluate(() => { const c = document.querySelector('#main').cloneNode(true); c.querySelectorAll('.lot-desc, .lot-items, h1, .lot__gallery, .lot-history__who, time').forEach((e) => e.remove()); return c.innerText.replace(/\s+/g, ' '); });
+            if (/[!\u2014\u2013]/.test(own)) { voiceHits.push(`${tag}: ${own.match(/.{0,30}[!\u2014\u2013].{0,30}/)?.[0]}`); }
         }
         t.clean(p, `${v} across ${visible.length} lots`);
     }
@@ -142,6 +146,7 @@ export default () => runSpec('b3', 'Lot page: every status, every viewer', async
     t.eq('no live wording on lots that are not live (Closes in, Place bid, outbid/leading, Be the first, Current bid on scheduled, ended on cancelled)', liveWordsOnDeadLots, []);
     t.eq('bidder names are masked everywhere and no e-mail address appears (the lot\'s seller is named by design)', nameHits, []);
     t.eq('no page prints UTC or GMT', utcHits, []);
+    t.eq('voice: no exclamation marks and no em or en dashes in the interface text of any lot page', voiceHits, []);
 
     // ---------- time zone, concretely ----------
     {
@@ -169,8 +174,12 @@ export default () => runSpec('b3', 'Lot page: every status, every viewer', async
     {
         const p = people.lerato;
         await p.go(`/auctions/${t.id_of('Yamaha F310 acoustic guitar')}`);
-        const imgs = await p.page.locator('.lot__gallery img').evaluateAll((is) => is.map((i) => ({ ok: i.complete && i.naturalWidth > 0, src: i.getAttribute('src') })));
-        t.check('the photos of a lot load (not broken images)', imgs.length > 0 && imgs.every((i) => i.ok), JSON.stringify(imgs));
+        const srcs = await p.page.locator('.lot__gallery img').evaluateAll((is) => [...new Set(is.map((i) => i.getAttribute('src')))]);
+        const codes = [];
+        for (const src of srcs) { const r = await p.ctx.request.get(src); codes.push([r.status(), r.headers()['content-type'], (await r.body()).length > 100]); }
+        t.check('every photo of a lot is served as an image (the strip loads them lazily, so the answer is checked, not the paint)', srcs.length > 1 && codes.every(([c, ct, big]) => c === 200 && /^image\//.test(ct) && big), JSON.stringify(codes));
+        const first = await p.page.locator('.lot__gallery img').first().evaluate((i) => i.complete && i.naturalWidth > 0);
+        t.check('the first photo is painted', first, '');
     }
 
     // ---------- looks: one lot per state, 1440 and 390, light and dark, with axe ----------

@@ -3,7 +3,7 @@
   Panel: unread first, then the last few read, each a button that marks it read and goes where it points; "See all" opens the inbox.
   Live updates: Echo when real-time is configured (a listener registered by the component), otherwise a 30 second poll while the tab is visible.
 --}}
-<div class="nf" x-data @click.outside="$wire.close()" @keydown.escape.window="if ($wire.open) { $wire.close(); $nextTick(() => $refs.trigger.focus()) }" @unless ($this->usesEcho()) wire:poll.30s.visible="refresh" @endunless>
+<div class="nf" x-data @click.outside="if ($wire.open) { $wire.close() }" @keydown.escape.window="if ($wire.open) { $wire.close(); $nextTick(() => $refs.trigger.focus()) }" @unless ($this->usesEcho()) wire:poll.30s.visible="refresh" @endunless>
     <button x-ref="trigger" wire:click="toggle" type="button" class="ds-iconbtn" aria-expanded="{{ $open ? 'true' : 'false' }}" aria-controls="nf-panel">
         <x-ds.icon name="bell" :size="20" />
         <span class="sr-only">Notifications{{ $this->unreadCount > 0 ? ', '.$this->unreadCount.' unread' : '' }}</span>

@@ -12,7 +12,7 @@
     :description="'Lot '.$lotNo.' on Dot.Auction: '.\Illuminate\Support\Str::limit(strip_tags((string) $auction->description) ?: $auction->title, 120)"
     :back="route('auctions.index')" back-label="All lots"
 >
-    <x-slot name="header">{{ $auction->title }}</x-slot>
+    {{-- No header slot: the layout prints the title prop as the h1, escaped once. A header slot would escape a lot title that contains ' & or " twice. --}}
     <x-slot name="meta">
         <span class="lot-no"><span class="sr-only">Lot </span>{{ $lotNo }}</span>
         @if ($auction->category)<span class="lot-cat">{{ $auction->category->name }}</span>@endif
