@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Auctions;
 use App\Http\Controllers\Controller;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
-use App\Models\AuctionSettlement;
 use App\Services\Auctions\LotBrowser;
+use App\Support\PageRange;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
@@ -43,7 +43,7 @@ class AuctionController extends Controller
         $browser->withCardData($query, $user);
         $browser->sorted($query, $sort, $now);
 
-        $auctions = $query->paginate(12)->withQueryString();
+        $auctions = PageRange::within($query->paginate(12)->withQueryString());
 
         // One grouped query each for the tab counts and the category chips, both for the same search the list answers.
         $counts = $browser->counts($search, $category, $now);
