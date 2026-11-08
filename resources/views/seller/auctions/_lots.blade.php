@@ -6,6 +6,7 @@
 @php
     use App\Models\Auction;
     use App\Support\Display;
+    use App\Support\SettlementPosition;
 @endphp
 <x-ds.table caption="Your lots" class="sl-table sl-cards">
     <thead>
@@ -29,11 +30,11 @@
                 $editable = in_array($row->status, ['draft', 'active'], true);
                 $priceNote = match ($lot) {
                     'sold' => 'Sold for',
-                    'unsold', 'pending' => $hasBids ? 'Highest bid' : 'No bids',
+                    'unsold', 'pending', 'closing' => $hasBids ? 'Highest bid' : 'No bids',
                     'scheduled', 'draft', 'cancelled' => 'Starting bid',
                     default => $hasBids ? 'Current bid' : 'Starting bid',
                 };
-                $price = in_array($lot, ['scheduled', 'draft', 'cancelled'], true) || ($lot === 'unsold' && ! $hasBids) ? $row->starting_price : $row->current_price;
+                $price = in_array($lot, ['scheduled', 'draft', 'cancelled'], true) || (in_array($lot, ['unsold', 'closing'], true) && ! $hasBids) ? $row->starting_price : $row->current_price;
                 $viewHref = route('auctions.show', $row);
                 $menuId = 'lot-menu-'.$row->id;
                 $canCancel = $row->status === 'active' && ! $hasBids;
@@ -62,7 +63,7 @@
                         <x-ds.status :state="$lot" size="sm" />
                     @endif
                     @if ($lot === 'sold' && $settlement)
-                        <span class="sl-sub">{{ $settlement->status === 'cancelled' ? 'Sale cancelled' : $settlement->statusLabel() }}</span>
+                        <span class="sl-sub">{{ SettlementPosition::of($settlement)->listLabel(false) }}</span>
                     @endif
                 </td>
                 <td data-label="Bids" class="num">{{ $row->bids_count }}</td>
@@ -76,10 +77,14 @@
                     @elseif ($lot === 'scheduled')
                         <x-ds.countdown :ends="$row->ends_at" :starts="$row->starts_at" size="sm" />
                     @elseif ($lot === 'draft')
-                        {{ Display::time($row->ends_at, 'j M Y, H:i') }}
+                        {{ Display::time($row->ends_at) }}
                         <span class="sl-sub">Planned close, not published</span>
+                    @elseif ($lot === 'cancelled')
+                        {{-- A cancelled lot never closed: show when it was cancelled (the row's last change), not the planned close. --}}
+                        {{ Display::time($row->updated_at) }}
+                        <span class="sl-sub">Cancelled</span>
                     @else
-                        {{ Display::time($row->ends_at, 'j M Y, H:i') }}
+                        {{ Display::time($row->ends_at) }}
                         <span class="sl-sub">Closed</span>
                     @endif
                 </td>

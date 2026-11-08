@@ -18,7 +18,7 @@
     $hasBids = $bids !== null ? $bids > 0 : \App\Models\Auction::toCents($auction->current_price) > \App\Models\Auction::toCents($auction->starting_price);
     [$priceLabel, $price] = match ($state) {
         'sold' => ['Sold for', $auction->current_price],
-        'unsold' => [$hasBids ? 'Highest bid' : 'No bids', $hasBids ? $auction->current_price : $auction->starting_price],
+        'unsold', 'closing' => [$hasBids ? 'Highest bid' : 'No bids', $hasBids ? $auction->current_price : $auction->starting_price],
         'pending' => ['Highest bid', $auction->current_price],
         'scheduled', 'draft', 'cancelled' => ['Starting bid', $auction->starting_price],
         default => [$hasBids ? 'Current bid' : 'Starting bid', $auction->current_price],
@@ -31,7 +31,7 @@
         @if ($image)
             <img src="{{ $auction->imageUrl($image, 'thumb') }}" alt="" loading="lazy" decoding="async" width="640" height="480">
         @else
-            <span class="ds-lot__noimg"><x-ds.icon name="gavel" :size="28" /><span>No photo yet</span></span>
+            <span class="ds-lot__noimg"><x-ds.icon name="image" :size="28" /><span>No photo yet</span></span>
         @endif
         <span class="ds-lot__number"><span class="sr-only">Lot </span>{{ $lot }}</span>
         @if ($live && ! $compact)<x-ds.rail :starts="$auction->starts_at" :ends="$auction->ends_at" :extensions="(int) $auction->snipe_extensions" class="ds-lot__rail" />@endif
@@ -53,7 +53,7 @@
                 <x-ds.countdown :ends="$auction->ends_at" size="sm" :show-at="false" />
             @elseif ($state === 'scheduled')
                 <x-ds.countdown :ends="$auction->ends_at" :starts="$auction->starts_at" size="sm" :show-at="false" />
-            @elseif (in_array($state, ['sold', 'unsold', 'pending'], true))
+            @elseif (in_array($state, ['sold', 'unsold', 'pending', 'closing'], true))
                 <span class="ds-lot__when">Closed {{ Display::time($auction->ends_at, 'j M, H:i') }}</span>
             @endif
             @if (! $compact && $bids !== null)<span class="ds-lot__bids">{{ $bids }} {{ $bids === 1 ? 'bid' : 'bids' }}</span>@endif

@@ -10,6 +10,8 @@ use App\Services\Auctions\SettlementPayer;
 use App\Services\Auctions\SettlementPaymentRecorder;
 use App\Services\Paystack\PaymentGatewayException;
 use App\Services\Paystack\PaystackConfig;
+use App\Support\PageRange;
+use App\Support\SettlementPosition;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -41,6 +43,7 @@ class SettlementController extends Controller
             ->latest('id')
             ->paginate(20)
             ->withQueryString();
+        PageRange::within($settlements);
 
         $counts = AuctionSettlement::query()->tap($mine)->toBase()
             ->selectRaw('count(*) as all_rows, coalesce(sum(case when winner_id = ? then 1 else 0 end), 0) as buying_rows, coalesce(sum(case when seller_id = ? then 1 else 0 end), 0) as selling_rows', [$userId, $userId])
@@ -53,11 +56,23 @@ class SettlementController extends Controller
             'payments' => $payments,
             'role' => $role,
             'counts' => ['all' => (int) $counts->all_rows, 'buying' => (int) $counts->buying_rows, 'selling' => (int) $counts->selling_rows],
-            // Winners who can pay right now: the one thing on this page that needs a person.
-            'toPay' => $payments->canTakePayments()
-                ? AuctionSettlement::query()->where('winner_id', $userId)->whereIn('status', [AuctionSettlement::AWAITING_PAYMENT, AuctionSettlement::PAYMENT_OVERDUE])->count()
-                : 0,
+            // Winners' sales that can be paid right now (the one thing on this page that needs a person) and the ones that will be
+            // owed once payment opens: read through SettlementPosition so this page agrees with Home, Won and the sale page.
+            ...$this->owing($userId),
         ]);
+    }
+
+    /**
+     * @return array{toPay: int, toPayLater: int, owedLater: int}
+     */
+    private function owing(int|string $userId): array
+    {
+        $unpaid = AuctionSettlement::query()->where('winner_id', $userId)
+            ->whereIn('status', [AuctionSettlement::AWAITING_PAYMENT, AuctionSettlement::PAYMENT_OVERDUE])
+            ->limit(500)->get();
+        $totals = SettlementPosition::totals(SettlementPosition::many($unpaid));
+
+        return ['toPay' => $totals['now_count'], 'toPayLater' => $totals['later_count'], 'owedLater' => $totals['later_cents']];
     }
 
     public function show(Request $request, AuctionSettlement $settlement): View

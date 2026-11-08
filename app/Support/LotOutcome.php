@@ -170,13 +170,10 @@ final class LotOutcome
         return in_array($this->state, ['live', 'ending'], true);
     }
 
-    /** The word for <x-ds.status>. A reserve-rejected lot is "unsold" even though a winning flag remains on its last bid. */
+    /** The word for <x-ds.status>. A reserve-rejected lot is "unsold" even though a winning flag remains on its last bid; a lot past its time but not yet settled is "closing", never "unsold". */
     public function statusState(): string
     {
-        return match ($this->state) {
-            'closing' => 'unsold',
-            default => $this->state,
-        };
+        return $this->state;
     }
 
     private function money(int|string|null $amount): string
@@ -263,7 +260,7 @@ final class LotOutcome
 
         if ($this->role === 'leader') {
             return $this->box('success', 'check-circle', 'You are leading',
-                'Your bid of '.$current.' is the highest. There is nothing to do: bidding higher against yourself would only raise your price. This page tells you when someone outbids you.',
+                'Your bid of '.$current.' is the highest. We will tell you if you are outbid.',
                 $reserve ?? '');
         }
 
@@ -285,14 +282,14 @@ final class LotOutcome
 
     private function closingBox(string $current): array
     {
-        $result = 'Bidding has closed. The result is being recorded and this page updates by itself.';
+        $result = 'The result is being recorded and will appear here within a few minutes.';
 
         if ($this->role === 'leader') {
             return $this->box('notice', 'clock', 'Bidding has closed',
                 'You held the highest bid, '.$current.'.',
                 $this->auction->reserve_price !== null && ! $this->auction->reserveMet()
                     ? 'It is below the reserve, so the seller will decide whether to accept it. This page shows the result.'
-                    : 'The result is being recorded and this page updates by itself.');
+                    : $result);
         }
 
         return $this->box('notice', 'clock', 'Bidding has closed', $result);
@@ -316,7 +313,7 @@ final class LotOutcome
                 $this->isBuyNowSale ? 'You bought this lot with Buy Now' : 'You won this lot',
                 $this->isBuyNowSale ? 'You paid the Buy Now price of '.$current.' and bidding ended at once, on '.$when.'.' : 'You won it for '.$current.' when bidding closed on '.$when.'.',
                 $acceptedBelowReserve ? 'The seller accepted your bid, which was below the reserve.' : '',
-                'Payment and the next steps are below.'),
+                'Where payment stands is below.'),
             'loser' => $this->box('neutral', 'gavel', 'You did not win this lot',
                 ($this->isBuyNowSale ? 'Another bidder bought it with Buy Now for '.$current.'.' : 'It sold for '.$current.' on '.$when.'.').' Your highest bid was '.$this->money($this->viewerBidCents).'.'),
             'seller' => $this->box('success', 'gavel', $this->isBuyNowSale ? 'Sold with Buy Now' : 'Sold',

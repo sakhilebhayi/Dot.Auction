@@ -4,6 +4,7 @@ namespace App\Livewire\Buyer;
 
 use App\Models\Auction;
 use App\Models\Watchlist;
+use App\Support\Display;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 use Livewire\Attributes\Locked;
@@ -41,6 +42,10 @@ class WatchToggle extends Component
 
         $userId = auth()->id();
         $existing = Watchlist::query()->where('user_id', $userId)->where('auction_id', $auction->id);
+
+        if (! $existing->exists() && ! Display::isWatchable($auction)) {
+            return; // closed or cancelled: nothing left to watch for (removing a watch is always allowed)
+        }
 
         if ($existing->exists()) {
             $existing->delete();

@@ -33,6 +33,12 @@
             <header class="sh-top">
                 <x-ds.brand variant="mark" :width="52" :href="route('dashboard')" class="sh-top__mark" />
                 <form class="sh-search" method="GET" action="{{ route('auctions.index') }}" role="search">
+                    {{-- On Browse this is the page's search from 64rem up, so it keeps the tab, category and sort the visitor has chosen. --}}
+                    @if (request()->routeIs('auctions.index'))
+                        @foreach (['state', 'category', 'sort'] as $keep)
+                            @if (is_string(request()->query($keep)) && request()->query($keep) !== '')<input type="hidden" name="{{ $keep }}" value="{{ request()->query($keep) }}">@endif
+                        @endforeach
+                    @endif
                     <label for="shell-search" class="sr-only">Search lots</label>
                     <x-ds.icon name="search" :size="18" class="sh-search__icon" />
                     <input id="shell-search" type="search" name="q" value="{{ request()->routeIs('auctions.index') && is_string(request()->query('q')) ? request()->query('q') : '' }}" placeholder="Search lots" autocomplete="off">
@@ -53,7 +59,11 @@
             <main id="main" class="sh-main" tabindex="-1">
                 <div class="sh-page sh-page--{{ $width }}">
                     @php
-                        $headTitle = isset($header) && trim((string) $header) !== '' ? strip_tags((string) $header) : $title;
+                        // A header slot arrives already escaped (its {{ }} ran once), and x-ds.page-header escapes its title prop again. Drop any
+                        // markup, decode the slot's entities once, and let the component do the one escape: "ship's" must not read "ship&#039;s".
+                        $headTitle = isset($header) && trim((string) $header) !== ''
+                            ? html_entity_decode(strip_tags((string) $header), ENT_QUOTES | ENT_HTML5, 'UTF-8')
+                            : $title;
                     @endphp
                     @if ($headTitle)
                         <x-ds.page-header :title="$headTitle" :back="$back" :back-label="$backLabel" :meta="$meta ?? null" :actions="$actions ?? null" :hidden="! $titleVisible" />
@@ -65,9 +75,10 @@
         </div>
 
         <nav class="sh-bar" aria-label="Main">
+            {{-- Buying is the core of the bar: Home, Browse, My bids, Watching. Selling sits in More ("List a lot" first) and on Home and My lots; the bar has no primary action of its own. --}}
+            <x-ds.nav-item variant="bar" :href="route('dashboard')" icon="home" :active="request()->routeIs('dashboard')">Home</x-ds.nav-item>
             <x-ds.nav-item variant="bar" :href="route('auctions.index')" icon="browse" :active="request()->routeIs('auctions.*')">Browse</x-ds.nav-item>
             <x-ds.nav-item variant="bar" :href="auction_route('buyer.bids')" icon="bids" :active="request()->routeIs('buyer.bids')">My bids</x-ds.nav-item>
-            <x-ds.nav-item variant="bar" :href="route('seller.auctions.create')" icon="plus" :accent="true">List a lot</x-ds.nav-item>
             <x-ds.nav-item variant="bar" :href="auction_route('buyer.watchlist')" icon="bookmark" :active="request()->routeIs('buyer.watchlist')">Watching</x-ds.nav-item>
             <button type="button" class="ds-nav ds-nav--bar" data-dialog-open="shell-menu"><x-ds.icon name="menu" :size="22" /><span class="ds-nav__label">More</span></button>
         </nav>

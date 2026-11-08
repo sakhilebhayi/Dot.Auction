@@ -8,8 +8,10 @@ use App\Models\ReserveNotMetProposal;
 use App\Models\SettlementPayment;
 use App\Models\User;
 use App\Models\Watchlist;
+use App\Support\PageRange;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -72,6 +74,28 @@ final class ViewerActivity
     }
 
     /**
+     * Lots this person bid on whose result has not landed: the clock has run out and the settle job has not recorded the result yet
+     * (state "closing"), or the lot ended below the reserve and this person's bid is on top, so the seller is deciding (state "pending").
+     * They stay on Home until the result is in, so a lot never drops out of sight between "live" and "won" or "not won". Most recent close first.
+     *
+     * @return Collection<int, Auction>
+     */
+    public function resultPending(User $user, ?CarbonInterface $now = null): Collection
+    {
+        $now ??= now();
+        $query = $this->lots->withViewerBid($this->lots->bidOnBy(Auction::query(), $user), $user);
+
+        $query->where(fn ($q) => $q
+            ->where(fn ($a) => $a->where('auctions.status', 'active')->where('auctions.ends_at', '<=', $now))
+            ->orWhere(fn ($p) => $p->where('auctions.status', 'pending_review')->whereExists(
+                fn ($b) => $b->selectRaw('1')->from('bids')->whereColumn('bids.auction_id', 'auctions.id')
+                    ->where('bids.bidder_id', $user->id)->where('bids.is_winning', true)
+            )));
+
+        return $query->orderByDesc('auctions.ends_at')->orderByDesc('auctions.id')->limit(self::SAFETY_CEILING)->get();
+    }
+
+    /**
      * Lots that ended below the reserve with this person's bid on top: nothing for them to do, the seller is deciding.
      *
      * @return Collection<int, Auction>
@@ -101,7 +125,7 @@ final class ViewerActivity
         $page = $query->orderByDesc('auctions.ends_at')->orderByDesc('auctions.id')
             ->paginate($perPage, pageName: 'ended_page')->withQueryString();
 
-        return $this->withMySettlements($page, $user);
+        return $this->withMySettlements(PageRange::within($page), $user);
     }
 
     /**
@@ -113,7 +137,7 @@ final class ViewerActivity
     {
         $query = $this->lots->withCardData($this->watchedBy(Auction::query(), $user)->browsable(), $user);
 
-        return $this->lots->soonestFirst($query)->paginate($perPage)->withQueryString();
+        return PageRange::within($this->lots->soonestFirst($query)->paginate($perPage)->withQueryString());
     }
 
     public function watchingCount(User $user): int
@@ -134,7 +158,7 @@ final class ViewerActivity
             ->whereRaw('not exists (select 1 from reserve_not_met_proposals rp where rp.auction_id = auctions.id and rp.status = ?)', ['rejected']);
         $this->lots->withViewerBid($query, $user)->with('images');
 
-        $page = $query->orderByDesc('auctions.ends_at')->orderByDesc('auctions.id')->paginate($perPage)->withQueryString();
+        $page = PageRange::within($query->orderByDesc('auctions.ends_at')->orderByDesc('auctions.id')->paginate($perPage)->withQueryString());
 
         return $this->withMySettlements($page, $user);
     }
@@ -302,8 +326,8 @@ final class ViewerActivity
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<Auction>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<Auction>
+     * @param  Builder<Auction>  $query
+     * @return Builder<Auction>
      */
     private function watchedBy($query, User $user)
     {

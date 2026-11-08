@@ -65,3 +65,17 @@ select.ds-in { padding-right: 2.25rem; }
 /* Jetstream's remaining utility-class surfaces: team member rows, session list, token lists. */
 .jf-fields .border-t, .jf-fields .border-gray-200 { border-color: var(--c-line); }
 
+
+/* Team: the role choice and the people list. Roles are ordinary radios in bordered rows, the chosen one marked by its border and weight, never by dimming the others. */
+.tm-roles .ds-check { padding: var(--s-3) var(--s-4); border: 1px solid var(--c-line-strong); border-radius: var(--r-2); background: var(--c-raised); }
+.tm-roles .ds-check + .ds-check { margin-top: var(--s-2); }
+.tm-roles .ds-check:has(input:checked) { border-color: var(--c-ink); outline: 1px solid var(--c-ink); }
+.tm-roles .ds-check:has(input:checked) .ds-check__text { font-weight: 650; }
+.tm-roles .ds-check:has(input:focus-visible) { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+.tm-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--c-line); }
+.tm-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); }
+.tm-row__who { display: grid; flex: 1 1 12rem; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.tm-row__sub { font-weight: 400; font-size: var(--t-sm); color: var(--c-ink-2); }
+.tm-row__role { font-size: var(--t-sm); font-weight: 650; color: var(--c-ink-2); }
+.tm-row__act { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-left: auto; }
+.tm-empty { margin: var(--s-4) 0 0; color: var(--c-ink-2); font-size: var(--t-sm); }

@@ -16,7 +16,7 @@
     @endif
 
     @if ($auction->items->isNotEmpty())
-        <x-ds.section title="In this lot" id="lot-items">
+        <x-ds.section title="What is included" id="lot-items">
             <ul class="lot-items">
                 @foreach ($auction->items as $item)
                     <li>

@@ -22,6 +22,8 @@
 .sh-main { flex: 1; padding: var(--s-6) var(--gutter) calc(var(--bar-h) + var(--s-10) + env(safe-area-inset-bottom)); outline: none; }
 .sh-page { width: 100%; max-width: var(--page-max); margin: 0 auto; }
 .sh-page--narrow { max-width: var(--page-narrow); }
+/* Reading and form pages share the left edge of every other page; centring them made the heading jump between pages. */
+@media (min-width: 64rem) { .sh-page--narrow { margin-inline: 0; } }
 .sh-page--wide { max-width: 96rem; }
 .sh-page--full { max-width: none; }
 

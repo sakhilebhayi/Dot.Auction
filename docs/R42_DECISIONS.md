@@ -254,3 +254,46 @@ Nothing below was decided or built; each is a rule or a fact only the owner has.
 4. **Does a paid seller get paid out, and where is it recorded?** Still manual and untracked (decision 1 above). The sale pages say so once; the delete-account rule lets a seller with a paid sale leave. Needs a `paid_out_at` rule when payouts are real.
 5. **Filtered lists share their page title** ("My lots" for Live, Drafts, Ended). Fine for a tab state; if you want "My lots: Drafts" in the tab title and history, say so.
 6. **Sign-in throttling copy and limits** (the limiter engaged within 8 bad attempts; Fortify's default is 5 a minute per e-mail and address) were left as they are. Say if the numbers should change.
+
+## Polish round 1 (design jury 1, 2026-11-08)
+
+Decisions made while executing `docs/R42_DESIGN_JURY_1.md`. Rules were not changed; wording and presentation were.
+
+1. **One answer for "can this sale be paid".** `App\Support\SettlementPosition` reads the settlement row and `PaystackConfig::canTakePayments()` once. States: waiting (unpaid, payment closed), due, overdue (payment open and past the deadline), paid, cancelled. While payment is closed no page says "Pay now", "overdue", "You owe" or shows a deadline; they say "Payment opens soon" and "You will owe R3,700.00 once it opens". A recorded `payment_overdue` row with payment closed (the demo world, or a key removed later) is shown as waiting. The seller is not shown "Cancel this sale" or a late-buyer prompt in that case (the lifecycle service still allows it by rule; only the UI stops offering it). The sale history hides "payment opened" and "deadline passed" while payment is closed. The demo seeder only writes those events when payment is on.
+2. **Titles** are escaped once everywhere; the layout decodes a header slot once. Test matrix in `tests/Feature/R42/TitleEscapingTest.php`. Mail: only the team invitation is a Blade mail and carries no lot title; Dot.Notify events send `auction_title` raw to the service, which owns its own escaping.
+3. **Pages past the end** (`?page=99`) redirect to the last page for browse, watching, won, ended bids, payments, notifications and my lots (`App\Support\PageRange`). A truly empty list keeps its empty state.
+4. **A lot past its time with no recorded result** is "Closed, result pending" (state `closing`), not "Not sold". The browse tab "Not sold" still counts such lots (its filter is unchanged); flagged for the next browse pass.
+5. **Outbid notices** collapse: one unread notice per lot per person, rewritten with the newest price; opening the lot marks it read. A Buy Now sale tells the displaced bidder "Sold to another bidder by Buy Now".
+6. **Phone bar** (see DESIGN.md Shell): buying first, List a lot in More.
+7. **Browse**: one search (the shell's from 64rem, the page's below), sort applies on change with a no-JavaScript Apply button, and lots in their final hour get their own row and are left out of the grid.
+
+### Needs owner (polish round 1)
+
+* **Should signed-out visitors be able to browse lots?** The jury's reasoning: a stranger sees only an example ladder and "Sign in to bid" and cannot tell what is sold, so the first visit proves nothing. Their suggestion is a read-only `/auctions` with "Sign in to bid" on the lot panel and four live lots on the landing page. It is an access and privacy decision (lot photos, seller names and prices become public; scraping; reserve is never shown, so that part is safe), so it was **not built**. Today browse and lot pages require sign-in.
+* **Buy Now e-mail.** Dot.Notify has only the `auction.outbid` template, so the e-mail to a displaced bidder after a Buy Now sale still reads "outbid". The in-app notice is right. A `auction.lost_to_buy_now` event and template in Dot.Notify would fix it; until then it is a choice between a slightly wrong e-mail and none.
+* **Density controls on browse** (grid or list, 3 or 4 columns) from the jury's item 5 were not built: they add a feature, not a repair.
+
+
+## Polish round 2 (design jury 2, 2026-11-08)
+
+Executed from `docs/R42_DESIGN_JURY_2.md`. No rule, lifecycle or payment behaviour changed; words, lists and the demo world were made to agree.
+
+1. **One payment story.** The seller's lots list now reads its sale phrase from `SettlementPosition::listLabel()` (it said "Payment overdue" while the sale page said nothing is due). With payment off: "Waiting for payment to open". With payment on: "Awaiting payment", "Buyer is late paying", "Paid", "Sale cancelled". The operator page labels every checkout as an attempt that did not complete ("Attempt started", "Attempt failed", "Attempt expired", "Payment attempt, not completed"), shows the sale's own state from the same class, and says the rows are earlier records while payment is off.
+2. **The demo seeder is coherent.** `auction:demo-seed` (payment off) writes only states reachable with payment off: sales awaiting payment with no deadline, no payment attempts, no overdue, paid or cancelled notices. `auction:demo-seed --payments` runs the seeding process (only) with a fake test key, applies the real payment window, runs the real overdue job and the real cancel action, and writes started, failed, paid, overdue and cancelled sales with the notices and history each really produces. The setting is put back afterwards. Anything that scripts the demo world and expects overdue, paid or cancelled sales must now pass `--payments`.
+3. **Closed lots stay on Home** until the result lands: a lot whose clock ran out and has no result yet, and a lot waiting on the seller where the person's bid is on top, appear in "My bids" with their status and as a quiet line in "Needs you". Won lots already stayed until paid.
+4. **No Watch on a lot with nothing left to watch for.** Offered only while a lot is scheduled or taking bids (lot page, browse cards, and the server refuses a crafted request). Someone who already follows a lot that has since closed keeps "Stop watching" on the Watching page only.
+5. **A cancelled sale is told once**, in the lot's own box, with one link "See the record of this sale". The payment panel and "Open the payment page" are gone for it.
+6. **Phones** get compact rows in place of tall cards for every lot list (about 1,700px for twelve lots, was about 7,400).
+7. **One count on Browse**: the header reads "22 lots: 2 closing within the hour and 20 others", and the page summary counts the same 20 as "other lots". All three come from one `$tally` in `AuctionController::index`.
+8. **Team settings** use the design system: a real radio choice for the role (the chosen role is marked, the others are not dimmed), the owner and every member in one list with role words and "Change role" / "Remove" actions, and role descriptions that say only what the role's permissions are ("Can read, create, update and delete."). The framework's boilerplate sentences are gone.
+9. **Validation wording**: `lang/en/validation.php` gives every field a plain name and the common failures a plain sentence. `tests/Feature/R42/ValidationWordingTest.php` submits the listing, photo, sign-in, reset, profile, password, delete-account, two-step, team and bid forms and fails on "field", a snake_case name or a dotted key.
+10. **Smaller**: the ladder "You" marker sits inside its row and every rung figure shares one right edge; the lot and sale pages say "Where payment stands is below" instead of promising "next steps"; the sale page says "Your role: Buyer / Seller"; demo photos are generated neutral scenes with no text; demo times are spread over the days they would really have happened.
+
+### Needs owner (polish round 2)
+
+* **What a winner does after paying.** Seller contact, collection or delivery, a won / pay / collect stepper and an expected date are all unbuilt and nothing on any page promises them. The product has no support contact in its configuration, so winner and sale pages say only what is due, when payment opens ("we will tell you when it opens") and nothing about delivery. Decide: does the buyer see the seller's name and a message route, who arranges collection, and is there a platform support address to show?
+* **Public browse.** Still a decision (see polish round 1): the first visit by a stranger shows no stock. Not built.
+* **A decision window for "awaiting seller decision".** The lot page still says there is no deadline. A stated window (for example 48 hours), a reminder to the seller and what happens at the end are rules only you can set (see also section 3, "Needs owner rules").
+* **A leader raising their own bid.** Unchanged (Q-A1, Q-A2 above): no form for a leader, no maximum bid.
+* **Teams.** The Administrator and Editor roles exist because Jetstream ships them; nothing in the auction product reads them (only the team owner can manage the team). Keep teams, rename the roles, or hide teams from the menu?
+* **Support contact.** A `config('auction.support_email')` (or a contact route) would let error pages and payment pages say who to ask. None exists.

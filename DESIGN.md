@@ -148,7 +148,7 @@ components:
 |---|---|
 | **Idea** | A price climbs a ladder while the clock runs down a rail. Time is the protagonist; prices are the data. |
 | **Metaphor** | The sale room: lot numbers on paddles, the catalogue sheet, the bid ladder of increments, the hammer at the end of the rail. |
-| **Signature** | The **bid ladder** (`ds.bid-ladder`): the real valid bids of one lot as rungs, the current price as the gold rung, the viewer's own bid marked "You", a private reserve shown only as met or not met. Its partner is the **closing rail** (`ds.rail`) and the sale-room **clock** (`ds.countdown`, in Chivo Mono so the digits never move). |
+| **Signature** | The **bid ladder** (`ds.bid-ladder`): the real valid bids of one lot as rungs, the current price as the gold rung, the viewer's own bid marked "You" (a marker inside its row, between the label and the figure, never across the border; every figure shares one right edge, pressable rung or not), a private reserve shown only as met or not met. Its partner is the **closing rail** (`ds.rail`) and the sale-room **clock** (`ds.countdown`, in Chivo Mono so the digits never move). |
 | **Emotion** | Calm certainty, the moment before the hammer falls: you can see exactly where the price is and how much time is left. |
 | **Motion verb** | **Strike.** Short, decisive, no bounce: a press travels 1px and stops, a dialog rises 8px in 240ms and stops, the rail advances in 1s linear steps. Nothing wobbles at rest. |
 | **Screenshot** | A lot page: the gold current rung at R1,250.00, the next bid R1,300.00 under it, the rail 90% spent and red, the clock reading 37m 58s. Captured set: `scratchpad/shell-shots/` (see the R-42 shell report for the path). |
@@ -206,8 +206,8 @@ Scale (ratio about 1.2, tokens `--t-*`): 12 / 14 / 16 / 19 / 23 / 28 / 34 / 44 (
 
 ## Layout
 
-- **Shell:** from 64rem a 15rem **rail** (brand, then Home, Buying: Browse lots, My bids, Watching, Won; Selling: My lots, Payments; Operations for operators), a sticky top bar (search, test or live badge, bell, theme, account) and a page column of 80rem (`default`), 54rem (`narrow`, forms and reading), 96rem (`wide`) or full. Below 64rem the rail goes away: a top bar with the logo mark and the bell, and a **bottom bar** of five items (Browse, My bids, **List a lot** as the one gold primary action, Watching, More). More opens a bottom sheet with every other destination, the account links, the theme switch and log out. The page's primary action (the bid) lives on the page, never in the bar.
-- **Grid:** one page container, a 4px base spacing scale (`--s-*`), a 1rem gutter (2rem from 64rem). Sections are bands divided by a 1px strong rule on top, not floating cards. Lots sit on a **ruled catalogue sheet** (`.ds-catalogue`: collapsed 1px borders), 17rem minimum cell.
+- **Shell:** from 64rem a 15rem **rail** (brand, then Home, Buying: Browse lots, My bids, Watching, Won; Selling: My lots, Payments; Operations for operators), a sticky top bar (search, test or live badge, bell, theme, account) and a page column of 80rem (`default`), 54rem (`narrow`, forms and reading), 96rem (`wide`) or full. Below 64rem the rail goes away: a top bar with the logo mark and the bell, and a **bottom bar** of five items (Home, Browse, My bids, Watching, More). More opens a bottom sheet with every other destination (**List a lot** first among the selling ones), the account links, the theme switch and log out. *Decision (design jury 1, polish round):* the bar used to carry **List a lot** in gold in the centre, which put selling above buying for a person who mostly bids. Buying is the core of the bar now; listing stays one tap away in More, on Home (gold button beside Browse lots) and on My lots, where a seller is already looking. The bar has no primary action of its own: the page owns it (the bid, Place bid, Pay now). Narrow reading and form pages (`narrow`) share the left edge of every other page from 64rem; they are not centred.
+- **Grid:** one page container, a 4px base spacing scale (`--s-*`), a 1rem gutter (2rem from 64rem). Sections are bands divided by a 1px strong rule on top, not floating cards. Lots sit on a **ruled catalogue sheet** (`.ds-catalogue`: collapsed 1px borders), 17rem minimum cell. **Below 40rem a lot is a row, not a card**: a photo column, then status, title, price with its label, time left and bids, and the watch control at the right of the last line (twelve lots are about 1,700px, not 7,400). The card layout returns from 40rem.
 - **Stats:** never four equal tiles. Use one headline `ds.stat` (money size) beside a `ds.dl` ledger, or at most three figures of different weight, or a ledger only. A figure always names its baseline ("since 8 Nov, 09:00").
 - **Touch:** every control is 44px on coarse pointers (48px for inputs on phones); inputs are 16px so iOS never zooms.
 - **Landmarks:** skip link first, `header` (top bar), `nav` (rail or bar), one `main#main`, one `h1` from the layout `header` slot, a unique `<title>` per page from the layout `title` prop.
@@ -237,7 +237,8 @@ All anonymous Blade components live in `resources/views/components/ds/`; **the p
 | `ds.status` | the status vocabulary below; pass `state=` or `auction=` |
 | `ds.countdown` | server time first, JS ticks it; Chivo Mono digits; `role=timer`, never announced per second; `ds:countdown-end` event |
 | `ds.rail` | the closing rail: share of the sale already gone, a tick for the original close when late bids extended it |
-| `ds.lot-card` | a lot as a catalogue entry in `.ds-catalogue` |
+| `ds.lot-card` | a lot as a catalogue entry in `.ds-catalogue`; a compact row below 40rem. A lot with no photo shows the designed "No photo yet" tile (a sunken frame with a dashed inner rule), the same words in the gallery. Watch is offered only while a lot is scheduled or taking bids (`Display::isWatchable`); a closed or cancelled lot has none |
+| `ds.lot-row` | a lot that is closing as a ruled strip: the countdown is the headline figure (xl on Browse, lg on Home), the rail under it, price and watch beside. A different family from the catalogue on purpose: the Closing soon row on Browse and the 24-hour lists on Home. A list of one fills the width |
 | `ds.bid-ladder` | the signature element; rungs are buttons that fill `[data-ds-bid-input]` |
 | `ds.stat`, `ds.dl` | a headline figure; a ledger / stacked / inline definition list |
 | `ds.page-header`, `ds.section` | the h1 block (the layout renders it); a ruled region with its own h2 |
@@ -266,21 +267,26 @@ A word, a silhouette and a hue for each state; colour is never the only signal. 
 | ending | Closing soon (inside `ending_soon_window_minutes`) | hourglass | Hammer |
 | scheduled | Scheduled | calendar | Dusk |
 | sold | Sold | gavel, filled ink chip | ink |
+| closing | Closed, result pending (time is up, the settler has not recorded a result) | clock | outline only |
 | unsold | Not sold | square with a bar | outline only |
 | pending | Awaiting seller decision | pause bars | Gavel text |
 | cancelled | Cancelled | circle with a slash | outline only |
 | extended | Extended (n times) | arrow to an end bar | Ring |
 | draft | Draft | pencil | outline only |
-| awaiting_payment, initiated | Awaiting payment, Payment started | clock | Gavel text |
+| awaiting_payment, initiated | Awaiting payment, Attempt started | clock | Gavel text |
 | paid | Paid | check in a circle | Ring |
-| payment_overdue, failed, unmatched | Payment overdue, Payment failed, Needs a person | warning triangle or x | Hammer |
-| expired | Expired | circle with a slash | outline only |
+| payment_overdue, failed, unmatched | Payment overdue, Attempt failed, Needs a person | warning triangle or x | Hammer |
+| expired | Attempt expired | circle with a slash | outline only |
+
+### Words that name a sale or a payment
+
+A sale is described by `App\Support\SettlementPosition` and nothing else: lists, dashboards and pages call `listLabel()`, `headline()` or `badge()`, never the stored settlement status. While payment is off no page says overdue, due, Pay now or cancelled-for-lateness for a sale that cannot be paid. A payment *attempt* (operator page) is history and is labelled so: "Attempt started", "Attempt failed", "Attempt expired", with "Payment attempt, not completed" under it. Form errors are sentences a person can act on ("Enter a title for the lot."), never the framework's ("The title field is required."): every field has a plain name in `lang/en/validation.php`, and a sweep test submits every form empty.
 
 ### Shell, navigation and routes
 
 Role-aware items: everyone sees buyer and seller items; the operator sees Payment operations. Targets that do not exist yet go through `auction_route('name')` (`Display::route()`), which returns `#` only while the route is not registered; such an item is marked `data-pending-route` and does nothing when pressed. **UI agents register these route names** (they are linked from the rail, the phone bar and the menu): `buyer.bids` (My bids), `buyer.watchlist` (Watching), `buyer.won` (Won). Registered routes light up with no change to the shell. Layout API: `<x-app-layout title="..." description="..." width="default|narrow|wide|full" back="url" :title-visible="false">` with slots `header` (the h1), `meta`, `actions`, `topbar`; `<x-guest-layout title="..." variant="card|document">`.
 
-Money, times: `Display::money()` / `<x-ds.money>` (config `auction.currency_symbol`); `Display::time($at, $format, $withZone)` delegates to the backend's `Auction::localTime()` when it exists, otherwise converts to `config('auction.display_timezone')` (Africa/Johannesburg). Swap point: `App\Support\Display::time()`.
+Money, times: `Display::money()` / `<x-ds.money>` (config `auction.currency_symbol`); a date with a time is one pattern everywhere, **"Mon 9 Nov, 15:59"**, with the year only when it is not this year (`Display::time` maps the older spellings `j M Y, H:i`, `j M, H:i`, `D j M, H:i` to it). The zone is named once in the shell note ("Times shown in South African time") and on the big clocks and deadlines, not on every list row. `Display::time($at, $format, $withZone)` delegates to the backend's `Auction::localTime()` when it exists, otherwise converts to `config('auction.display_timezone')` (Africa/Johannesburg). Swap point: `App\Support\Display::time()`.
 
 ### Email
 
@@ -310,4 +316,6 @@ Don't
 - Use colour alone for a state, an icon alone for a meaning, a placeholder as a label, or a hover-only control.
 - Invent activity: no fake "watching now", no sample counts, no live badges that are not live.
 - Print the reserve amount to a buyer, anywhere, ever.
+- Say "Pay now" or "overdue" for a sale that cannot be paid. `App\Support\SettlementPosition` is the one answer (waiting, due, overdue, paid, cancelled) for Home, Won, My bids, Payments, the sale page and the lot page; while online payment is closed every page says payment opens soon and what will be owed.
+- Escape a title twice. A header slot arrives escaped; the layout decodes it once and the page header escapes it once. Prefer the layout's `title` prop (no header slot) for anything a user typed.
 - Load a CDN, a web font service or an icon font.

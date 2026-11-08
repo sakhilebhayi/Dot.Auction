@@ -20,13 +20,44 @@
 @media (pointer: coarse) { .ds-lot__watch { min-height: var(--hit); } }
 .ds-lot__actions form { margin: 0; }
 
+/* ---------- Phones: a lot is a row, not a card ----------
+ * One tall card per lot made twelve lots about 7,400px of scrolling. Below 40rem each lot is a ruled row: a photo column, then the status, the title, the price with its
+ * label, the time left and the bids, and the watch control on the last line at the right. Everything the card says is still there, in the same order, and the whole row
+ * is still one link. From 40rem the card layout returns. */
+@media (max-width: 39.99rem) {
+    .ds-catalogue { grid-template-columns: minmax(0, 1fr); }
+    .ds-catalogue .ds-lot { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); }
+    .ds-catalogue .ds-lot__media { aspect-ratio: auto; min-height: 7.5rem; }
+    .ds-catalogue .ds-lot__rail { display: none; }
+    .ds-catalogue .ds-lot__number { padding: 1px 6px; font-size: var(--t-xs); }
+    .ds-catalogue .ds-lot__noimg::before { inset: var(--s-2); }
+    .ds-catalogue .ds-lot__noimg { font-size: var(--t-xs); gap: var(--s-1); text-align: center; padding: 0 var(--s-2); }
+    .ds-catalogue .ds-lot__body { grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--s-2); padding: var(--s-2) var(--s-3); align-content: start; }
+    .ds-catalogue .ds-lot__body > * { grid-column: 1 / -1; }
+    .ds-catalogue .ds-lot__tags { min-height: 0; }
+    .ds-catalogue .ds-lot__price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2); }
+    .ds-catalogue .ds-lot__meta { grid-column: 1; align-self: center; justify-content: flex-start; }
+    .ds-catalogue .ds-lot__actions { grid-column: 2; padding: 0; align-self: center; }
+    .ds-catalogue .ds-lot__watch { margin-left: 0; min-height: 2.25rem; }
+}
+
 /* A lot fills its cell so the watch control sits on the same line in every card of a row. */
 .ds-catalogue > li > .ds-lot { height: 100%; }
 
 /* ---------- Browse ---------- */
-.dc-filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); align-items: end; margin-bottom: var(--s-6); }
+.dc-filters { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-3); align-items: end; width: 100%; }
 .dc-filters .ds-field + .ds-field { margin-top: 0; }
-@media (min-width: 40rem) { .dc-filters { grid-template-columns: minmax(0, 1fr) 14rem auto; } }
+.dc-filters__sort { grid-column: 1 / -1; }
+.dc-filters noscript { grid-column: 1 / -1; }
+.dc-resultbar + .ds-catalogue, .dc-tabs { margin-top: 0; }
+@media (min-width: 40rem) { .dc-filters { grid-template-columns: minmax(0, 1fr) auto 14rem; } .dc-filters__sort { grid-column: auto; } }
+/* From 64rem the shell's search box is the one search; only the sort stays on the page, its label beside it. */
+@media (min-width: 64rem) {
+    .dc-filters { grid-template-columns: auto; width: auto; }
+    .dc-filters__q, .dc-filters__go { display: none; }
+    .dc-filters__sort { display: grid; grid-template-columns: auto 14rem; align-items: center; gap: var(--s-3); }
+    .dc-filters__sort .ds-label { margin: 0; }
+}
 .dc-tabs { margin-bottom: var(--s-4); }
 .dc-chips { display: flex; gap: var(--s-2); margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter) var(--s-2); overflow-x: auto; }
 .dc-chips > * { flex: none; }
@@ -69,6 +100,8 @@
 .dc-lotname { color: var(--c-ink); font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
 .dc-lotname:hover { text-decoration: underline; text-underline-offset: 0.2em; }
 @media (pointer: coarse) { .dc-lotname { display: inline-flex; align-items: center; min-height: var(--hit); } }
+/* A name that is the only way into a row is a touch target: 44px high on a phone, not 17px of text. */
+@media (pointer: coarse) { .dc-lotname, .sl-lot__title, .pay-lot a { display: inline-flex; align-items: center; min-height: var(--hit); } }
 .dc-sub { display: block; margin-top: 2px; color: var(--c-ink-3); font-size: var(--t-sm); font-weight: 400; }
 .dc-ledger { margin-top: var(--s-4); }
 .dc-more { margin: var(--s-3) 0 0; }
@@ -123,3 +156,40 @@ button.nf-item:hover { background: var(--c-quiet-hover); }
     .ds-table.is-stackable td.dc-lotcell { display: block; padding-bottom: var(--s-2); text-align: left; }
     .ds-table.is-stackable td.dc-lotcell::before { content: none; }
 }
+
+
+/* ---------- Browse: the closing-soon row ---------- */
+/* A different family from the catalogue below: ruled strips, the countdown is the headline figure and the rail runs under it. */
+.dc-closing { margin: var(--s-2) 0 var(--s-8); border-top: 2px solid var(--c-urgent); }
+.dc-closing__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-4); padding: var(--s-3) 0; }
+.dc-closing__title { font-size: var(--t-xl); font-stretch: 108%; letter-spacing: -0.012em; color: var(--c-urgent); }
+.dc-closing__title--rest { margin: 0 0 var(--s-3); color: var(--c-ink); }
+.dc-closing__sub { margin: 0; color: var(--c-ink-2); font-size: var(--t-sm); }
+.dc-closing__list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--c-line-strong); }
+.dc-close {
+    position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-3) var(--s-6); align-items: center;
+    padding: var(--s-4) 0; background: var(--c-surface); border-bottom: 1px solid var(--c-line-strong);
+}
+.dc-close:hover { background: var(--c-sunken); }
+.dc-close__clock { grid-column: 1 / -1; display: grid; gap: var(--s-2); }
+.dc-close--lg .dc-close__clock { gap: var(--s-1); }
+.dc-close__rail { max-width: 28rem; }
+.dc-close__lot { min-width: 0; grid-column: 1; }
+.dc-close__name { font-size: var(--t-lg); font-weight: 700; line-height: 1.25; }
+.dc-close__link { color: var(--c-ink); text-decoration: none; overflow-wrap: anywhere; }
+.dc-close__link::after { content: ""; position: absolute; inset: 0; }
+.dc-close__link:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+.dc-close__facts { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin: var(--s-1) 0 0; color: var(--c-ink-2); font-size: var(--t-sm); }
+.dc-close__price { grid-column: 2; grid-row: 2; display: grid; justify-items: end; gap: 2px; text-align: right; }
+.dc-close__price-label { color: var(--c-ink-3); font-size: var(--t-sm); }
+.dc-close__act { grid-column: 1 / -1; position: relative; z-index: 2; }
+.dc-close--lg .dc-close__name { font-size: var(--t-md); }
+.dc-close__act .ds-lot__watch { margin-left: calc(-1 * var(--s-2)); }
+@media (min-width: 48rem) {
+    .dc-close { grid-template-columns: 17rem minmax(0, 1fr) auto auto; padding: var(--s-4) var(--s-4); }
+    .dc-close__clock { grid-column: 1; }
+    .dc-close__lot { grid-column: 2; }
+    .dc-close__price { grid-column: 3; grid-row: 1; }
+    .dc-close__act { grid-column: 4; }
+}
+.dc-split td[data-label="Deadline"] { white-space: nowrap; }

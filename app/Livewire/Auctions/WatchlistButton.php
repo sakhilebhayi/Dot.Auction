@@ -4,6 +4,7 @@ namespace App\Livewire\Auctions;
 
 use App\Models\Auction;
 use App\Models\Watchlist;
+use App\Support\Display;
 use Illuminate\View\View;
 use Livewire\Component;
 
@@ -38,6 +39,13 @@ class WatchlistButton extends Component
         // HasUserScope already restricts these queries to the authenticated
         // user's own rows.
         $exists = Watchlist::where('auction_id', $this->auction->id)->exists();
+
+        // A lot that has closed or been cancelled has nothing left to watch for. (Removing a watch is always allowed.)
+        if (! $exists && ! Display::isWatchable($this->auction)) {
+            $this->message = 'This lot is closed, so it cannot be watched.';
+
+            return;
+        }
 
         if ($exists) {
             Watchlist::where('auction_id', $this->auction->id)->delete();

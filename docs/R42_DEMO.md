@@ -1,7 +1,7 @@
 # R-42 demo world (local only)
 
 A believable, fictional South African marketplace for design and QA work. Nothing here is real: people,
-lots and prices are invented, and every photo is a flat colour labelled `DEMO IMAGE`.
+lots and prices are invented, and every photo is a generated, neutral studio scene with no text on it. (Production lots show their sellers' real photos.)
 
 ## Build it
 
@@ -11,6 +11,7 @@ export DB_CONNECTION=sqlite DB_DATABASE=$PWD/database/audit.sqlite     # any loc
 touch database/audit.sqlite && php artisan migrate
 php artisan auction:demo-seed            # builds the world; does nothing if it is already complete
 php artisan auction:demo-seed --fresh    # removes the demo accounts and everything they own, then rebuilds
+php artisan auction:demo-seed --fresh --payments   # the same world as if online payment were on (see below)
 ```
 
 * **Refuses to run in production**: the command exits with an error, and the seeder class throws if called
@@ -60,12 +61,9 @@ Buy Now; 1 ended with no bids; 2 cancelled. One to three placeholder photos on m
 location) on a few. Watchlist rows for four buyers. About 50 notifications (outbid, won, sold, ending soon,
 paid, overdue, cancelled), roughly half read.
 
-Settlements in every state: awaiting payment (2), paid (2), payment overdue (1), cancelled (1). The operator
-page also has a started checkout, a failed attempt and one payment event that matched no sale (needs an
-operator).
+Settlements depend on the payment switch, because only some states can exist with payment off:
 
-## Showing the payment screens
+* **Default (payment off):** every sale is awaiting payment with no deadline. No payment attempts, no overdue, paid or cancelled sales and no notices about them. Every page says "Payment opens soon" and what will be owed (`App\Support\SettlementPosition`). The operator page is empty.
+* **`--payments`:** the seeding process runs with a fake test key (`sk_test_demo_fake_gateway_never_sent`, never sent anywhere), so the real services apply: 2 sales awaiting payment inside their deadline (one with a declined card and a checkout left open), 2 paid, 1 overdue, 1 cancelled by the seller after the deadline, each with the notices and history that state produces, and one payment event that matched no sale (needs an operator). The key is put back when the command ends: to see "Pay now" and the overdue wording on the pages, serve the app with `PAYSTACK_SECRET_KEY=sk_test_demo_fake_gateway_never_sent` (pressing Pay now then fails at Paystack, which shows the gateway-error state). Served without the key, the same data reads as "Payment opens soon" for every unpaid sale, paid and cancelled sales unchanged.
 
-With no Paystack key the app shows its honest "payment is not available yet" copy. To see the Pay now screens
-set `PAYSTACK_SECRET_KEY=sk_test_demo` (a fake test key: pressing Pay now then fails at Paystack, which shows
-the gateway-error state). No real key is ever needed or wanted here.
+Notice and bid times are spread over the days they would really have happened (a win when its lot closed, an outbid when the bid that displaced it arrived, a payment notice when the payment or deadline happened); drafts and lots were created at different times.

@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\AuctionSettlement;
 use App\Services\Auctions\ViewerActivity;
-use App\Support\Display;
+use App\Services\Paystack\PaystackConfig;
+use App\Support\SettlementPosition;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -43,13 +45,17 @@ class DashboardController extends Controller
         $outbid = $openBids->filter(fn ($a) => ! $a->viewer_leads)->values();
         $leading = $openBids->filter(fn ($a) => (bool) $a->viewer_leads)->values();
         $leadingSoon = $leading->filter(fn ($a) => $a->ends_at->lte($now->copy()->addHours(ViewerActivity::SOON_HOURS)))->values();
+        $resultPending = $activity->resultPending($user, $now);
         $salesToPay = $activity->salesToPay($user);
-        $lateBuyers = $activity->lateBuyers($user);
+        // One reading of every unpaid sale (payable now, late, or waiting for payment to open): the same one the sale page uses.
+        $positions = SettlementPosition::many($salesToPay);
+        // A buyer cannot be late while payment is closed, so the seller is not asked to chase one.
+        $lateBuyers = app(PaystackConfig::class)->canTakePayments() ? $activity->lateBuyers($user) : collect();
         $decisions = $activity->reserveDecisions($user);
         $seller = $activity->sellerSummary($user, $now);
         $operatorQueue = $user->isPlatformOperator() ? $activity->paymentsNeedingAPerson() : 0;
 
-        $needs = $this->needs($decisions->count(), $salesToPay, $outbid->count(), $leadingSoon->count(), $lateBuyers, $operatorQueue, $activity->owedCents($user));
+        $needs = $this->needs($decisions->count(), $positions, $outbid->count(), $leadingSoon->count(), $lateBuyers, $operatorQueue, $resultPending);
 
         return view('dashboard', [
             'isNew' => false,
@@ -58,7 +64,8 @@ class DashboardController extends Controller
             'outbid' => $outbid,
             'leading' => $leading,
             'openBids' => $openBids,
-            'salesToPay' => $salesToPay,
+            'resultPending' => $resultPending,
+            'salesToPay' => $positions,
             'decisions' => $decisions,
             'seller' => $seller,
             'sellingNow' => $seller && $seller['live'] > 0 ? $activity->sellingNow($user, 6, $now) : collect(),
@@ -72,11 +79,12 @@ class DashboardController extends Controller
      * The "needs you" lines, most pressing first. Each is a sentence in plain words and a link that goes straight to the
      * place to act: ['tone' => urgent|notice|info, 'icon' => ..., 'text' => ..., 'action' => label, 'href' => url].
      *
-     * @param  \Illuminate\Support\Collection<int, AuctionSettlement>  $salesToPay
-     * @param  \Illuminate\Support\Collection<int, AuctionSettlement>  $lateBuyers
-     * @return list<array{tone: string, icon: string, text: string, action: string, href: string}>
+     * @param  Collection<int, SettlementPosition>  $positions  the winner's unpaid sales
+     * @param  Collection<int, AuctionSettlement>  $lateBuyers
+     * @param  Collection<int, \App\Models\Auction>  $resultPending  lots bid on whose result has not landed
+     * @return list<array{tone: string, icon: string, text: string, action: ?string, href: ?string}>
      */
-    private function needs(int $decisions, $salesToPay, int $outbid, int $leadingSoon, $lateBuyers, int $operatorQueue, int $owedCents): array
+    private function needs(int $decisions, $positions, int $outbid, int $leadingSoon, $lateBuyers, int $operatorQueue, $resultPending): array
     {
         $needs = [];
         $plural = fn (int $n, string $one, string $many) => $n === 1 ? $one : $many;
@@ -91,30 +99,69 @@ class DashboardController extends Controller
             ];
         }
 
-        $overdue = $salesToPay->where('status', AuctionSettlement::PAYMENT_OVERDUE);
-        $awaiting = $salesToPay->where('status', AuctionSettlement::AWAITING_PAYMENT);
+        $overdue = $positions->filter->isOverdue()->values();
+        $due = $positions->filter(fn (SettlementPosition $p) => $p->state() === SettlementPosition::DUE)->values();
+        $waiting = $positions->filter->isWaiting()->values();
 
         if ($overdue->isNotEmpty()) {
             $first = $overdue->first();
             $needs[] = [
                 'tone' => 'urgent', 'icon' => 'alert',
                 'text' => $overdue->count() === 1
-                    ? 'Payment is overdue on '.$first->auction->title.' ('.$first->amount().'). You can still pay until the seller cancels the sale.'
+                    ? $first->winnerLine($first->settlement->auction->title)
                     : 'Payment is overdue on '.$overdue->count().' sales. You can still pay until the sellers cancel them.',
                 'action' => $overdue->count() === 1 ? 'Pay now' : 'See payments',
-                'href' => $overdue->count() === 1 ? route('settlements.show', $first) : route('settlements.index'),
+                'href' => $overdue->count() === 1 ? route('settlements.show', $first->settlement) : route('settlements.index'),
             ];
         }
 
-        if ($awaiting->isNotEmpty()) {
-            $first = $awaiting->first();
+        if ($due->isNotEmpty()) {
+            $first = $due->first();
             $needs[] = [
                 'tone' => 'notice', 'icon' => 'clock',
-                'text' => $awaiting->count() === 1
-                    ? 'You won '.$first->auction->title.'. Pay '.$first->amount().($first->payment_due_at ? ' by '.Display::time($first->payment_due_at, 'D j M, H:i', true) : '').'.'
-                    : 'You owe '.\App\Models\Auction::money($owedCents / 100).' across '.$salesToPay->count().' won lots.',
-                'action' => $awaiting->count() === 1 ? 'Pay now' : 'See payments',
-                'href' => $awaiting->count() === 1 ? route('settlements.show', $first) : route('settlements.index'),
+                'text' => $due->count() === 1
+                    ? $first->winnerLine($first->settlement->auction->title)
+                    : 'You owe '.SettlementPosition::money((int) $due->sum(fn ($p) => $p->owedNowCents())).' across '.$due->count().' won lots.',
+                'action' => $due->count() === 1 ? 'Pay now' : 'See payments',
+                'href' => $due->count() === 1 ? route('settlements.show', $first->settlement) : route('settlements.index'),
+            ];
+        }
+
+        // Payment is not open: there is nothing to do, so this line has no button. It says what will be owed so it is no surprise.
+        if ($waiting->isNotEmpty()) {
+            $first = $waiting->first();
+            $needs[] = [
+                'tone' => 'info', 'icon' => 'clock',
+                'text' => $waiting->count() === 1
+                    ? 'Waiting for payment to open on '.$first->settlement->auction->title.'. You will owe '.$first->settlement->amount().' once it does.'
+                    : 'Waiting for payment to open on '.$waiting->count().' won lots. You will owe '.SettlementPosition::money((int) $waiting->sum(fn ($p) => $p->owedLaterCents())).' once it does.',
+                'action' => null, 'href' => null,
+            ];
+        }
+
+        // A lot the person bid on that has closed but has no result yet stays here until it does. Nothing to press, so they are quiet lines.
+        $settling = $resultPending->filter(fn ($a) => $a->status === 'active')->values();
+        $deciding = $resultPending->filter(fn ($a) => $a->status === 'pending_review')->values();
+
+        if ($deciding->isNotEmpty()) {
+            $needs[] = [
+                'tone' => 'info', 'icon' => 'pause',
+                'text' => $deciding->count() === 1
+                    ? 'The seller is deciding on '.$deciding->first()->title.', where you hold the top bid. Nothing to do yet.'
+                    : 'The seller is deciding on '.$deciding->count().' lots where you hold the top bid. Nothing to do yet.',
+                'action' => $deciding->count() === 1 ? 'Open lot' : 'See my bids',
+                'href' => $deciding->count() === 1 ? route('auctions.show', $deciding->first()) : auction_route('buyer.bids').'#waiting',
+            ];
+        }
+
+        if ($settling->isNotEmpty()) {
+            $needs[] = [
+                'tone' => 'info', 'icon' => 'clock',
+                'text' => $settling->count() === 1
+                    ? 'Bidding closed on '.$settling->first()->title.'. The result is being recorded and shows here within a few minutes.'
+                    : 'Bidding closed on '.$settling->count().' lots you bid on. The results are being recorded and show here within a few minutes.',
+                'action' => $settling->count() === 1 ? 'Open lot' : 'See my bids',
+                'href' => $settling->count() === 1 ? route('auctions.show', $settling->first()) : auction_route('buyer.bids').'#ended',
             ];
         }
 

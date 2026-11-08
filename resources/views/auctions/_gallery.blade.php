@@ -38,6 +38,7 @@
     <section class="lot-gallery lot-gallery--empty" aria-label="Photos of {{ $auction->title }}">
         <div class="lot-gallery__none">
             <x-ds.icon name="image" :size="32" />
+            <p class="lot-gallery__none-title">No photo yet</p>
             <p>The seller has not added photos to this lot.</p>
         </div>
     </section>

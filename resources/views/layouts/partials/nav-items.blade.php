@@ -27,6 +27,7 @@
     <x-ds.nav-item variant="row" :href="auction_route('buyer.bids')" icon="bids" :active="request()->routeIs('buyer.bids')">My bids</x-ds.nav-item>
     <x-ds.nav-item variant="row" :href="auction_route('buyer.watchlist')" icon="bookmark" :active="request()->routeIs('buyer.watchlist')">Watching</x-ds.nav-item>
     <x-ds.nav-item variant="row" :href="auction_route('buyer.won')" icon="trophy" :active="request()->routeIs('buyer.won')">Won</x-ds.nav-item>
+    <x-ds.nav-item variant="row" :href="route('seller.auctions.create')" icon="plus" :active="request()->routeIs('seller.auctions.create')">List a lot</x-ds.nav-item>
     <x-ds.nav-item variant="row" :href="route('seller.auctions.index')" icon="tag" :active="request()->routeIs('seller.auctions.*')">My lots</x-ds.nav-item>
     <x-ds.nav-item variant="row" :href="route('settlements.index')" icon="receipt" :active="request()->routeIs('settlements.*')">Payments</x-ds.nav-item>
     @if ($isOperator)

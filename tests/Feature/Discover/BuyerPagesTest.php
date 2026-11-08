@@ -33,6 +33,7 @@ class BuyerPagesTest extends TestCase
 
     public function test_my_bids_groups_lots_by_the_next_step(): void
     {
+        config(['paystack.secret_key' => 'sk_test_unit_test_key_0123456789']); // payment is open
         $me = $this->person();
         $rival = $this->person();
 
@@ -131,6 +132,7 @@ class BuyerPagesTest extends TestCase
 
     public function test_won_shows_my_wins_with_their_sale_and_the_way_to_pay(): void
     {
+        config(['paystack.secret_key' => 'sk_test_unit_test_key_0123456789']); // payment is open
         $me = $this->person();
         $other = $this->person();
         $unpaid = $this->endedLot($me, '400.00', ['title' => 'Won Unpaid']);

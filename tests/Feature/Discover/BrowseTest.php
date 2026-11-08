@@ -55,12 +55,36 @@ class BrowseTest extends TestCase
         $html = $this->actingAs($buyer)->get(route('auctions.index'))->assertOk()->getContent();
 
         foreach ([
-            'State Live' => 'Live', 'State Ending' => 'Closing soon', 'State Scheduled' => 'Scheduled', 'State Pending' => 'Awaiting seller decision',
+            'State Live' => 'Live', 'State Scheduled' => 'Scheduled', 'State Pending' => 'Awaiting seller decision',
             'State Sold' => 'Sold', 'State Unsold' => 'Not sold', 'State Cancelled' => 'Cancelled',
         ] as $title => $word) {
             $this->assertStringContainsString('>'.$word.'<', $this->cardFor($html, $title), "$title is $word");
         }
         $this->assertStringNotContainsString('State Draft', $html, 'drafts never show in browse');
+
+        // The lot inside its final hour is promoted to the Closing soon row on the plain list; its card shows under its own tab.
+        $ending = $this->actingAs($buyer)->get(route('auctions.index', ['state' => 'ending']))->assertOk()->getContent();
+        $this->assertStringContainsString('>Closing soon<', $this->cardFor($ending, 'State Ending'));
+    }
+
+    public function test_lots_in_their_final_hour_get_their_own_row_and_are_not_listed_twice(): void
+    {
+        [$buyer] = $this->everyState();
+        $html = $this->actingAs($buyer)->get(route('auctions.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('id="closing-soon-title"', $html);
+        $this->assertSame(1, substr_count($html, 'State Ending</a>'), 'the lot is in the row and not again in the grid');
+        $this->assertStringContainsString('Other lots', $html);
+
+        // A search asks for something else: no promotion, the lot is an ordinary result.
+        $search = $this->actingAs($buyer)->get(route('auctions.index', ['q' => 'State Ending']))->assertOk()->getContent();
+        $this->assertStringNotContainsString('id="closing-soon-title"', $search);
+        $this->assertStringContainsString('State Ending', $search);
+
+        // One search box on the page's own form, and the sort applies on change.
+        $this->assertSame(1, substr_count($html, 'type="search"') - substr_count($html, 'id="shell-search"'), 'the page has one search field of its own (the shell has the other, hidden by CSS from 64rem up and below)');
+        $this->assertStringContainsString('data-autosubmit', $html);
+        $this->assertStringContainsString('<noscript>', $html, 'sorting works without JavaScript through a button');
     }
 
     public function test_a_lot_the_seller_rejected_is_not_sold_even_though_it_has_a_winning_bid(): void

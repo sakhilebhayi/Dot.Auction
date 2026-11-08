@@ -10,6 +10,7 @@
 
 @media (max-width: 40rem) { .sh-page:has(.lot) .ds-pagehead__title { font-size: var(--t-xl); } .sh-page:has(.lot) .ds-pagehead__back { min-height: 2.25rem; } .lot-bid__top, .lot-bid__act { padding-inline: var(--s-4); } }
 @media (pointer: coarse) { .sh-page:has(.lot) .ds-pagehead__back { min-height: var(--hit); } }
+@media (max-width: 40rem) { .sh-page:has(.lot) .ds-pagehead__title { font-size: var(--t-xl); } .sh-page:has(.lot) .ds-pagehead__back { min-height: var(--hit); } .lot-bid__top, .lot-bid__act { padding-inline: var(--s-4); } }
 .lot-wrap { container-type: inline-size; container-name: lot; }
 .lot { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-6); align-items: start; }
 .lot__side, .lot-bid { display: contents; }
@@ -31,8 +32,11 @@
 /* ---------- The bidding column ---------- */
 .lot-bid__main { display: grid; min-width: 0; background: var(--c-surface); border: 1px solid var(--c-line-strong); }
 .lot-bid__top { display: grid; gap: var(--s-3); padding: var(--s-4) var(--s-5); }
-.lot-bid__tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
-.lot-bid__tags .lot-watch { margin-left: auto; }
+.lot-bid__tags { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); }
+.lot-bid__chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); min-width: 0; }
+.lot-bid__tags .lot-watch { flex: none; margin-left: auto; white-space: nowrap; }
+.lot-bid__tags .lot-watch .ds-btn { white-space: nowrap; }
+.ds-confirm__lot { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
 .lot-price { display: grid; gap: 2px; }
 .lot-price__label { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--s-3); color: var(--c-ink-3); font-size: var(--t-sm); font-weight: 550; }
 .lot-price__amount { line-height: 1; }
@@ -116,7 +120,10 @@
 .lot-gallery__thumbs button[aria-current="true"] { opacity: 1; outline: 2px solid var(--c-ink); outline-offset: 1px; }
 .lot-gallery__thumbs img { display: block; width: 100%; height: 100%; object-fit: cover; }
 @media (pointer: coarse) { .lot-gallery__thumbs button { width: var(--hit); height: var(--hit); } }
-.lot-gallery__none { display: grid; justify-items: center; gap: var(--s-2); padding: var(--s-12) var(--s-6); border: 1px dashed var(--c-line-strong); color: var(--c-ink-2); text-align: center; }
+.lot-gallery__none { display: grid; align-content: center; justify-items: center; gap: var(--s-2); aspect-ratio: 4 / 3; padding: var(--s-6); background: var(--c-sunken); border: 1px solid var(--c-line); color: var(--c-ink-2); text-align: center; position: relative; }
+.lot-gallery__none::before { content: ""; position: absolute; inset: var(--s-4); border: 1px dashed var(--c-line-strong); pointer-events: none; }
+.lot-gallery__none p { margin: 0; }
+.lot-gallery__none-title { font-weight: 650; font-size: var(--t-md); color: var(--c-ink); }
 
 /* ---------- Facts ---------- */
 .lot-details { display: grid; gap: var(--s-8); }

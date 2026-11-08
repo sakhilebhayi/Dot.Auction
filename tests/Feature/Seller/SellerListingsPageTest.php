@@ -183,10 +183,11 @@ class SellerListingsPageTest extends TestCase
 
     public function test_a_sold_lot_links_to_its_payment_and_says_where_the_payment_is(): void
     {
+        $this->disablePaystack();
         [$settlement, , $seller] = $this->settlement(50000);
         $settlement->auction->update(['title' => 'Sold Sideboard']);
 
-        $html = $this->actingAs($seller)->get(route('seller.auctions.index'))->assertOk()->assertSee('Sold Sideboard')->assertSee('Awaiting payment')->getContent();
+        $html = $this->actingAs($seller)->get(route('seller.auctions.index'))->assertOk()->assertSee('Sold Sideboard')->assertSee('Waiting for payment to open')->getContent();
 
         $this->assertStringContainsString(route('settlements.show', $settlement), $html);
         $this->assertStringContainsString('View payment', $html);

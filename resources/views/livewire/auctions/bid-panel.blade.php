@@ -30,9 +30,11 @@
         {{-- Where the price is and how long is left --}}
         <div class="lot-bid__top">
             <div class="lot-bid__tags">
-                <x-ds.status :state="$o->statusState()" />
-                @if ($live && $extensions > 0)<x-ds.status state="extended" :count="$extensions" />@endif
-                @if (! $o->isSeller && in_array($state, ['scheduled', 'live', 'ending', 'closing', 'pending'], true))
+                <div class="lot-bid__chips">
+                    <x-ds.status :state="$o->statusState()" />
+                    @if ($live && $extensions > 0)<x-ds.status state="extended" :count="$extensions" />@endif
+                </div>
+                @if (! $o->isSeller && in_array($state, ['scheduled', 'live', 'ending'], true))
                     <livewire:auctions.watchlist-button :auction="$a" :key="'watch-'.$a->id" />
                 @endif
             </div>
@@ -136,7 +138,10 @@
                 </div>
             @endif
 
-            @if ($purchased || ($o->state === 'sold' && $o->role === 'winner' && $o->settlement))
+            {{-- A cancelled sale is told once, in the box above. It has no payment to open, so no payment panel and no payment link: only the record. --}}
+            @if ($o->saleCancelled && $o->settlement && in_array($o->role, ['winner', 'seller'], true))
+                <p class="lot-note"><a class="lot-link" href="{{ route('settlements.show', $o->settlement) }}">See the record of this sale</a></p>
+            @elseif ($purchased || ($o->state === 'sold' && $o->role === 'winner' && $o->settlement))
                 <p class="lot-note">
                     @if ($o->settlement)
                         <a class="lot-link" href="{{ route('settlements.show', $o->settlement) }}">Open the payment page for this sale</a>
@@ -147,7 +152,7 @@
             @endif
         </div>
 
-        @if ($o->settlement && in_array($o->role, ['winner', 'seller'], true))
+        @if ($o->settlement && ! $o->saleCancelled && in_array($o->role, ['winner', 'seller'], true))
             @include('auctions._settlement-panel', ['settlement' => $o->settlement])
         @endif
     </section>
@@ -200,6 +205,7 @@
     @if ($o->canBid)
         <x-ds.dialog :id="$confirmId" :title="'Place a bid of '.($confirmAmount !== '' ? $confirmAmount : $min).'?'" size="sm" wire:ignore.self>
             <div class="ds-confirm">
+                <p class="ds-confirm__lot">On {{ $a->title }}</p>
                 <p class="ds-confirm__body">A bid is binding and cannot be withdrawn. If it is the highest when the lot closes, you buy the lot at this price.</p>
                 @if ($inLateWindow)<p class="ds-confirm__body">This lot closes soon, so your bid adds {{ $extra }} {{ $extra === 1 ? 'minute' : 'minutes' }} to the clock.</p>@endif
                 <div class="ds-dialog__foot">
@@ -217,8 +223,9 @@
     @if ($o->canBuyNow)
         <x-ds.dialog :id="$buyNowId" :title="'Buy now for '.Auction::money($a->buy_now_price).'?'" size="sm" wire:ignore.self>
             <div class="ds-confirm">
+                <p class="ds-confirm__lot">{{ $a->title }}</p>
                 <p class="ds-confirm__body">Bidding ends straight away and you win this lot at {{ Auction::money($a->buy_now_price) }}. Like a bid, it is binding.</p>
-                <p class="ds-confirm__body">After you confirm, this page shows the payment step for the sale.</p>
+                <p class="ds-confirm__body">After you confirm, this page shows where payment stands for the sale.</p>
                 <div class="ds-dialog__foot">
                     <x-ds.button variant="quiet" data-dialog-close>Keep bidding</x-ds.button>
                     <x-ds.button autofocus wire:click="buyNow" wire:loading.attr="disabled" wire:target="buyNow">

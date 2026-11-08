@@ -36,7 +36,7 @@
     }
     $currentLabel = match (true) {
         $state === 'sold' => 'Sold for',
-        in_array($state, ['unsold', 'pending'], true) && $hasBids => 'Highest bid',
+        in_array($state, ['unsold', 'pending', 'closing'], true) && $hasBids => 'Highest bid',
         $hasBids => 'Current bid',
         default => 'Starting bid',
     };
@@ -58,18 +58,20 @@
             @endphp
             <li class="ds-rung ds-rung--{{ $r['kind'] }} @if (! empty($r['you'])) is-you @endif">
                 @if ($press)
+                    {{-- Its name is what it shows, "Bid R1,300.00" or "Next bid R1,300.00". Pressing fills the bid field; nothing is sent until the form is. --}}
                     <button type="button" class="ds-rung__row" data-ds-rung="{{ $amount }}">
-                        <span class="sr-only">Set my bid to</span>
-                        <span class="ds-rung__label">{{ $r['label'] ?? 'Bid' }}</span>
+                        <span class="ds-rung__label">{{ $r['kind'] === 'next' ? 'Next bid' : 'Bid' }}</span>
                         <x-ds.money :amount="$amount" :size="$r['kind'] === 'next' ? 'lg' : 'md'" />
+                        <x-ds.icon name="arrow-right" :size="16" class="ds-rung__go" />
                     </button>
                 @else
                     <div class="ds-rung__row">
-                        <span class="ds-rung__label">{{ $r['label'] }}@if (! empty($r['you']) && $r['kind'] === 'current')<span class="sr-only">, you lead</span>@endif</span>
+                        <span class="ds-rung__label">{{ $r['label'] ?? 'Valid bid' }}@if (! empty($r['you']) && $r['kind'] === 'current')<span class="sr-only">, you lead</span>@endif</span>
+                        {{-- The marker sits inside the row, between the label and the figure, so it never crosses the row's border. --}}
+                        @if (! empty($r['you']) && $r['kind'] === 'current')<span class="ds-rung__you" aria-hidden="true">You</span>@endif
                         <x-ds.money :amount="$amount" :size="$r['kind'] === 'current' ? 'xl' : 'md'" :muted="$r['kind'] === 'start'" />
                     </div>
                 @endif
-                @if (! empty($r['you']))<span class="ds-rung__you">You</span>@endif
             </li>
         @endforeach
     </ol>

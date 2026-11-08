@@ -12,6 +12,7 @@ use App\Services\Auctions\ListingManager;
 use App\Services\Auctions\ListingRejected;
 use App\Services\DisplayTime;
 use App\Services\Paystack\PaystackConfig;
+use App\Support\PageRange;
 use App\Support\SellerLots;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,6 +49,7 @@ class ListingController extends Controller
             $now,
             $endingSoon,
         )->paginate(15)->withQueryString();
+        PageRange::within($auctions);
 
         $ids = $auctions->getCollection()->modelKeys();
 

@@ -168,7 +168,7 @@ class LotPageOutcomeTest extends TestCase
         $a = $this->settled();
         $not = [...self::LIVE_ONLY, 'You are leading', 'Reserve not met'];
 
-        $this->expectPage($a, $this->leader, ['Sold', 'Sold for', 'You won this lot', 'You won it for R260.00', 'Payment and the next steps are below', 'Payment pending'], $not);
+        $this->expectPage($a, $this->leader, ['Sold', 'Sold for', 'You won this lot', 'You won it for R260.00', 'Where payment stands is below', 'Payment pending'], $not);
         $this->expectPage($a, $this->other, ['You did not win this lot', 'It sold for R260.00', 'Your highest bid was R240.00'], [...$not, 'You won this lot', 'Payment pending']);
         $this->expectPage($a, $this->seller, ['Sold for R260.00 to', 'Payment is tracked below', 'Payment pending'], $not);
         $this->expectPage($a, $this->stranger, ['Sold for R260.00', 'after 2 bids'], [...$not, 'You won', 'Payment pending']);
@@ -267,6 +267,7 @@ class LotPageOutcomeTest extends TestCase
         $this->assertSame(1, substr_count($html, '<h1'));
         $this->assertMatchesRegularExpression('/<h1[^>]*>\s*Signed guitar\s*<\/h1>/', $html);
         $this->assertStringContainsString('The seller has not added photos to this lot.', $html);
+        $this->assertStringContainsString('No photo yet', $html);
         $lot = substr($html, (int) strpos($html, 'class="lot-wrap"'), (int) strpos($html, '</main>') - (int) strpos($html, 'class="lot-wrap"'));
         // The only inline style in the lot markup is the rail's custom property (--p, --o): data for the kit's closing rail, not decoration.
         $this->assertDoesNotMatchRegularExpression('/style="(?!--[po]: )/', $lot);
