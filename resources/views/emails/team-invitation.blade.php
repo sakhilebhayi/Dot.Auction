@@ -1,5 +1,6 @@
 @component('mail::message')
-{{ __('You have been invited to join the :team team!', ['team' => $invitation->team->name]) }}
+{{-- The team name is typed by a stranger and this mail is sent in this app's name: its Markdown characters are escaped so a name such as "[Verify your account](https://...)" stays words and cannot become a link. --}}
+{{ __('You have been invited to join the :team team!', ['team' => preg_replace('/([\\\\`*_{}\[\]()<>#+\-.!|~:@])/', '\\\\$1', (string) $invitation->team->name)]) }}
 
 @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::registration()))
 {{ __('If you do not have an account, you may create one by clicking the button below. After creating an account, you may click the invitation acceptance button in this email to accept the team invitation:') }}

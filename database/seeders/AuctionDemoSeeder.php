@@ -509,10 +509,34 @@ class AuctionDemoSeeder extends Seeder
         DB::table('auctions')->where('id', $auction->id)->update(['created_at' => $at, 'updated_at' => $at]);
     }
 
+    private function unlockBidHistory(callable $edit): void
+    {
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'pgsql') {
+            DB::unprepared('ALTER TABLE bids DISABLE TRIGGER bids_append_only_update');
+        } elseif ($driver === 'sqlite') {
+            DB::unprepared('DROP TRIGGER IF EXISTS bids_append_only_update');
+        }
+
+        try {
+            $edit();
+        } finally {
+            if ($driver === 'pgsql') {
+                DB::unprepared('ALTER TABLE bids ENABLE TRIGGER bids_append_only_update');
+            } elseif ($driver === 'sqlite') {
+                (require database_path('migrations/2026_11_09_000001_make_bids_append_only.php'))->up();
+            }
+        }
+    }
+
     private function backdateBid(Bid $bid, int $minutesAgo): void
     {
         $at = now()->subMinutes($minutesAgo);
-        DB::table('bids')->where('id', $bid->id)->update(['created_at' => $at, 'updated_at' => $at]);
+
+        // The bid ledger refuses edits to created_at (migration 2026_11_09_000001). The demo world back-dates its history, so
+        // for these statements, and only in this local-only seeder, the update guard is lifted and put back.
+        $this->unlockBidHistory(fn () => DB::table('bids')->where('id', $bid->id)->update(['created_at' => $at, 'updated_at' => $at]));
     }
 
     // ───────────────────────────── settlements ─────────────────────────────

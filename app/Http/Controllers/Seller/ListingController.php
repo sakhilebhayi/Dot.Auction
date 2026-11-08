@@ -16,6 +16,7 @@ use App\Support\SellerLots;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
@@ -162,11 +163,18 @@ class ListingController extends Controller
             $auction->load('images');
         }
 
+        $categories = AuctionCategory::orderBy('name')->pluck('name', 'id')->all();
+
+        if ($categories === []) {
+            // A listing cannot be saved without a category. Make the cause findable instead of leaving an empty list.
+            Log::error('A seller opened the listing form but there are no auction categories. Run: php artisan auction:seed-categories');
+        }
+
         return view('seller.auctions.form', [
             'auction' => $auction,
             'maxImages' => (int) config('auction.images.max_per_auction', 6),
             'termsLocked' => $auction->exists && $auction->hasBids(),
-            'categories' => AuctionCategory::orderBy('name')->pluck('name', 'id')->all(),
+            'categories' => $categories,
             'values' => [
                 'title' => $auction->title,
                 'description' => $auction->description,

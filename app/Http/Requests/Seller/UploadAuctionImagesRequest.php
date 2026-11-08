@@ -6,12 +6,21 @@ use App\Rules\DecodableImage;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class UploadAuctionImagesRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('auction'));
+        // Gate::inspect keeps the policy's own answer: a draft that is not the person's own is a 404, not a 403.
+        $response = Gate::forUser($this->user())->inspect('update', $this->route('auction'));
+
+        if ($response->denied() && $response->status() === 404) {
+            throw new NotFoundHttpException;
+        }
+
+        return $response->allowed();
     }
 
     /**

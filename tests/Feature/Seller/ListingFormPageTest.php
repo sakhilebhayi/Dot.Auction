@@ -183,8 +183,8 @@ class ListingFormPageTest extends TestCase
             ->assertStatus(422)->assertJsonPath('errors.images.0', 'An auction can have at most 6 photos. This one has 2, so you can add 4 more.');
         $this->assertSame(2, $auction->images()->count());
 
-        // A stranger is refused the same way as before.
-        $this->actingAs($this->seller())->postJson(route('seller.auctions.images.store', $auction), ['images' => [UploadedFile::fake()->image('x.jpg', 40, 30)]])->assertForbidden();
+        // A stranger is refused, and a draft that is not theirs does not exist as far as they can tell (404, not 403).
+        $this->actingAs($this->seller())->postJson(route('seller.auctions.images.store', $auction), ['images' => [UploadedFile::fake()->image('x.jpg', 40, 30)]])->assertNotFound();
     }
 
     public function test_the_plain_form_post_still_redirects_with_a_message(): void

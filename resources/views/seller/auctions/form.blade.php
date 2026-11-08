@@ -158,7 +158,7 @@
                             @foreach ($auction->images as $image)
                                 <li class="sl-grid__item">
                                     <figure>
-                                        <img src="{{ $image->url() }}" width="{{ $image->width }}" height="{{ $image->height }}" loading="lazy" decoding="async"
+                                        <img src="{{ $image->url('thumb') }}" width="{{ $image->width }}" height="{{ $image->height }}" loading="lazy" decoding="async"
                                              alt="{{ $auction->title }}, photo {{ $loop->iteration }} of {{ $loop->count }}">
                                         @if ($loop->first)<figcaption>Cover</figcaption>@endif
                                     </figure>

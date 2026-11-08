@@ -30,9 +30,10 @@ class BidHistoryOrderTest extends TestCase
                 'bidder_id' => User::factory()->create()->id,
                 'amount' => $amount,
                 'is_winning' => false,
+                'created_at' => $second,
+                'updated_at' => $second,
             ]);
         }
-        Bid::query()->update(['created_at' => $second, 'updated_at' => $second]);
 
         $this->assertSame(
             array_reverse(array_map(fn (Bid $b) => $b->id, $ids)),
@@ -46,9 +47,8 @@ class BidHistoryOrderTest extends TestCase
         $second = now()->startOfSecond();
 
         foreach ([210, 220, 230] as $amount) {
-            Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => User::factory()->create()->id, 'amount' => $amount, 'is_winning' => false]);
+            Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => User::factory()->create()->id, 'amount' => $amount, 'is_winning' => false, 'created_at' => $second, 'updated_at' => $second]);
         }
-        Bid::query()->update(['created_at' => $second, 'updated_at' => $second]);
 
         $viewer = User::factory()->withPersonalTeam()->create();
 

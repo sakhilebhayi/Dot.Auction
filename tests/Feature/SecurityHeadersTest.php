@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
-/** Baseline browser protections are on every response; the CSP only reports; a route's own header is kept. */
+/** Baseline browser protections are on every response; the CSP is enforced (report-only on request); a route's own header is kept. */
 class SecurityHeadersTest extends TestCase
 {
     public function test_every_response_carries_the_enforced_baseline_headers(): void
@@ -27,12 +27,12 @@ class SecurityHeadersTest extends TestCase
         $this->get('/does-not-exist')->assertNotFound()->assertHeader('X-Frame-Options', 'SAMEORIGIN');
     }
 
-    public function test_the_csp_is_report_only_and_reports_to_the_csp_report_endpoint(): void
+    public function test_the_csp_is_enforced_by_default_and_reports_to_the_csp_report_endpoint(): void
     {
         $r = $this->get('/');
 
-        $policy = (string) $r->headers->get('Content-Security-Policy-Report-Only');
-        $this->assertFalse($r->headers->has('Content-Security-Policy'), 'nothing is enforced yet');
+        $policy = (string) $r->headers->get('Content-Security-Policy');
+        $this->assertFalse($r->headers->has('Content-Security-Policy-Report-Only'), 'enforced, not just reported');
         $this->assertStringContainsString("default-src 'self'", $policy);
         $this->assertStringContainsString('report-uri /csp-report', $policy);
         $this->assertStringContainsString("frame-ancestors 'self'", $policy);
@@ -48,22 +48,41 @@ class SecurityHeadersTest extends TestCase
         $this->assertStringContainsString("style-src-attr 'unsafe-inline'", $policy);
         $this->assertStringContainsString("font-src 'self'", $policy);
         $this->assertStringNotContainsString('paystack', $policy, 'Paystack is a redirect to its hosted page, so no script or frame allowance is needed');
-        // The switch turns the same policy into an enforced one, with no deploy.
-        config(['security.csp_report_only' => false]);
-        $enforced = $this->get('/');
-        $this->assertStringContainsString("default-src 'self'", (string) $enforced->headers->get('Content-Security-Policy'));
-        $this->assertFalse($enforced->headers->has('Content-Security-Policy-Report-Only'));
+        // The switch turns the same policy into a report-only one, with no deploy.
+        config(['security.csp_report_only' => true]);
+        $reporting = $this->get('/');
+        $this->assertStringContainsString("default-src 'self'", (string) $reporting->headers->get('Content-Security-Policy-Report-Only'));
+        $this->assertFalse($reporting->headers->has('Content-Security-Policy'));
     }
 
     public function test_the_nonce_in_the_policy_is_the_one_the_page_uses_and_changes_every_request(): void
     {
         $first = $this->get('/');
-        preg_match("/'nonce-([^']+)'/", (string) $first->headers->get('Content-Security-Policy-Report-Only'), $m1);
+        preg_match("/'nonce-([^']+)'/", (string) $first->headers->get('Content-Security-Policy'), $m1);
         $first->assertSee('nonce="'.$m1[1].'"', false);
 
         $second = $this->get('/');
-        preg_match("/'nonce-([^']+)'/", (string) $second->headers->get('Content-Security-Policy-Report-Only'), $m2);
+        preg_match("/'nonce-([^']+)'/", (string) $second->headers->get('Content-Security-Policy'), $m2);
         $this->assertNotSame($m1[1], $m2[1]);
+    }
+
+    public function test_connections_are_limited_to_this_site_and_the_named_realtime_host(): void
+    {
+        $policy = (string) $this->get('/')->headers->get('Content-Security-Policy');
+        preg_match('/connect-src ([^;]+)/', $policy, $m);
+        $this->assertSame("'self'", trim($m[1]), 'no wildcard https: or wss: allowance by default');
+
+        config([
+            'auction.realtime.enabled' => true, 'broadcasting.default' => 'reverb', 'broadcasting.connections.reverb.key' => 'k',
+            'security.reverb_public' => ['host' => 'ws.example.test', 'port' => 443, 'scheme' => 'https'],
+            'security.csp_connect_src' => ['https://api.example.test'],
+        ]);
+        preg_match('/connect-src ([^;]+)/', (string) $this->get('/')->headers->get('Content-Security-Policy'), $m);
+        $this->assertSame("'self' wss://ws.example.test:443 https://api.example.test", trim($m[1]));
+
+        config(['auction.realtime.enabled' => false]);
+        preg_match('/connect-src ([^;]+)/', (string) $this->get('/')->headers->get('Content-Security-Policy'), $m);
+        $this->assertStringNotContainsString('ws.example.test', $m[1], 'no socket is allowed when real-time is off');
     }
 
     public function test_hsts_is_sent_on_https_only_and_can_be_switched_off(): void

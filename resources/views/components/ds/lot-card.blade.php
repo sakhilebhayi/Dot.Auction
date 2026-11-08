@@ -29,7 +29,7 @@
 <article {{ $attributes->class(['ds-lot', 'ds-lot--'.$state]) }}>
     <div class="ds-lot__media">
         @if ($image)
-            <img src="{{ Display::route('auctions.images.show', [$auction, $image]) }}" alt="" loading="lazy" decoding="async" width="640" height="480">
+            <img src="{{ $auction->imageUrl($image, 'thumb') }}" alt="" loading="lazy" decoding="async" width="640" height="480">
         @else
             <span class="ds-lot__noimg"><x-ds.icon name="gavel" :size="28" /><span>No photo yet</span></span>
         @endif
