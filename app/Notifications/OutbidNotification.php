@@ -86,7 +86,7 @@ class OutbidNotification extends Notification
         return [
             'type' => 'outbid',
             'title' => "You've been outbid",
-            'message' => "Someone placed a higher bid on \"{$auction->title}\" — new price ".Auction::money($auction->current_price).'.',
+            'message' => "Someone bid higher on \"{$auction->title}\". The price is now ".Auction::money($auction->current_price).' and the next valid bid is '.Auction::money($auction->minimumBidCents() / 100).'.',
             'auction_id' => $auction->id,
             'url' => route('auctions.show', $auction),
         ];

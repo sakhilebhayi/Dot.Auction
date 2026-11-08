@@ -61,7 +61,7 @@ class AuctionEndingSoonNotification extends Notification
         return [
             'type' => 'auction_ending_soon',
             'title' => 'Auction ending soon',
-            'message' => "\"{$this->auction->title}\" ends {$this->auction->ends_at->diffForHumans()}.",
+            'message' => "\"{$this->auction->title}\" closes at ".DisplayTime::format($this->auction->ends_at, 'D j M, H:i', true).'.',
             'auction_id' => $this->auction->id,
             'url' => route('auctions.show', $this->auction),
         ];
