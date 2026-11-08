@@ -65,7 +65,9 @@ class Auction extends Model
         });
 
         static::deleted(function (Auction $auction): void {
-            $paths = $auction->imagePathsToRemove;
+            $paths = collect($auction->imagePathsToRemove)
+                ->flatMap(fn (string $path) => [$path, ...\App\Services\Auctions\AuctionImageVariants::allPaths($path)])
+                ->all();
 
             if ($paths !== []) {
                 DB::afterCommit(fn () => Storage::disk(AuctionImage::DISK)->delete($paths));
@@ -120,6 +122,16 @@ class Auction extends Model
     public function images(): HasMany
     {
         return $this->hasMany(AuctionImage::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * The address of one of this auction's photos at a given size: 'thumb' (480 px, lists and cards), 'medium' (1200 px,
+     * the gallery's main picture) or 'large' (2000 px, the default). Views should use this rather than building the route,
+     * so a card never downloads a full-size photo. The route applies the auction's visibility rule on every request.
+     */
+    public function imageUrl(AuctionImage $image, string $size = 'large'): string
+    {
+        return $image->url($size);
     }
 
     public function watchlists(): HasMany

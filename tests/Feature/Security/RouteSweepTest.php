@@ -326,7 +326,7 @@ class RouteSweepTest extends TestCase
         $this->as('stranger');
         $r = $this->get(route('auctions.images.show', [$this->lot, $this->lotImage]))->assertOk();
         $this->assertSame('nosniff', $r->headers->get('X-Content-Type-Options'));
-        $this->assertSame('image/jpeg', $r->headers->get('Content-Type'));
+        $this->assertSame(\App\Services\Auctions\AuctionImageVariants::format()[1], $r->headers->get('Content-Type'));
         $this->assertStringStartsWith('inline', (string) $r->headers->get('Content-Disposition'));
         $this->assertStringContainsString('private', (string) $r->headers->get('Cache-Control'));
     }

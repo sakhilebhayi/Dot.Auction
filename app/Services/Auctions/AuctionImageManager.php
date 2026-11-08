@@ -7,6 +7,7 @@ use App\Models\AuctionImage;
 use App\Rules\DecodableImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -32,9 +33,10 @@ class AuctionImageManager
     {
         $disk = Storage::disk(AuctionImage::DISK);
         $written = [];
+        $variants = app(AuctionImageVariants::class);
 
         try {
-            return DB::transaction(function () use ($auction, $files, $disk, &$written) {
+            $added = DB::transaction(function () use ($auction, $files, $disk, &$written) {
                 $id = $auction instanceof Auction ? $auction->getKey() : $auction;
                 $locked = Auction::query()->lockForUpdate()->find($id)
                     ?? throw new ListingRejected('This auction no longer exists.');
@@ -81,6 +83,18 @@ class AuctionImageManager
 
                 return $created;
             });
+
+            // The smaller copies, once the rows are committed. A failure here never fails the upload: the copy is made
+            // the first time somebody asks for it (AuctionImageVariants::ensure).
+            foreach ($added as $image) {
+                try {
+                    $variants->generate($image);
+                } catch (\Throwable $e) {
+                    Log::warning('Could not make the smaller copies of a new listing photo.', ['image_id' => $image->getKey(), 'error' => class_basename($e).': '.$e->getMessage()]);
+                }
+            }
+
+            return $added;
         } catch (\Throwable $e) {
             if ($written !== []) {
                 $disk->delete($written);

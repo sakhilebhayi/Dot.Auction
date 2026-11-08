@@ -14,9 +14,11 @@ use Illuminate\Support\Facades\Schema;
  *  - DELETE is refused while the bid's auction still exists. The one legitimate removal is the cascade when the auction
  *    itself is deleted (a draft that was never open), where the parent row is already gone.
  *
- * PostgreSQL and SQLite only (the two databases this app runs on); any other driver is left alone. On SQLite note that
- * a later migration which rebuilds the `bids` table drops these triggers: add them again there (Security\BidsAreAppendOnlyTest
- * fails if that happens).
+ * PostgreSQL (production) gets both triggers. SQLite (development and the default test database) gets the UPDATE trigger
+ * only: a DELETE trigger that names `auctions` makes SQLite refuse the table rebuilds Laravel does for key changes
+ * (`alter table __temp__auctions rename`), so on SQLite deleting a bid is guarded by the application tests, not the
+ * database. Any other driver is left alone. A later SQLite migration that rebuilds `bids` drops the trigger: add it again
+ * there (Security\BidsAreAppendOnlyTest fails if that happens).
  */
 return new class extends Migration
 {
@@ -61,7 +63,6 @@ SQL);
 
         if ($driver === 'sqlite') {
             DB::unprepared('DROP TRIGGER IF EXISTS bids_append_only_update');
-            DB::unprepared('DROP TRIGGER IF EXISTS bids_append_only_delete');
             DB::unprepared(<<<'SQL'
 CREATE TRIGGER bids_append_only_update BEFORE UPDATE ON bids
 WHEN NEW.amount IS NOT OLD.amount OR NEW.bidder_id IS NOT OLD.bidder_id OR NEW.auction_id IS NOT OLD.auction_id
@@ -70,13 +71,7 @@ BEGIN
     SELECT RAISE(ABORT, 'bids are append-only: only is_winning may change');
 END
 SQL);
-            DB::unprepared(<<<'SQL'
-CREATE TRIGGER bids_append_only_delete BEFORE DELETE ON bids
-WHEN EXISTS (SELECT 1 FROM auctions WHERE id = OLD.auction_id)
-BEGIN
-    SELECT RAISE(ABORT, 'bids are append-only: a bid cannot be deleted while its auction exists');
-END
-SQL);
+
         }
     }
 

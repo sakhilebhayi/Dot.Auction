@@ -44,7 +44,7 @@
                 <td class="sl-lot">
                     <span class="sl-thumb">
                         @if ($cover)
-                            <img src="{{ route('auctions.images.show', [$row, $cover]) }}" alt="" width="64" height="64" loading="lazy" decoding="async">
+                            <img src="{{ $row->imageUrl($cover, 'thumb') }}" alt="" width="64" height="64" loading="lazy" decoding="async">
                         @else
                             <x-ds.icon name="image" :size="22" />
                         @endif

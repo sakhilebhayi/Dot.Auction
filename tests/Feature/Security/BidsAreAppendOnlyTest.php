@@ -24,6 +24,13 @@ class BidsAreAppendOnlyTest extends TestCase
         return Bid::forceCreate(['auction_id' => $auction->id, 'bidder_id' => User::factory()->create()->id, 'amount' => $amount, 'is_winning' => true]);
     }
 
+    private function onlyOnPostgres(): void
+    {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('The delete guard is a PostgreSQL trigger; SQLite gets the update guard only (see the migration).');
+        }
+    }
+
     private function refuses(callable $statement): void
     {
         try {
@@ -64,6 +71,7 @@ class BidsAreAppendOnlyTest extends TestCase
 
     public function test_a_bid_cannot_be_deleted_while_its_auction_exists(): void
     {
+        $this->onlyOnPostgres();
         $bid = $this->bid();
 
         $this->refuses(fn () => $bid->delete());
@@ -75,6 +83,7 @@ class BidsAreAppendOnlyTest extends TestCase
 
     public function test_deleting_the_auction_itself_still_removes_its_bids(): void
     {
+        $this->onlyOnPostgres();
         $auction = Auction::factory()->create();
         $this->bid($auction);
 

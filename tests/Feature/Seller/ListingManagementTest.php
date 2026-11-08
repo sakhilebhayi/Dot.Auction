@@ -427,12 +427,13 @@ class ListingManagementTest extends TestCase
         $stranger = $this->seller();
         $auction = Auction::factory()->draft()->create(['seller_id' => $owner->id]);
 
+        // A draft is the owner's alone: to anyone else it does not exist (404), so ids cannot be counted by trying them.
         $this->actingAs($stranger);
-        $this->get(route('seller.auctions.edit', $auction))->assertForbidden();
-        $this->put(route('seller.auctions.update', $auction), $this->payload())->assertForbidden();
-        $this->post(route('seller.auctions.publish', $auction))->assertForbidden();
-        $this->post(route('seller.auctions.cancel', $auction))->assertForbidden();
-        $this->delete(route('seller.auctions.destroy', $auction))->assertForbidden();
+        $this->get(route('seller.auctions.edit', $auction))->assertNotFound();
+        $this->put(route('seller.auctions.update', $auction), $this->payload())->assertNotFound();
+        $this->post(route('seller.auctions.publish', $auction))->assertNotFound();
+        $this->post(route('seller.auctions.cancel', $auction))->assertNotFound();
+        $this->delete(route('seller.auctions.destroy', $auction))->assertNotFound();
 
         $this->assertSame('draft', $auction->fresh()->status);
         $this->assertNotNull(Auction::find($auction->id));
