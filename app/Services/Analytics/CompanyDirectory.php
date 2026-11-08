@@ -27,7 +27,9 @@ class CompanyDirectory
         $ids = array_values(array_unique(array_map('intval', $userIds)));
 
         foreach (array_chunk($ids, 500) as $chunk) {
-            $users = User::query()->whereIn('id', $chunk)->get(['id', 'current_team_id']);
+            // Ordered: without it PostgreSQL returns rows in heap order, which changes after an UPDATE, so the member lists
+            // (and a test that compares them) came back in a different order from run to run.
+            $users = User::query()->whereIn('id', $chunk)->orderBy('id')->get(['id', 'current_team_id']);
 
             $currentUuids = Team::query()
                 ->whereIn('id', $users->pluck('current_team_id')->filter()->unique()->values())
