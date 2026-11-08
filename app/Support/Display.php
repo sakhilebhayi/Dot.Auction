@@ -108,7 +108,8 @@ final class Display
     }
 
     /**
-     * The lot state used by <x-ds.status>: draft | cancelled | pending | scheduled | ending | live | sold | unsold.
+     * The lot state used by <x-ds.status>: draft | cancelled | pending | scheduled | ending | live | closing | sold | unsold.
+     * "closing" is a lot whose time is up but whose result is not recorded yet; it is neither sold nor unsold until the settler runs.
      * "pending" is a lot that ended below its reserve and waits for the seller (status pending_review).
      * "ending" is a live lot inside config auction.ending_soon_window_minutes.
      */
@@ -133,7 +134,7 @@ final class Display
             return 'scheduled';
         }
         if ($status === 'active' && $auction->ends_at->isPast()) {
-            return 'unsold'; // closed, the settle job has not run yet; shown as ended rather than live
+            return 'closing'; // closed by the clock, the settle job has not run yet: no result is stated until it has
         }
         if ($auction->ends_at->lte(now()->addMinutes((int) config('auction.ending_soon_window_minutes', 60)))) {
             return 'ending';
@@ -155,6 +156,7 @@ final class Display
             'ending' => ['word' => 'Closing soon', 'long' => null, 'icon' => 'hourglass', 'tone' => 'urgent'],
             'scheduled' => ['word' => 'Scheduled', 'long' => 'Not open yet', 'icon' => 'calendar', 'tone' => 'scheduled'],
             'sold' => ['word' => 'Sold', 'long' => 'Sold, the hammer has fallen', 'icon' => 'gavel', 'tone' => 'ink'],
+            'closing' => ['word' => 'Closed, result pending', 'long' => 'Closed, the result is being recorded', 'icon' => 'clock', 'tone' => 'muted'],
             'unsold' => ['word' => 'Not sold', 'long' => 'Ended without a sale', 'icon' => 'no-sale', 'tone' => 'muted'],
             'pending' => ['word' => 'Awaiting seller decision', 'long' => 'Ended below the reserve, the seller is deciding', 'icon' => 'pause', 'tone' => 'notice'],
             'cancelled' => ['word' => 'Cancelled', 'long' => null, 'icon' => 'ban', 'tone' => 'muted'],

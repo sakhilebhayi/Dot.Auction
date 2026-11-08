@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auctions;
 use App\Http\Controllers\Controller;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
+use App\Notifications\OutbidNotification;
 use App\Services\Auctions\LotBrowser;
 use App\Support\PageRange;
 use Illuminate\Http\Request;
@@ -87,9 +88,14 @@ class AuctionController extends Controller
      * AuctionPolicy. Reserve price is never passed to the view — only the
      * reserveMet() boolean — so the Blade template has no way to leak it.
      */
-    public function show(Auction $auction): View
+    public function show(Request $request, Auction $auction): View
     {
         Gate::authorize('view', $auction);
+
+        // Having opened the lot, an unread "you were outbid" notice about it has been answered.
+        if ($request->user() !== null) {
+            OutbidNotification::markReadFor($request->user(), $auction->id);
+        }
 
         $auction->load(['category', 'seller', 'items', 'images']);
 

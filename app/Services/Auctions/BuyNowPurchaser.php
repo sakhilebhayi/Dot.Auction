@@ -100,7 +100,7 @@ class BuyNowPurchaser
                 event(new BidPlaced($bid));
 
                 if ($previousBidderId !== null && $previousBidderId !== $bid->bidder_id) {
-                    User::find($previousBidderId)?->notify(new OutbidNotification($bid));
+                    User::find($previousBidderId)?->notify(new OutbidNotification($bid, buyNow: true));
                 }
             });
 

@@ -36,7 +36,7 @@
     }
     $currentLabel = match (true) {
         $state === 'sold' => 'Sold for',
-        in_array($state, ['unsold', 'pending'], true) && $hasBids => 'Highest bid',
+        in_array($state, ['unsold', 'pending', 'closing'], true) && $hasBids => 'Highest bid',
         $hasBids => 'Current bid',
         default => 'Starting bid',
     };

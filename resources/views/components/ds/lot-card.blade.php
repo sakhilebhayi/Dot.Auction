@@ -18,7 +18,7 @@
     $hasBids = $bids !== null ? $bids > 0 : \App\Models\Auction::toCents($auction->current_price) > \App\Models\Auction::toCents($auction->starting_price);
     [$priceLabel, $price] = match ($state) {
         'sold' => ['Sold for', $auction->current_price],
-        'unsold' => [$hasBids ? 'Highest bid' : 'No bids', $hasBids ? $auction->current_price : $auction->starting_price],
+        'unsold', 'closing' => [$hasBids ? 'Highest bid' : 'No bids', $hasBids ? $auction->current_price : $auction->starting_price],
         'pending' => ['Highest bid', $auction->current_price],
         'scheduled', 'draft', 'cancelled' => ['Starting bid', $auction->starting_price],
         default => [$hasBids ? 'Current bid' : 'Starting bid', $auction->current_price],
@@ -53,7 +53,7 @@
                 <x-ds.countdown :ends="$auction->ends_at" size="sm" :show-at="false" />
             @elseif ($state === 'scheduled')
                 <x-ds.countdown :ends="$auction->ends_at" :starts="$auction->starts_at" size="sm" :show-at="false" />
-            @elseif (in_array($state, ['sold', 'unsold', 'pending'], true))
+            @elseif (in_array($state, ['sold', 'unsold', 'pending', 'closing'], true))
                 <span class="ds-lot__when">Closed {{ Display::time($auction->ends_at, 'j M, H:i') }}</span>
             @endif
             @if (! $compact && $bids !== null)<span class="ds-lot__bids">{{ $bids }} {{ $bids === 1 ? 'bid' : 'bids' }}</span>@endif

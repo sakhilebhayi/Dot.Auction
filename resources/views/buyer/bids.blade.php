@@ -87,7 +87,7 @@
                             <tr>
                                 <td data-label="Lot" class="dc-lotcell"><a class="dc-lotname" href="{{ route('auctions.show', $lot) }}">{{ $lot->title }}</a></td>
                                 <td data-label="Your bid" class="num"><x-ds.money :amount="$lot->viewer_top_bid" /></td>
-                                <td data-label="Final price" class="num">@if (in_array($lotState, ['sold', 'unsold', 'pending'], true) && (int) $lot->bids_count > 0)<x-ds.money :amount="$lot->current_price" />@else None @endif</td>
+                                <td data-label="Final price" class="num">@if (in_array($lotState, ['sold', 'unsold', 'pending', 'closing'], true) && (int) $lot->bids_count > 0)<x-ds.money :amount="$lot->current_price" />@else None @endif</td>
                                 <td data-label="Outcome">
                                     @if ($won)<x-ds.badge tone="live" icon="trophy" size="sm">You won</x-ds.badge>
                                         @if ($sale)

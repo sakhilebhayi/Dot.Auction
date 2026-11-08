@@ -1,6 +1,6 @@
 {{--
   ds.status: the status vocabulary. Every state has a WORD, a silhouette and a hue; colour is never the only signal.
-  Props: state (live|ending|scheduled|sold|unsold|pending|cancelled|extended|draft|awaiting_payment|paid|payment_overdue|failed|expired|initiated|unmatched),
+  Props: state (live|ending|scheduled|closing|sold|unsold|pending|cancelled|extended|draft|awaiting_payment|paid|payment_overdue|failed|expired|initiated|unmatched),
          or auction=<Auction> to derive the lot state (draft, cancelled, pending_review, scheduled, ended sold / unsold, live, ending soon),
          count=null (for extended: "Extended 2 times"), size='md' (sm|md), long=false (use the long sentence form, for headers).
   Deriving from an Auction reads status, starts_at, ends_at and, for ended lots, winningBid (eager load it to avoid a query per card).

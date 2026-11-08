@@ -170,13 +170,10 @@ final class LotOutcome
         return in_array($this->state, ['live', 'ending'], true);
     }
 
-    /** The word for <x-ds.status>. A reserve-rejected lot is "unsold" even though a winning flag remains on its last bid. */
+    /** The word for <x-ds.status>. A reserve-rejected lot is "unsold" even though a winning flag remains on its last bid; a lot past its time but not yet settled is "closing", never "unsold". */
     public function statusState(): string
     {
-        return match ($this->state) {
-            'closing' => 'unsold',
-            default => $this->state,
-        };
+        return $this->state;
     }
 
     private function money(int|string|null $amount): string
@@ -285,14 +282,14 @@ final class LotOutcome
 
     private function closingBox(string $current): array
     {
-        $result = 'Bidding has closed. The result is being recorded and this page updates by itself.';
+        $result = 'The result is being recorded and will appear here within a few minutes.';
 
         if ($this->role === 'leader') {
             return $this->box('notice', 'clock', 'Bidding has closed',
                 'You held the highest bid, '.$current.'.',
                 $this->auction->reserve_price !== null && ! $this->auction->reserveMet()
                     ? 'It is below the reserve, so the seller will decide whether to accept it. This page shows the result.'
-                    : 'The result is being recorded and this page updates by itself.');
+                    : $result);
         }
 
         return $this->box('notice', 'clock', 'Bidding has closed', $result);
