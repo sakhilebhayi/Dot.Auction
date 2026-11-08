@@ -123,7 +123,11 @@ final class Display
             return 'pending';
         }
         if ($status === 'ended') {
-            return $auction->winningBid !== null ? 'sold' : 'unsold';
+            // A seller who rejected the top bid below the reserve ends the lot with a "winning" bid and no sale. Lists load
+            // that fact as the reserve_rejected column (App\Services\Auctions\LotBrowser); where it was not loaded the old rule holds.
+            $rejected = (bool) ($auction->getAttributes()['reserve_rejected'] ?? false);
+
+            return $auction->winningBid !== null && ! $rejected ? 'sold' : 'unsold';
         }
         if ($auction->isScheduled()) {
             return 'scheduled';
