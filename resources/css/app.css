@@ -15,6 +15,7 @@
 @import "./guest.css";
 @import "./welcome.css";
 @import "./jetstream.css";
+@import "./seller.css";
 @import "./legacy.css";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";

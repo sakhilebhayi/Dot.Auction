@@ -8,6 +8,7 @@ use App\Models\Auction;
 use App\Models\AuctionImage;
 use App\Services\Auctions\AuctionImageManager;
 use App\Services\Auctions\ListingRejected;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 
@@ -20,18 +21,34 @@ class ImageController extends Controller
 {
     public function __construct(private readonly AuctionImageManager $images) {}
 
-    public function store(UploadAuctionImagesRequest $request, Auction $auction): RedirectResponse
+    /**
+     * The photo drop zone sends the same request with XMLHttpRequest (to show upload progress) and asks for JSON; the
+     * rules and the outcome are identical, only the envelope differs. A validation failure is answered 422 with the
+     * framework's JSON error bag by the form request itself.
+     */
+    public function store(UploadAuctionImagesRequest $request, Auction $auction): RedirectResponse|JsonResponse
     {
         try {
             $added = $this->images->add($auction, $request->file('images'));
         } catch (ListingRejected $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage(), 'errors' => ['images' => [$e->getMessage()]]], 422);
+            }
+
             return redirect()->route('seller.auctions.edit', $auction)->withErrors(['images' => $e->getMessage()]);
         }
 
         $count = count($added);
+        $message = $count === 1 ? '1 photo added.' : "{$count} photos added.";
 
-        return redirect()->route('seller.auctions.edit', $auction)
-            ->with('status', $count === 1 ? '1 photo added.' : "{$count} photos added.");
+        if ($request->expectsJson()) {
+            // The page reloads after a successful upload and shows the message once.
+            $request->session()->flash('status', $message);
+
+            return response()->json(['message' => $message, 'added' => $count]);
+        }
+
+        return redirect()->route('seller.auctions.edit', $auction)->with('status', $message);
     }
 
     public function destroy(Auction $auction, AuctionImage $image): RedirectResponse

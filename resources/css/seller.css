@@ -1,0 +1,174 @@
+/*
+ * seller: the seller's lots, the listing form, payments (winner and seller) and payment operations. Tokens only: no colour, font or
+ * shadow is written by value here. Classes: sl- (seller and shared), pay- (payments), ops- (operator).
+ */
+
+.sl-gap { margin-bottom: var(--s-5); }
+.sl-gap-top { margin-top: var(--s-5); }
+.sl-sub { display: block; margin-top: 2px; font-size: var(--t-xs); font-weight: 450; color: var(--c-ink-3); line-height: 1.4; }
+.sl-link { color: var(--c-link); font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; }
+.sl-lead { max-width: var(--measure); margin-bottom: var(--s-6); color: var(--c-ink-2); }
+.sl-errors { margin: var(--s-1) 0 0; padding-left: var(--s-5); list-style: disc; }
+.sl-errors li + li { margin-top: var(--s-1); }
+.sl-errors a { font-weight: 600; text-underline-offset: 0.2em; }
+.sl-note { display: flex; align-items: flex-start; gap: var(--s-2); margin-top: var(--s-4); max-width: var(--measure); font-size: var(--t-sm); color: var(--c-ink-2); }
+.sl-note .ds-icon { flex: none; margin-top: 2px; color: var(--c-ink-3); }
+.sl-static { margin: 0; min-height: var(--hit); display: flex; align-items: center; }
+
+/* ---------- My lots: the ledger ---------- */
+.sl-table { margin-top: var(--s-2); }
+.sl-table td.sl-lot { display: flex; align-items: center; gap: var(--s-3); min-width: 15rem; }
+.sl-thumb { flex: none; display: grid; place-items: center; width: 4rem; height: 4rem; overflow: hidden; background: var(--c-sunken); border: 1px solid var(--c-line); color: var(--c-ink-3); }
+.sl-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.sl-lot__text { display: grid; gap: 2px; min-width: 0; }
+.sl-lot__title { color: var(--c-ink); font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
+.sl-lot__title:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+.sl-lot__meta { font-size: var(--t-sm); color: var(--c-ink-3); }
+.sl-table td.sl-closes { min-width: 9rem; }
+.sl-table td.sl-closes .ds-countdown { display: grid; }
+
+.sl-actions__row { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-2); flex-wrap: wrap; }
+.sl-more .ds-dropdown__trigger { width: var(--hit); padding: 0; justify-content: center; border-color: var(--c-line-strong); }
+.sl-table td.sl-actions { white-space: normal; min-width: 11rem; }
+
+/* A lot waiting for the seller: the decision sits right under its row, in the same band. */
+.sl-row--pending td { border-bottom: 0; }
+.sl-decision td { padding-top: 0; border-bottom: 1px solid var(--c-line-strong); }
+.sl-decision__box { background: var(--c-notice-bg); border: 1px solid var(--c-notice); padding: var(--s-4); }
+.sl-decision__lead { margin: 0 0 var(--s-2); max-width: var(--measure); }
+
+/* Phones: every ledger below becomes a card per row. The first cell and the actions span the card, the rest sit in two columns with the label above the value. */
+@media (max-width: 39.99rem) {
+    .sl-cards .ds-table.is-stackable tr:not(.sl-decision) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s-4); row-gap: var(--s-3); padding: var(--s-4) 0; }
+    .sl-cards .ds-table.is-stackable tr:not(.sl-decision) > td { display: grid; justify-content: stretch; align-content: start; gap: 2px; width: auto; min-width: 0; padding: 0; text-align: left; }
+    .sl-cards .ds-table.is-stackable tr > td::before { max-width: none; font-size: var(--t-xs); }
+    .sl-cards .ds-table.is-stackable tr > td.num { text-align: left; white-space: normal; }
+    .sl-cards .ds-table.is-stackable tr > td:first-child, .sl-cards .ds-table.is-stackable tr > td.actions, .sl-cards .ds-table.is-stackable tr > td.sl-span { grid-column: 1 / -1; }
+    .sl-cards .ds-table.is-stackable tr > td > .ds-status, .sl-cards .ds-table.is-stackable tr > td > .ds-badge { justify-self: start; }
+    .sl-table .ds-table.is-stackable tr > td.sl-lot { display: flex; }
+    .sl-table td.sl-actions { min-width: 0; padding-top: var(--s-1); }
+    .sl-actions__row { justify-content: flex-start; flex-wrap: nowrap; }
+    .sl-actions__row > .ds-btn { flex: 1 1 0; min-width: 0; }
+    .sl-actions__row > .sl-more { flex: none; margin-left: auto; }
+    .sl-table .ds-table.is-stackable tr.sl-row--pending { border-bottom: 0; padding-bottom: 0; }
+    .sl-decision td { padding: 0; }
+    .sl-decision__box { padding: var(--s-3); }
+    .pay-table td.actions form, .pay-table td.actions .ds-btn, .pay-table td.actions form .ds-btn { width: 100%; }
+}
+
+/* ---------- The listing form ---------- */
+.sl-form { display: grid; gap: var(--s-8); align-items: start; }
+.sl-form__main { min-width: 0; max-width: 46rem; }
+.sl-section { margin-top: var(--s-8); }
+.sl-section:first-child { margin-top: 0; }
+.sl-section .ds-section__body > .ds-field + .ds-field { margin-top: var(--s-5); }
+.sl-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5); align-items: start; }
+.sl-pair + .sl-pair, .sl-pair + .sl-suggest + .sl-pair, .sl-pair + .sl-picks { margin-top: var(--s-5); }
+.sl-pair .ds-field + .ds-field { margin-top: 0; }
+.sl-suggest { margin-top: var(--s-2); font-size: var(--t-sm); color: var(--c-ink-2); }
+.sl-suggest .ds-btn { min-height: 2rem; }
+.sl-picks { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); }
+.sl-picks[hidden] { display: none; }
+.sl-picks__label { font-size: var(--t-sm); font-weight: 650; }
+.sl-picks__row { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.sl-count { margin-top: var(--s-1); font-size: var(--t-xs); color: var(--c-ink-3); font-variant-numeric: tabular-nums; text-align: right; }
+.sl-count.is-near { color: var(--c-urgent); font-weight: 650; }
+.sl-savebar { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-8); padding-top: var(--s-5); border-top: 1px solid var(--c-line-strong); }
+.sl-actionrow { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: var(--s-4) 0; }
+.sl-unsaved { display: flex; align-items: center; gap: var(--s-2); margin: var(--s-3) 0; padding: var(--s-2) var(--s-3); background: var(--c-notice-bg); color: var(--c-notice); border: 1px solid var(--c-notice); font-size: var(--t-sm); font-weight: 650; }
+.sl-unsaved[hidden] { display: none; }
+.sl-form [id] { scroll-margin-top: 5rem; }
+
+.sl-form__aside { min-width: 0; }
+.sl-aside__title { font-size: var(--t-md); font-weight: 700; margin-bottom: var(--s-3); }
+.sl-preview { max-width: 20rem; }
+.sl-preview.is-new .ds-lot__number { display: none; }
+.sl-preview .ds-lot__link { pointer-events: none; }
+
+@media (min-width: 64rem) {
+    .sl-form { grid-template-columns: minmax(0, 46rem) minmax(16rem, 20rem); justify-content: start; gap: var(--s-12); }
+    .sl-form__aside { position: sticky; top: 5rem; }
+}
+@media (max-width: 39.99rem) {
+    .sl-pair { grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
+    .sl-savebar .ds-btn { flex: 1 1 100%; }
+    .sl-actionrow .ds-btn { flex: 1 1 100%; }
+    .sl-preview { max-width: none; }
+}
+
+/* ---------- Photos ---------- */
+.sl-photos__count { font-size: var(--t-sm); font-weight: 650; font-variant-numeric: tabular-nums; color: var(--c-ink-2); }
+.sl-photos__none { margin-bottom: var(--s-5); color: var(--c-ink-2); }
+.sl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: var(--s-4); margin: 0 0 var(--s-6); padding: 0; list-style: none; }
+.sl-grid__item { display: grid; gap: var(--s-2); align-content: start; }
+.sl-grid figure { position: relative; margin: 0; aspect-ratio: 4 / 3; background: var(--c-sunken); border: 1px solid var(--c-line-strong); overflow: hidden; }
+.sl-grid img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sl-grid figcaption { position: absolute; left: 0; bottom: 0; padding: 2px var(--s-2); background: var(--c-ink); color: var(--c-ground); font-size: var(--t-xs); font-weight: 650; }
+.sl-grid__item > .ds-btn { width: 100%; }
+
+.sl-upload { display: grid; gap: var(--s-4); max-width: 34rem; }
+.sl-drop { position: relative; }
+.sl-drop__input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.sl-drop__face { display: grid; justify-items: center; gap: var(--s-1); padding: var(--s-8) var(--s-4); background: var(--c-raised); border: 2px dashed var(--c-line-strong); color: var(--c-ink-2); text-align: center; cursor: pointer; transition: border-color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out); }
+.sl-drop__input:hover + .sl-drop__face { border-color: var(--c-ink-2); }
+.sl-drop__input:focus-visible + .sl-drop__face { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+.sl-drop.is-over .sl-drop__face { border-color: var(--c-ink); background: var(--c-sunken); }
+.sl-drop__title { font-weight: 700; color: var(--c-ink); font-size: var(--t-md); }
+.sl-drop__hint { font-size: var(--t-sm); color: var(--c-ink-3); }
+.sl-queue { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.sl-queue:empty { display: none; }
+.sl-queue__item { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr) auto; gap: var(--s-3); align-items: center; padding: var(--s-2); background: var(--c-surface); border: 1px solid var(--c-line); }
+.sl-queue__item.is-bad { border-color: var(--c-danger); background: var(--c-danger-bg); }
+.sl-queue__item img { width: 3.5rem; height: 3.5rem; object-fit: cover; background: var(--c-sunken); }
+.sl-queue__name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: var(--t-sm); }
+.sl-queue__meta { display: block; font-size: var(--t-xs); color: var(--c-ink-3); }
+.sl-queue__item.is-bad .sl-queue__meta { color: var(--c-danger); font-weight: 650; }
+.sl-progress__bar { height: 0.5rem; background: var(--c-sunken); border: 1px solid var(--c-line); overflow: hidden; }
+.sl-progress__bar span { display: block; width: 100%; height: 100%; background: var(--c-action); transform-origin: left center; transform: scaleX(0); transition: transform var(--dur-short) var(--ease-out); }
+.sl-progress__text { margin-top: var(--s-2); font-size: var(--t-sm); color: var(--c-ink-2); }
+.sl-upload__problem[hidden], .sl-progress[hidden] { display: none; }
+/* Scripts on: the real file input is only the keyboard and drop target. Scripts off: it stays a plain visible file input. */
+.sl-upload:not([data-enhanced]) .sl-drop__input { position: static; opacity: 1; height: auto; font-size: var(--t-md); padding: var(--s-3); border: 1px solid var(--c-line-strong); background: var(--c-raised); width: 100%; }
+.sl-upload:not([data-enhanced]) .sl-drop__face { display: none; }
+
+/* ---------- Payments ---------- */
+.pay-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-bottom: var(--s-5); }
+.pay-table .pay-lot a { color: var(--c-ink); font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
+.pay-table .pay-lot a:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+.pay-table .pay-actions form { display: inline; margin: 0; }
+.pay-foot { margin-top: var(--s-4); max-width: var(--measure); font-size: var(--t-sm); color: var(--c-ink-3); }
+
+.pay-next { display: grid; gap: var(--s-2); margin-bottom: var(--s-8); }
+.pay-next__label { margin: 0; font-size: var(--t-sm); font-weight: 650; color: var(--c-ink-3); }
+.pay-next__amount { margin: 0; }
+.pay-next__headline { margin: var(--s-3) 0 0; font-size: var(--t-xl); font-weight: 700; font-stretch: 106%; letter-spacing: -0.012em; line-height: 1.2; }
+.pay-next__detail { margin: 0; max-width: var(--measure); color: var(--c-ink-2); }
+.pay-next__due { display: flex; align-items: center; gap: var(--s-2); margin: var(--s-2) 0 0; color: var(--c-ink-2); }
+.pay-next__action { display: grid; gap: var(--s-2); justify-items: start; margin-top: var(--s-4); }
+.pay-next__action .ds-hint { margin: 0; max-width: 46ch; }
+.pay-note { max-width: var(--measure); color: var(--c-ink-2); }
+.pay-ref { font-family: var(--f-mono); font-size: var(--t-sm); overflow-wrap: anywhere; }
+.pay-history { display: grid; margin: 0; padding: 0; list-style: none; }
+.pay-history li { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); }
+.pay-history li:first-child { border-top: 1px solid var(--c-line); }
+.pay-history time { color: var(--c-ink-3); font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 39.99rem) {
+    .pay-history li { grid-template-columns: minmax(0, 1fr); gap: var(--s-1); }
+    .pay-next__action .ds-btn { width: 100%; }
+}
+
+/* ---------- Payment operations ---------- */
+.ops-region { width: 100%; }
+.ops-region:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+.ops-ref { font-family: var(--f-mono); font-size: var(--t-sm); overflow-wrap: anywhere; max-width: 17rem; }
+.ops-reason { display: block; margin-top: var(--s-1); font-weight: 650; color: var(--c-urgent); font-size: var(--t-sm); }
+.ops-table tr.ops-row--attention { background: var(--c-urgent-bg); }
+.ops-table .sl-sub { max-width: 24rem; }
+@media (min-width: 40rem) { .ops-region { overflow-x: auto; } }
+@media (max-width: 39.99rem) { .ops-table td.ops-ref { max-width: none; } }
+
+/* Touch: links that are only text (a lot's title, a payment's lot) get a 44px target without changing the layout around them. */
+@media (pointer: coarse) {
+    .sl-lot__title, .pay-table .pay-lot a, .sl-link { display: inline-block; padding-block: 10px; margin-block: -10px; }
+}

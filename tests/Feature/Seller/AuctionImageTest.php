@@ -495,7 +495,8 @@ class AuctionImageTest extends TestCase
         $this->assertStringContainsString('enctype="multipart/form-data"', $html);
         $this->assertStringContainsString('1 of 6', $html);
         $this->assertStringContainsString(route('seller.auctions.images.destroy', [$auction, $image]), $html);
-        $this->assertStringContainsString('Remove photo 1', $html);
+        // The visible word is "Remove"; "photo 1" is the screen-reader part of the same button, so the text is checked with tags stripped.
+        $this->assertStringContainsString('Remove photo 1', preg_replace('/\s+/', ' ', strip_tags($html)));
     }
 
     public function test_the_upload_control_disappears_at_the_limit(): void
@@ -514,7 +515,7 @@ class AuctionImageTest extends TestCase
     {
         $html = $this->actingAs($this->seller())->get(route('seller.auctions.create'))->assertOk()->getContent();
 
-        $this->assertStringContainsString('after you save the draft', strtolower($html));
+        $this->assertStringContainsString('save the draft first, then add up to 6 photos', strtolower($html));
         $this->assertStringNotContainsString('id="images"', $html);
     }
 }

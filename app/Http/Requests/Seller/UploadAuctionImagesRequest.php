@@ -3,7 +3,9 @@
 namespace App\Http\Requests\Seller;
 
 use App\Rules\DecodableImage;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UploadAuctionImagesRequest extends FormRequest
 {
@@ -44,5 +46,21 @@ class UploadAuctionImagesRequest extends FormRequest
             'images.*.mimetypes' => 'Photos must be JPG, PNG or WebP files.',
             'images.*.max' => "Each photo must be {$megabytes} MB or smaller.",
         ];
+    }
+
+    /**
+     * The photo drop zone sends this request with XMLHttpRequest and asks for JSON. The app's exception handler renders JSON
+     * only for api/* paths, so without this a failed check would redirect and the script would read the redirected page as success.
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        if ($this->expectsJson()) {
+            throw new HttpResponseException(response()->json([
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422));
+        }
+
+        parent::failedValidation($validator);
     }
 }

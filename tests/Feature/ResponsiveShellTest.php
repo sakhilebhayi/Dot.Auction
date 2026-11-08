@@ -138,12 +138,13 @@ class ResponsiveShellTest extends TestCase
         $this->assertStringContainsString('prefers-reduced-motion', $css);
     }
 
-    public function test_the_dashboard_and_seller_tables_scroll_inside_their_own_container(): void
+    public function test_the_dashboard_table_scrolls_inside_its_own_container(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         Auction::factory()->create(['seller_id' => $user->id, 'title' => 'Hereford heifers, twelve head']);
 
-        foreach (['/dashboard', '/seller/auctions'] as $url) {
+        // The seller list no longer scrolls sideways: it is a stacked ds.table that becomes a card per lot (see SellerListingsPageTest).
+        foreach (['/dashboard'] as $url) {
             $xpath = $this->xpath($this->actingAs($user)->get($url)->assertOk()->getContent());
 
             $wrapped = $xpath->query('//div[contains(@class,"table-scroll")]//table[contains(@class,"dot-table")]');
