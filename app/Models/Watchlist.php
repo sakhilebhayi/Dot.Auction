@@ -23,6 +23,14 @@ class Watchlist extends Model
 {
     use HasUserScope;
 
+    /**
+     * The table's key is the composite (user_id, auction_id) and it has no `id`
+     * column. Without this, Eloquent's insert asks the database to RETURN "id",
+     * which PostgreSQL (production) rejects: adding a watch failed there while
+     * passing on SQLite.
+     */
+    public $incrementing = false;
+
     protected $fillable = ['user_id', 'auction_id'];
 
     protected $casts = ['ending_soon_notified_at' => 'datetime'];
