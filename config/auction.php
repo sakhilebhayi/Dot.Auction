@@ -83,6 +83,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Settlement sweep
+    |--------------------------------------------------------------------------
+    | auction:repair-unsettled (hourly) looks for ended auctions that have a
+    | winner but no settlement because the queued hand-off was lost. It looks
+    | back `lookback_days` (so sales that pre-date online settlement are never
+    | back-filled) and leaves an auction alone for `grace_minutes` after it
+    | closed, which is longer than the queue normally takes.
+    */
+    'settlement_sweep' => [
+        'lookback_days' => (int) env('AUCTION_SWEEP_LOOKBACK_DAYS', 7),
+        'grace_minutes' => (int) env('AUCTION_SWEEP_GRACE_MINUTES', 15),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Seller listings
     |--------------------------------------------------------------------------
     */

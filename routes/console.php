@@ -3,6 +3,7 @@
 use App\Console\Commands\MarkOverduePayments;
 use App\Console\Commands\NotifyEndingSoonWatchers;
 use App\Console\Commands\PublishMetrics;
+use App\Console\Commands\RepairUnsettledAuctions;
 use App\Console\Commands\SettleEndedAuctions;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -26,6 +27,12 @@ Schedule::command(SettleEndedAuctions::class)
 
 // Once per watcher per auction (the watch row carries the marker), so the
 // cadence only decides how late a notice can be, never how many go out.
+// Safety net for a lost settlement hand-off (F-06): quiet unless it has to repair something.
+Schedule::command(RepairUnsettledAuctions::class)
+    ->hourly()
+    ->withoutOverlapping(15)
+    ->onOneServer();
+
 Schedule::command(NotifyEndingSoonWatchers::class)
     ->everyFiveMinutes()
     ->withoutOverlapping(10)

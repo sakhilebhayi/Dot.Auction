@@ -4,7 +4,9 @@ namespace App\Services\Auctions;
 
 use App\Events\AuctionSettled;
 use App\Events\ReserveNotMet;
+use App\Listeners\RecordSettlementForPayment;
 use App\Models\Auction;
+use App\Models\AuctionSettlement;
 use App\Models\Bid;
 use App\Models\ReserveNotMetProposal;
 use App\Notifications\AuctionWonNotification;
@@ -80,6 +82,48 @@ class AuctionSettler
             DB::afterCommit(fn () => event(new ReserveNotMet($proposal)));
 
             return true;
+        });
+    }
+
+    /**
+     * The safety net for a sale whose payment hand-off never happened (R-42 F-06): the auction ended with a winner, but
+     * the queued listener that writes the settlement was lost (worker killed, database blip, all retries used).
+     *
+     * Under the same row lock the settler uses, this re-reads the auction and, only if it is `ended`, has a winning
+     * bid, has no settlement and was not rejected by the seller (reserve not met), records the settlement through the
+     * listener's own idempotent code, synchronously. Two overlapping sweeps serialise on the lock; the second finds the
+     * settlement and returns false. The winner is not told again: their notice was sent when the auction settled.
+     *
+     * @return bool true when this call created the settlement
+     */
+    public function repairMissingSettlement(Auction|int $auction): bool
+    {
+        $auctionId = $auction instanceof Auction ? $auction->getKey() : $auction;
+
+        return DB::transaction(function () use ($auctionId) {
+            $locked = Auction::query()->lockForUpdate()->find($auctionId);
+
+            if ($locked === null || $locked->status !== 'ended') {
+                return false;
+            }
+
+            if (AuctionSettlement::query()->where('auction_id', $locked->id)->exists()) {
+                return false;
+            }
+
+            if (ReserveNotMetProposal::query()->where('auction_id', $locked->id)->where('status', 'rejected')->exists()) {
+                return false;
+            }
+
+            $topBid = Bid::query()->where('auction_id', $locked->id)->where('is_winning', true)->first();
+
+            if ($topBid === null) {
+                return false;
+            }
+
+            app(RecordSettlementForPayment::class)->handle(new AuctionSettled($locked, $topBid));
+
+            return AuctionSettlement::query()->where('auction_id', $locked->id)->exists();
         });
     }
 }
