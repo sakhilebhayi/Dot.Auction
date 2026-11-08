@@ -13,7 +13,7 @@ class DisplayTest extends TestCase
 {
     private function lot(string $status, array $over = []): Auction
     {
-        $auction = new Auction(array_merge([
+        $auction = (new Auction)->forceFill(array_merge([
             'status' => $status,
             'starting_price' => '1000.00', 'current_price' => '1000.00', 'bid_increment' => '50.00',
             'starts_at' => now()->subHour(), 'ends_at' => now()->addHours(5), 'snipe_extensions' => 0,

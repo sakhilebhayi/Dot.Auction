@@ -9,7 +9,7 @@
     $maxExtensions = config('auction.snipe_max_extensions');
 
     // An unsaved lot, only to draw the ladder. Nothing is stored and nothing here is real.
-    $example = new Auction([
+    $example = (new Auction)->forceFill([
         'title' => 'Example lot', 'status' => 'active',
         'starting_price' => '1000.00', 'current_price' => '1250.00', 'bid_increment' => '50.00',
         'starts_at' => now()->subHour(), 'ends_at' => now()->addHours(3), 'snipe_extensions' => 0,

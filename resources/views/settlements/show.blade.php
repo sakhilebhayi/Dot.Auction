@@ -1,4 +1,3 @@
-@php($zone = config('app.timezone'))
 <x-app-layout :title="'Payment for '.$settlement->auction->title" :title-visible="false">
 <div class="dot-page dot-page-narrow">
 

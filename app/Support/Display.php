@@ -55,7 +55,7 @@ final class Display
         }
 
         if (method_exists(Auction::class, 'localTime')) {
-            return Auction::localTime($at, $format, $withZone);
+            return Auction::localTime($at, $format ?? 'D j M, H:i', $withZone);
         }
 
         $local = Carbon::instance($at instanceof CarbonInterface ? $at->toDateTime() : $at)
