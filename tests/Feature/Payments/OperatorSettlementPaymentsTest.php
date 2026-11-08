@@ -37,12 +37,13 @@ class OperatorSettlementPaymentsTest extends TestCase
         SettlementPayment::forceCreate(['provider' => 'paystack', 'reference' => 'GHOST-REF-1', 'status' => SettlementPayment::UNMATCHED, 'reason' => 'unknown_reference', 'amount_cents' => 5000, 'currency' => 'ZAR']);
 
         $page = $this->actingAs($this->operator())->get(route('operator.settlement-payments.index'))->assertOk()
-            ->assertSee('2 payments need an operator')
+            ->assertSee('2 payments need a person')
             ->assertSee('AUC-ATTEMPT-INITIATED')->assertSee('AUC-ATTEMPT-PAID')->assertSee('AUC-ATTEMPT-HELD')->assertSee('GHOST-REF-1')
             ->assertSee('Vintage Brass Compass')
             ->assertSee('Amount mismatch')->assertSee('Unknown reference')
-            ->assertSee('R1,234.50')->assertSee('R50.00')
-            ->assertSee('TEST MODE');
+            ->assertSeeText('R1,234.50')->assertSeeText('R50.00')
+            // The test-mode badge now belongs to the shell's top bar (it said TEST MODE on this page before).
+            ->assertSee('Test mode');
 
         // The page itself is read-only: no form inside <main> (the shell's search box, log out and menu forms sit outside it).
         $html = $page->getContent();
@@ -53,7 +54,7 @@ class OperatorSettlementPaymentsTest extends TestCase
     public function test_with_nothing_wrong_the_page_says_so(): void
     {
         $this->actingAs($this->operator())->get(route('operator.settlement-payments.index'))
-            ->assertOk()->assertSee('No payments need an operator')->assertSee('No payments have been recorded yet');
+            ->assertOk()->assertSee('No payments need a person')->assertSee('No payments have been recorded yet');
     }
 
     public function test_the_attention_filter_hides_the_fine_ones(): void

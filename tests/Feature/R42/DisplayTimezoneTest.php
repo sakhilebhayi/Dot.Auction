@@ -139,6 +139,8 @@ class DisplayTimezoneTest extends TestCase
 
     public function test_pages_print_local_times(): void
     {
+        // "Pay by" is printed only while payment is actually switched on, so it is on here.
+        $this->enablePaystack();
         [$settlement, $winner] = $this->settlement(settlement: ['payment_due_at' => '2026-11-10 07:00:00']);
 
         $html = $this->actingAs($winner)->get(route('settlements.show', $settlement))->assertOk()->getContent();

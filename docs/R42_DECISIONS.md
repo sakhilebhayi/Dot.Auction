@@ -183,3 +183,38 @@ host pinning, fails on any authenticated route not listed (or explained in `SKIP
 `AUCTION_DISPLAY_TIMEZONE`, `AUCTION_REALTIME_ENABLED`, `AUCTION_POLL_SECONDS`, `AUCTION_SWEEP_LOOKBACK_DAYS`,
 `AUCTION_SWEEP_GRACE_MINUTES`, `TRUSTED_HOSTS`, `NOTIFY_RESERVE_NOT_MET_EVENT`. Migrations added:
 `2026_11_08_000002` (nullable column), `2026_11_08_000003` (foreign keys RESTRICT).
+
+## UI: seller area, payments and payment operations (ui-seller, 2026-11-08)
+
+Built on the Rostrum kit (`DESIGN.md`); no auction rule was added or changed. Skills used: `impeccable` (operate mode, craft floor), `hallmark` (floor, locked DESIGN.md), `design-taste-frontend` (app screens), `emil-design-eng` (press, dialog and menu motion), `ui-ux-pro-max` (checklist only), `awwwards` (quality bar).
+
+### Taken
+
+| # | Decision | Why |
+|---|---|---|
+| U-1 | One word for people: **Payments** (nav, page, titles, copy); **Payment operations** for the operator page. The words "settlement" and "settlement payments" no longer appear on a screen. Routes and class names are unchanged. | Brief item 5. |
+| U-2 | `/seller/auctions` filters by state through `?state=` (pending, live, ending, scheduled, draft, ended, cancelled). Counts and rows come from one definition (`App\Support\SellerLots`), so a tab can never disagree with its count. Tabs with nothing in them are not offered. "Closing soon" is a subset of "Live". | Brief item 1. |
+| U-3 | A lot that waits for the seller's reserve decision carries the real `reserve-decision-panel` (Livewire) in a band under its row. The list does not duplicate the panel's logic. After a decision the panel shows its own result; the row's status updates on the next load. | Brief item 1. ui-auction owns the panel's look. |
+| U-4 | An `active` lot whose close time has passed but which the job has not settled yet shows "Closed, being settled", not "Not sold". `Display::lotState()` still says `unsold` for it (shell file, left alone). | Telling a seller with bids that the lot did not sell for up to five minutes was wrong. |
+| U-5 | Closing time on a new lot starts as 7 days out at 18:00 display time, and "Close it after 1, 3, 7, 14 days" fills the field (only durations within `listing.max_duration_days`). The bid-step suggestion is about 5% of the starting price rounded to 1, 2 or 5 times a power of ten, and appears only while the increment is empty. All of it is a suggestion the server validates again. | "Sensible defaults", brief item 2. Not a rule: the seller can type anything the existing validation allows. |
+| U-6 | The photo drop zone sends the existing upload request with XMLHttpRequest (for progress) and asks for JSON. `ImageController::store` and `UploadAuctionImagesRequest` answer JSON when asked, with the same rules and messages. Without JavaScript the plain form post works as before. | Progress and error feedback. Needed `failedValidation` override because the app renders JSON errors only for `api/*`. |
+| U-7 | "Pay by" / "Was due" is shown only while payment is actually switched on. "Pay now" appears on the payments list (posts to the existing pay route) and on the sale page. The mode badge (Test mode / Live mode) is the shell's; the pages no longer print their own. | Brief item 3. |
+| U-8 | The payout note ("Payout is not available yet ... settlement is manual") is printed once, on the seller's sale page, in its own "Your payout" section, and once as a single line under the seller's rows on the list. | Brief item 3. |
+| U-9 | The Paystack return is titled by state through a new `payment_state` session flash (paid, pending, failed, held, unconfirmed, gateway). The messages themselves are unchanged. | Brief item 3. |
+| U-10 | The sale page shows a history built from `SettlementEvent` types in plain sentences ("Payment opened for the buyer", "You cancelled the sale"). The audit `note` text is never printed. | Internal notes carry ISO timestamps and references. |
+| U-11 | Operator filters (`?status=`) with counts; `?show=attention` keeps working. The table is stacked cards below 40rem and a focusable, labelled scroll region from 40rem. | Brief item 4. |
+
+### Left as is, for whoever merges
+
+* `seller/auctions/_table.blade.php` (the old table) is still included by the dashboard and still uses `.dot-*` classes and inline styles. It belongs to ui-discover's rewrite of the dashboard; delete it, and the `.dot-table`, `.table-scroll`, `.dot-actions`, `.dot-status*` rules in `legacy.css`, when the dashboard stops including it. This branch removed only the rules nothing uses any more.
+* `settlements/_mode.blade.php` is no longer included by my pages but `auctions/_settlement-panel.blade.php` (ui-auction) still includes it; remove both together with `.dot-mode`.
+* Shell bug, not fixed (shell file): `layouts/app.blade.php` builds the h1 with `strip_tags((string) $header)` from the header slot, so a header slot that contains an escaped `&` or `<` (a lot title) prints `&amp;` in the heading. The sale page therefore passes its title through the `title` prop and no header slot. `html_entity_decode()` around the strip would fix it for everyone.
+
+### Needs an owner rule (nothing was invented)
+
+1. **Photo order and the cover.** The first photo added is the cover and there is no way to reorder. A "make cover" or drag-to-reorder control needs a rule about positions (the backend has `position` but no endpoint).
+2. **Photos on the first save.** A new lot is saved first and photos come on the next screen. Uploading with the first save would need the draft and the photos to be created together.
+3. **Payout tracking.** The seller's page can only say that payout is manual. A "paid out on ..." state (and who records it) is a product decision; so is whether a seller may see the buyer's name on a paid sale.
+4. **What cancelling an overdue sale promises.** The page says it does not relist and does not refund anyone. Whether a cancel should offer to relist the lot is a rule.
+5. **Closing time default and bid step suggestion (U-5).** Fine as suggestions; if the owner wants category-specific defaults they need a table of them.
+6. **Reserve decision deadline and what the bidder is told** (F-09, already above): the list now shows "waiting since" nowhere because there is no deadline to count against.

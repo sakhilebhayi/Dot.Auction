@@ -34,8 +34,9 @@ class PayNowTest extends TestCase
         $this->actingAs($winner)->get(route('settlements.show', $settlement))
             ->assertOk()
             ->assertSee('Pay now')
-            ->assertSee('R1,234.50')
-            ->assertSee('TEST MODE')
+            ->assertSeeText('R1,234.50')
+            // The mode badge is the shell's (top bar), not a per-page label.
+            ->assertSee('Test mode')
             ->assertSee('No real money moves')
             ->assertSee(route('settlements.pay', $settlement), false);
     }
@@ -59,7 +60,7 @@ class PayNowTest extends TestCase
         $settlement->forceFill(['status' => AuctionSettlement::PAID, 'paid_at' => now()])->save();
 
         $page = $this->actingAs($seller)->get(route('settlements.show', $settlement))->assertOk()
-            ->assertSee('payment received, settlement to seller is manual')
+            ->assertSee('settlement to seller is manual')
             ->assertSee('Payout is not available yet');
         $this->assertStringNotContainsStringIgnoringCase('you have been paid', $page->getContent());
         $this->assertStringNotContainsStringIgnoringCase('payout sent', $page->getContent());
@@ -263,7 +264,7 @@ class PayNowTest extends TestCase
         $this->actingAs($winner)->get(route('settlements.show', $settlement))
             ->assertOk()
             ->assertDontSee('Pay now')
-            ->assertDontSee('TEST MODE')
+            ->assertDontSee('Test mode')
             ->assertSee('Payment is not available yet')
             ->assertSee('nothing is due');
 
@@ -291,7 +292,7 @@ class PayNowTest extends TestCase
         [$settlement, $winner] = $this->settlement();
 
         $this->actingAs($winner)->get(route('settlements.show', $settlement))->assertOk()
-            ->assertSee('Pay now')->assertDontSee('TEST MODE')->assertSee('LIVE MODE');
+            ->assertSee('Pay now')->assertDontSee('Test mode')->assertSee('Live mode');
     }
 
     public function test_the_auction_page_links_the_winner_to_the_pay_page_when_payments_are_on(): void
