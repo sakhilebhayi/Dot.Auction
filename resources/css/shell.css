@@ -1,0 +1,77 @@
+/* shell: the signed-in frame. Rail from 64rem up; top bar plus bottom bar below. Tokens only. */
+
+.sh { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 100vh; min-height: 100dvh; }
+.sh-col { min-width: 0; display: flex; flex-direction: column; }
+
+/* ---------- Rail ---------- */
+.sh-side { display: none; }
+
+/* ---------- Top bar ---------- */
+.sh-top { position: sticky; top: 0; z-index: var(--z-bar); display: flex; align-items: center; gap: var(--s-3); min-height: var(--topbar-h); padding: 0 var(--gutter); background: var(--c-ground); border-bottom: 1px solid var(--c-line); padding-top: env(safe-area-inset-top); }
+.sh-top__mark { display: inline-block; }
+.sh-top__tools { display: flex; align-items: center; gap: var(--s-1); margin-left: auto; }
+.sh-top__user { display: none; }
+.sh-search { display: none; position: relative; flex: 1 1 auto; max-width: 28rem; }
+.sh-search input { width: 100%; min-height: 2.5rem; padding: 0 var(--s-3) 0 2.5rem; background: var(--c-raised); color: var(--c-ink); border: 1px solid var(--c-line-strong); border-radius: var(--r-2); font: inherit; font-size: var(--t-sm); }
+.sh-search input::placeholder { color: var(--c-ink-3); opacity: 1; }
+.sh-search input:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 0; border-color: var(--c-focus); }
+.sh-search__icon { position: absolute; left: var(--s-3); top: 50%; transform: translateY(-50%); color: var(--c-ink-3); pointer-events: none; }
+.sh-user__name { max-width: 10rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Main ---------- */
+.sh-main { flex: 1; padding: var(--s-6) var(--gutter) calc(var(--bar-h) + var(--s-10) + env(safe-area-inset-bottom)); outline: none; }
+.sh-page { width: 100%; max-width: var(--page-max); margin: 0 auto; }
+.sh-page--narrow { max-width: var(--page-narrow); }
+.sh-page--wide { max-width: 96rem; }
+.sh-page--full { max-width: none; }
+
+/* ---------- Phone bottom bar ---------- */
+.sh-bar { display: grid; position: fixed; z-index: var(--z-bar); left: 0; right: 0; bottom: 0; grid-template-columns: repeat(5, minmax(0, 1fr)); background: var(--c-surface); border-top: 1px solid var(--c-line-strong); padding-bottom: env(safe-area-inset-bottom); }
+.ds-nav { display: flex; align-items: center; gap: var(--s-3); text-decoration: none; color: var(--c-ink-2); font: inherit; }
+.ds-nav--bar { flex-direction: column; justify-content: center; gap: 2px; min-height: var(--bar-h); padding: var(--s-2) var(--s-1); background: transparent; border: 0; border-radius: 0; cursor: pointer; font-size: var(--t-xs); font-weight: 600; line-height: 1.2; text-align: center; }
+.ds-nav--bar.is-active { color: var(--c-ink); font-weight: 800; box-shadow: inset 0 3px 0 var(--c-ink); }
+.ds-nav--bar.is-accent { background: var(--c-action); color: var(--c-on-action); font-weight: 750; }
+.ds-nav--bar:hover { background: var(--c-quiet-hover); }
+.ds-nav--bar.is-accent:hover { background: var(--c-action-hover); }
+.ds-nav--bar:focus-visible { outline-offset: -4px; box-shadow: none; border-radius: 0; }
+.ds-nav--row { min-height: var(--hit); padding: var(--s-2) var(--s-3); border-radius: var(--r-2); color: var(--c-ink); font-weight: 550; }
+.ds-nav--row:hover { background: var(--c-quiet-hover); }
+.ds-nav--row.is-active { background: var(--c-sunken); font-weight: 800; }
+.ds-nav__badge { margin-left: auto; min-width: 1.25rem; padding: 0 6px; background: var(--c-ink); color: var(--c-ground); border-radius: var(--r-round); font-size: var(--t-xs); font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.ds-nav[data-pending-route] { cursor: default; }
+
+/* The phone menu is a sheet (ds.dialog). */
+.sh-sheet__nav { display: grid; gap: 2px; }
+.sh-sheet__who { font-size: var(--t-sm); color: var(--c-ink-3); }
+
+/* ---------- Wide: the rail ---------- */
+@media (min-width: 64rem) {
+    :root { --gutter: 2rem; }
+    .sh { grid-template-columns: var(--rail-w) minmax(0, 1fr); }
+    .sh-bar { display: none; }
+    .sh-top__mark { display: none; }
+    .sh-search { display: block; }
+    .sh-top__user { display: block; }
+    .sh-top { padding-top: 0; }
+    .sh-main { padding: var(--s-8) var(--gutter) var(--s-16); }
+
+    .sh-side {
+        position: sticky; top: 0; align-self: start; height: 100vh; height: 100dvh; display: flex; flex-direction: column;
+        padding: var(--s-5) 0 var(--s-4) var(--s-4); background: var(--c-surface); border-right: 1px solid var(--c-line-strong); overflow-y: auto;
+    }
+    .sh-side__brand { margin: 0 0 var(--s-6) var(--s-2); }
+    .sh-side__list { display: grid; gap: 2px; align-content: start; margin-right: -1px; }
+    .sh-group { margin: var(--s-5) 0 var(--s-1) var(--s-3); font-size: var(--t-sm); font-weight: 600; color: var(--c-ink-3); }
+    .sh-side__foot { margin: auto var(--s-4) 0 var(--s-3); padding-top: var(--s-6); font-size: var(--t-xs); color: var(--c-ink-3); }
+
+    /* An index tab: the current page's row joins the content ground and breaks the rail's rule. */
+    .ds-nav--rail { min-height: var(--hit); padding: 0 var(--s-3); border: 1px solid transparent; border-right: 0; border-radius: var(--r-2) 0 0 var(--r-2); font-weight: 550; }
+    .ds-nav--rail:hover { background: var(--c-quiet-hover); }
+    .ds-nav--rail.is-active { background: var(--c-ground); color: var(--c-ink); font-weight: 800; border-color: var(--c-line-strong); }
+    .ds-nav--rail:focus-visible { outline-offset: -2px; box-shadow: none; }
+}
+
+/* ---------- Flash banner (Jetstream x-banner and server flashes) ---------- */
+.sh-flash { padding: var(--s-3) var(--gutter) 0; }
+
+@media (max-width: 63.99rem) { .sh-top__mark { min-height: var(--hit); display: inline-flex; align-items: center; } }

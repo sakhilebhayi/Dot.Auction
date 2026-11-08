@@ -44,7 +44,10 @@ class OperatorSettlementPaymentsTest extends TestCase
             ->assertSee('R1,234.50')->assertSee('R50.00')
             ->assertSee('TEST MODE');
 
-        $this->assertStringNotContainsString('<form', substr($page->getContent(), strpos($page->getContent(), '<main')));
+        // The page itself is read-only: no form inside <main> (the shell's search box, log out and menu forms sit outside it).
+        $html = $page->getContent();
+        $main = substr($html, (int) strpos($html, '<main'), (int) strpos($html, '</main>') - (int) strpos($html, '<main'));
+        $this->assertStringNotContainsString('<form', $main);
     }
 
     public function test_with_nothing_wrong_the_page_says_so(): void

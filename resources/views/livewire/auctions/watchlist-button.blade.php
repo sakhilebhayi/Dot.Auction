@@ -4,6 +4,6 @@
     class="dot-btn {{ $watching ? 'dot-btn-primary' : 'dot-btn-ghost' }}"
     title="{{ $watching ? 'Remove from watchlist' : 'Add to watchlist' }}"
 >
-    <span class="material-symbols-rounded" style="font-size:16px;">{{ $watching ? 'bookmark' : 'bookmark_border' }}</span>
+    <x-ds.icon :name="$watching ? 'bookmark' : 'bookmark'" :size="16" :filled="$watching" />
     {{ $watching ? 'Watching' : 'Watch' }}
 </button>

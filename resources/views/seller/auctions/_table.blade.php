@@ -18,11 +18,11 @@
             @php($status = $row->displayStatus())
             <tr>
                 <td>
-                    <div style="font-family:'Syne',sans-serif;font-weight:700;color:#f4f4f5;max-width:260px;overflow-wrap:anywhere;">
+                    <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--c-ink);max-width:260px;overflow-wrap:anywhere;">
                         @if($status === 'draft')
-                            <a class="dot-link" style="color:#f4f4f5;" href="{{ route('seller.auctions.edit', $row) }}">{{ $row->title }}</a>
+                            <a class="dot-link" style="color:var(--c-ink);" href="{{ route('seller.auctions.edit', $row) }}">{{ $row->title }}</a>
                         @else
-                            <a class="dot-link" style="color:#f4f4f5;" href="{{ route('auctions.show', $row) }}">{{ $row->title }}</a>
+                            <a class="dot-link" style="color:var(--c-ink);" href="{{ route('auctions.show', $row) }}">{{ $row->title }}</a>
                         @endif
                     </div>
                     <div class="dot-help" style="margin-top:2px;">
@@ -62,7 +62,7 @@
 </div>
 @else
 <div style="padding:2.5rem 1.4rem;text-align:center;">
-    <p style="margin:0 0 0.4rem;font-family:'Syne',sans-serif;font-weight:700;color:#f4f4f5;">You have not listed anything yet.</p>
+    <p style="margin:0 0 0.4rem;font-family:'Syne',sans-serif;font-weight:700;color:var(--c-ink);">You have not listed anything yet.</p>
     <p class="dot-help" style="margin:0 0 1.1rem;">Start a draft, check it over, then publish when you are ready for bids.</p>
     <a href="{{ route('seller.auctions.create') }}" class="dot-btn dot-btn-primary">List an auction</a>
 </div>

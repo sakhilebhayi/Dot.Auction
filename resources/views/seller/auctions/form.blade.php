@@ -8,7 +8,7 @@
     $snipeExtension = (int) config('auction.snipe_extension_minutes');
     $snipeMax = (int) config('auction.snipe_max_extensions');
 @endphp
-<x-app-layout>
+<x-app-layout :title="$editing ? 'Edit lot' : 'List a lot'" :title-visible="false">
 <div class="dot-page dot-page-narrow">
 
     <p style="margin:0 0 1.25rem;">
@@ -17,7 +17,7 @@
 
     <div class="dot-row dot-row-between" style="margin-bottom:1.5rem;">
         <div>
-            <h1 class="dot-title">{{ $editing ? 'Edit auction' : 'List an auction' }}</h1>
+            <p class="dot-title" aria-hidden="true">{{ $editing ? 'Edit auction' : 'List an auction' }}</p>
             <div class="dot-subtitle">
                 @if(! $editing)
                     This saves a private draft. Nothing is visible to buyers until you publish it.
@@ -176,7 +176,7 @@
                             @csrf
                             <button type="submit" class="dot-btn dot-btn-primary">Publish auction</button>
                         </form>
-                        <form method="POST" action="{{ route('seller.auctions.destroy', $auction) }}" onsubmit="return confirm('Delete this draft permanently?');">
+                        <form method="POST" action="{{ route('seller.auctions.destroy', $auction) }}" data-confirm="Delete this draft permanently?">
                             @csrf @method('DELETE')
                             <button type="submit" class="dot-btn dot-btn-danger">Delete draft</button>
                         </form>
@@ -189,7 +189,7 @@
                     @if($locked)
                         <p class="dot-help">It has bids, so it can no longer be cancelled.</p>
                     @else
-                        <form method="POST" action="{{ route('seller.auctions.cancel', $auction) }}" onsubmit="return confirm('Cancel this auction? Buyers will no longer be able to bid.');">
+                        <form method="POST" action="{{ route('seller.auctions.cancel', $auction) }}" data-confirm="Cancel this auction? Buyers will no longer be able to bid.">
                             @csrf
                             <button type="submit" class="dot-btn dot-btn-danger">Cancel auction</button>
                         </form>

@@ -1,3 +1,4 @@
 @props(['disabled' => false])
 
-<input {{ $disabled ? 'disabled' : '' }} {!! $attributes->merge(['class' => 'bg-[var(--ink)] border border-[var(--line)] text-[var(--paper)] placeholder:text-[var(--stone)]/60 focus:border-[var(--gold)] focus:ring-[var(--gold)] rounded-md shadow-sm disabled:opacity-50']) !!}>
+{{-- Jetstream's x-input: a bare input in the design system's control style. Prefer <x-ds.input>, which adds the label, hint and error wiring. --}}
+<input {{ $disabled ? 'disabled' : '' }} {!! $attributes->merge(['class' => 'ds-in']) !!}>

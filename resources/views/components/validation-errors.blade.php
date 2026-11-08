@@ -1,11 +1,9 @@
 @if ($errors->any())
-    <div {{ $attributes }}>
-        <div class="font-display font-medium text-[var(--red-soft)]">{{ __('Whoops! Something went wrong.') }}</div>
-
-        <ul class="mt-3 list-disc list-inside text-sm text-[var(--red-soft)]">
+    <x-ds.alert tone="danger" title="This could not be saved." role="alert" {{ $attributes }}>
+        <ul class="ds-alert__list">
             @foreach ($errors->all() as $error)
                 <li>{{ $error }}</li>
             @endforeach
         </ul>
-    </div>
+    </x-ds.alert>
 @endif

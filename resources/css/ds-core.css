@@ -1,0 +1,144 @@
+/* ds-core: icons, buttons, status, money, badge, avatar, skeleton, alert, brand. Tokens only. */
+
+/* ---------- Icon ---------- */
+.ds-icon { flex: none; display: inline-block; vertical-align: -0.2em; }
+.ds-icon--spin { animation: ds-spin 0.8s linear infinite; }
+@keyframes ds-spin { to { transform: rotate(360deg); } }
+
+/* Elements that show only in one theme (theme toggle glyphs, menu words). */
+.when-light { display: inline-block; }
+.when-dark { display: none; }
+:root[data-theme="dark"] .when-light, :root.dark .when-light { display: none; }
+:root[data-theme="dark"] .when-dark, :root.dark .when-dark { display: inline-block; }
+[data-scheme="light"] .when-light, [data-scheme="dark"] .when-dark { display: inline-block; }
+[data-scheme="light"] .when-dark, [data-scheme="dark"] .when-light { display: none; }
+
+/* ---------- Brand ---------- */
+.ds-brand { display: inline-block; width: var(--brand-w); line-height: 0; flex: none; text-decoration: none; }
+.ds-brand__crop { position: relative; overflow: hidden; width: 100%; }
+.ds-brand--lockup .ds-brand__crop { aspect-ratio: 935 / 603; }
+.ds-brand--lockup .ds-brand__crop img { width: 126.3%; max-width: none; height: auto; margin-left: -12.3%; margin-top: -15%; }
+.ds-brand--mark .ds-brand__crop { aspect-ratio: 673 / 436; }
+.ds-brand--mark .ds-brand__crop img { width: 175.5%; max-width: none; height: auto; margin-left: -37.4%; margin-top: -21.1%; }
+
+/* ---------- Buttons ---------- */
+.ds-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+    min-height: var(--hit); padding: 0 var(--s-4);
+    border: 1px solid transparent; border-radius: var(--r-2);
+    font: inherit; font-size: var(--t-md); font-weight: 650; line-height: 1; letter-spacing: 0;
+    text-decoration: none; white-space: nowrap; cursor: pointer;
+    transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+    -webkit-tap-highlight-color: transparent;
+}
+.ds-btn:active:not(:disabled) { transform: translateY(1px) scale(0.985); }
+.ds-btn--sm { min-height: 2.25rem; padding: 0 var(--s-3); font-size: var(--t-sm); }
+.ds-btn--lg { min-height: 3.25rem; padding: 0 var(--s-6); font-size: var(--t-lg); }
+.ds-btn--block { display: flex; width: 100%; }
+.ds-btn:disabled, .ds-btn[aria-disabled="true"] { cursor: not-allowed; opacity: 0.55; }
+.ds-btn.is-loading, .ds-btn.is-loading:disabled { cursor: progress; opacity: 1; }
+
+.ds-btn--primary { background: var(--c-action); color: var(--c-on-action); border-color: var(--c-action-edge); }
+.ds-btn--primary:hover:not(:disabled) { background: var(--c-action-hover); }
+
+.ds-btn--quiet { background: transparent; color: var(--c-ink); border-color: var(--c-line-strong); }
+.ds-btn--quiet:hover:not(:disabled) { background: var(--c-quiet-hover); }
+
+.ds-btn--danger { background: transparent; color: var(--c-danger); border-color: var(--c-danger); }
+.ds-btn--danger:hover:not(:disabled) { background: var(--c-danger-bg); }
+.ds-dialog .ds-btn--danger { background: var(--c-danger-fill); color: var(--c-on-danger-fill); border-color: var(--c-danger-fill); }
+.ds-dialog .ds-btn--danger:hover:not(:disabled) { background: var(--red-700); border-color: var(--red-700); }
+
+.ds-btn--link { min-height: var(--hit); padding: 0 var(--s-1); color: var(--c-link); border-color: transparent; text-decoration: underline; text-underline-offset: 0.2em; font-weight: 600; }
+.ds-btn--link:hover:not(:disabled) { text-decoration-thickness: 2px; }
+
+@media (hover: none) { .ds-btn--primary:hover:not(:disabled) { background: var(--c-action); } }
+
+.ds-iconbtn {
+    position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center;
+    width: var(--hit); height: var(--hit); padding: 0;
+    background: transparent; color: var(--c-ink); border: 1px solid transparent; border-radius: var(--r-2);
+    cursor: pointer; text-decoration: none;
+    transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+}
+.ds-iconbtn:hover { background: var(--c-quiet-hover); }
+.ds-iconbtn:active { transform: scale(0.96); }
+.ds-iconbtn--small { width: 2.25rem; height: 2.25rem; }
+.ds-iconbtn__badge {
+    position: absolute; top: 3px; right: 1px; min-width: 1.125rem; height: 1.125rem; padding: 0 5px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--c-danger-fill); color: var(--c-on-danger-fill);
+    border-radius: var(--r-round); font-size: 0.6875rem; font-weight: 700; line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Money ---------- */
+.ds-money { display: inline-flex; align-items: baseline; white-space: nowrap; font-weight: 650; font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; letter-spacing: -0.01em; color: var(--c-ink); }
+.ds-money__sym { margin-right: 0.12em; font-size: 0.66em; font-weight: 600; color: var(--c-ink-2); }
+.ds-money__cents { font-size: 0.64em; font-weight: 550; color: var(--c-ink-2); }
+.ds-money__sign { margin-right: 0.05em; }
+.ds-money--sm { font-size: var(--t-sm); }
+.ds-money--md { font-size: var(--t-md); }
+.ds-money--lg { font-size: var(--t-xl); letter-spacing: -0.02em; }
+.ds-money--xl { font-size: var(--t-2xl); letter-spacing: -0.025em; font-stretch: 104%; }
+.ds-money--money { font-size: var(--t-money); letter-spacing: -0.03em; font-stretch: 106%; font-weight: 700; line-height: 1; }
+.ds-money.is-muted, .ds-money.is-muted .ds-money__sym, .ds-money.is-muted .ds-money__cents { color: var(--c-ink-3); }
+.ds-money.is-struck { text-decoration: line-through; text-decoration-thickness: 1px; }
+
+/* ---------- Status vocabulary: word + silhouette + hue ---------- */
+.ds-status {
+    display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+    padding: 3px 9px 3px 7px; border: 1px solid currentColor; border-radius: var(--r-1);
+    font-size: var(--t-sm); font-weight: 650; line-height: 1.25; white-space: normal;
+}
+.ds-status > span { min-width: 0; overflow-wrap: anywhere; }
+.ds-status--sm { padding: 2px 7px 2px 5px; font-size: var(--t-xs); gap: 5px; }
+.ds-status--live { color: var(--c-live); background: var(--c-live-bg); }
+.ds-status--urgent { color: var(--c-urgent); background: var(--c-urgent-bg); }
+.ds-status--scheduled { color: var(--c-scheduled); background: var(--c-scheduled-bg); }
+.ds-status--notice { color: var(--c-notice); background: var(--c-notice-bg); }
+.ds-status--ink { color: var(--c-ground); background: var(--c-ink); border-color: var(--c-ink); }
+.ds-status--muted { color: var(--c-ink-2); background: transparent; border-color: var(--c-line-strong); }
+.ds-status--neutral { color: var(--c-ink-2); background: var(--c-sunken); border-color: var(--c-line-strong); }
+
+.ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border: 1px solid var(--c-line-strong); border-radius: var(--r-1); background: transparent; color: var(--c-ink-2); font-size: var(--t-xs); font-weight: 650; line-height: 1.5; white-space: nowrap; }
+.ds-badge--sm { padding: 0 6px; }
+.ds-badge--ink { background: var(--c-ink); color: var(--c-ground); border-color: var(--c-ink); }
+.ds-badge--live { color: var(--c-live); background: var(--c-live-bg); border-color: currentColor; }
+.ds-badge--urgent { color: var(--c-urgent); background: var(--c-urgent-bg); border-color: currentColor; }
+.ds-badge--notice { color: var(--c-notice); background: var(--c-notice-bg); border-color: currentColor; }
+.ds-badge--scheduled { color: var(--c-scheduled); background: var(--c-scheduled-bg); border-color: currentColor; }
+
+/* ---------- Avatar ---------- */
+.ds-avatar { display: inline-grid; place-items: center; flex: none; width: var(--av, 32px); height: var(--av, 32px); background: var(--c-sunken); color: var(--c-ink); border: 1px solid var(--c-line-strong); border-radius: var(--r-2); font-size: calc(var(--av, 32px) * 0.38); font-weight: 700; line-height: 1; overflow: hidden; }
+.ds-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---------- Skeleton ---------- */
+.ds-skel { display: block; height: 0.9rem; background: var(--c-sunken); border-radius: var(--r-1); animation: ds-pulse 1.4s ease-in-out infinite alternate; }
+.ds-skel--block { height: auto; min-height: 2rem; width: 100%; }
+.ds-skel-lines { display: grid; gap: var(--s-2); flex: 1; }
+.ds-skel-row { display: flex; gap: var(--s-3); align-items: center; padding: var(--s-3) 0; }
+.ds-skel-card { display: grid; gap: var(--s-3); padding: var(--s-4); background: var(--c-surface); }
+@keyframes ds-pulse { from { opacity: 0.5; } to { opacity: 1; } }
+
+/* ---------- Alert ---------- */
+.ds-alert { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--s-3); align-items: start; padding: var(--s-3) var(--s-4); border: 1px solid var(--c-line-strong); border-radius: var(--r-2); background: var(--c-sunken); color: var(--c-ink); font-size: var(--t-md); }
+.ds-alert__icon { margin-top: 2px; color: var(--c-ink-2); }
+.ds-alert__title { font-weight: 700; }
+.ds-alert__text { color: var(--c-ink); }
+.ds-alert__text p + p { margin-top: var(--s-2); }
+.ds-alert__text a { color: inherit; font-weight: 600; }
+.ds-alert__close { margin: -6px -8px 0 0; display: inline-flex; align-items: center; justify-content: center; width: var(--hit); height: var(--hit); background: transparent; color: var(--c-ink-2); border: 0; border-radius: var(--r-2); cursor: pointer; }
+.ds-alert__close:hover { background: var(--c-quiet-hover); }
+.ds-alert--success { background: var(--c-ok-bg); border-color: var(--c-ok); }
+.ds-alert--success .ds-alert__icon { color: var(--c-ok); }
+.ds-alert--notice { background: var(--c-notice-bg); border-color: var(--c-notice); }
+.ds-alert--notice .ds-alert__icon { color: var(--c-notice); }
+.ds-alert--danger { background: var(--c-danger-bg); border-color: var(--c-danger); }
+.ds-alert--danger .ds-alert__icon { color: var(--c-danger); }
+
+/* Touch: on coarse pointers every small control still has a 44px target. */
+@media (pointer: coarse) {
+    .ds-btn--sm, .ds-iconbtn--small { min-height: var(--hit); }
+    .ds-iconbtn--small { width: var(--hit); height: var(--hit); }
+}

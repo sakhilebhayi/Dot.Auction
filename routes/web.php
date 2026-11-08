@@ -189,6 +189,13 @@ if (app()->environment('local', 'testing')) {
         return redirect(str_starts_with($to, '/') && ! str_starts_with($to, '//') ? $to : '/dashboard');
     })->where('who', '.+')->name('dev.login');
 
+    // The design-system gallery: every component in both themes, with invented, unsaved lots (App\Support\KitData).
+    Route::get('/dev/kit', function () {
+        $now = now();
+
+        return view('dev.kit', ['lots' => \App\Support\KitData::lots($now), 'now' => $now]);
+    })->name('dev.kit');
+
     Route::get('/dev/logout', function (Request $request) {
         Auth::logout();
         $request->session()->invalidate();

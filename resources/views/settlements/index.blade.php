@@ -1,9 +1,9 @@
-<x-app-layout>
+<x-app-layout title="Payments" :title-visible="false">
 <div class="dot-page">
 
     <div class="dot-row dot-row-between" style="margin-bottom:1.5rem;">
         <div>
-            <h1 class="dot-title">Payments</h1>
+            <p class="dot-title" aria-hidden="true">Payments</p>
             <div class="dot-subtitle">Auctions you won and auctions you sold. Winners pay Dot.Auction; paying sellers out is a manual step.</div>
         </div>
         @include('settlements._mode', ['payments' => $payments])
@@ -11,7 +11,7 @@
 
     <div class="dot-panel" style="overflow:hidden;">
         @if($settlements->count())
-        <div style="overflow-x:auto;">
+        <div class="table-scroll" role="region" aria-label="Scrolls sideways on small screens" tabindex="0">
             <table class="dot-table">
                 <caption class="sr-only">Your settlements</caption>
                 <thead>
@@ -27,8 +27,8 @@
                     @foreach($settlements as $row)
                     @php($won = $row->winner_id === auth()->id())
                     <tr>
-                        <td style="font-family:'Syne',sans-serif;font-weight:700;color:#f4f4f5;max-width:280px;overflow-wrap:anywhere;">
-                            <a class="dot-link" style="color:#f4f4f5;" href="{{ route('settlements.show', $row) }}">{{ $row->auction->title }}</a>
+                        <td style="font-family:'Syne',sans-serif;font-weight:700;color:var(--c-ink);max-width:280px;overflow-wrap:anywhere;">
+                            <a class="dot-link" style="color:var(--c-ink);" href="{{ route('settlements.show', $row) }}">{{ $row->auction->title }}</a>
                         </td>
                         <td>{{ $won ? 'You won' : 'You sold' }}</td>
                         <td class="num dot-mono">{{ $row->amount() }}</td>
@@ -50,7 +50,7 @@
         </div>
         @else
         <div style="padding:2.5rem 1.4rem;text-align:center;">
-            <p style="margin:0 0 0.4rem;font-family:'Syne',sans-serif;font-weight:700;color:#f4f4f5;">Nothing to pay and nothing sold yet.</p>
+            <p style="margin:0 0 0.4rem;font-family:'Syne',sans-serif;font-weight:700;color:var(--c-ink);">Nothing to pay and nothing sold yet.</p>
             <p class="dot-help" style="margin:0 0 1.1rem;">When you win an auction, or one of yours sells, it appears here.</p>
             <a href="{{ route('auctions.index') }}" class="dot-btn dot-btn-primary">Browse auctions</a>
         </div>

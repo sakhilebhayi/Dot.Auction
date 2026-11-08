@@ -108,7 +108,10 @@ class DashboardTest extends TestCase
 
         $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
 
-        $this->assertStringNotContainsString('href="#"', $html);
+        // The shell links the buyer pages through auction_route(): '#' only while a route is not registered yet, and those
+        // links are marked data-pending-route (the script cancels the click). Any other '#' link is a dead placeholder.
+        $this->assertSame(substr_count($html, 'data-pending-route'), substr_count($html, 'href="#"'), 'every href="#" is a marked pending route');
+        $this->assertStringNotContainsString('href="#" class="dot-', $html);
         // Seller listing management shipped: the control is a real link now,
         // not an aria-disabled stand-in.
         $this->assertStringNotContainsString('aria-disabled="true"', $html);

@@ -1,0 +1,66 @@
+/* jetstream: Jetstream's own markup (profile, teams, API tokens, 2FA, confirm password, Livewire modals) drawn with the design system. Tokens only. */
+
+/* Raw inputs from <x-input> and <x-checkbox> */
+.ds-in {
+    display: block; width: 100%; min-height: var(--hit); padding: var(--s-2) var(--s-3);
+    background: var(--c-raised); color: var(--c-ink); border: 1px solid var(--c-line-strong); border-radius: var(--r-2);
+    font: inherit; font-size: var(--t-md); line-height: 1.4; box-shadow: none; appearance: none; -webkit-appearance: none;
+    transition: border-color var(--dur-micro) var(--ease-out);
+}
+.ds-in::placeholder { color: var(--c-ink-3); opacity: 1; }
+.ds-in:hover { border-color: var(--c-ink-2); }
+.ds-in:focus, .ds-in:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 0; border-color: var(--c-focus); box-shadow: none; }
+.ds-in:disabled { background: var(--c-sunken); color: var(--c-ink-3); cursor: not-allowed; }
+.ds-in[aria-invalid="true"] { border-color: var(--c-danger); }
+select.ds-in { padding-right: 2.25rem; }
+
+.ds-checkbox { position: relative; flex: none; width: 1.375rem; height: 1.375rem; margin: 0; background: var(--c-raised); border: 1.5px solid var(--c-line-strong); border-radius: var(--r-1); appearance: none; -webkit-appearance: none; cursor: pointer; }
+.ds-checkbox:checked { background: var(--c-ink); border-color: var(--c-ink); }
+.ds-checkbox:checked::after { content: ""; position: absolute; left: 6px; top: 1px; width: 6px; height: 12px; border: solid var(--c-ground); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.ds-checkbox:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; box-shadow: none; }
+.ds-alert__list { margin: var(--s-1) 0 0; padding-left: var(--s-5); list-style: disc; }
+
+/* Ruled form sections */
+.jf-section { display: grid; gap: var(--s-4) var(--s-8); padding-block: var(--s-8); border-top: 1px solid var(--c-line-strong); }
+
+.jf-rule { display: none; }
+.jf-intro { min-width: 0; }
+.jf-intro__title { font-size: var(--t-lg); font-stretch: 106%; }
+.jf-intro__text { margin-top: var(--s-2); max-width: 44ch; color: var(--c-ink-2); font-size: var(--t-sm); }
+.jf-body { min-width: 0; }
+.jf-fields { display: block; min-width: 0; }
+.jf-fields p, .jf-fields .text-sm { line-height: 1.5; }
+.jf-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-4); margin-top: var(--s-5); }
+.jf-saved { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--c-ok); font-size: var(--t-sm); font-weight: 650; }
+.jf-fields .col-span-6 + .col-span-6 { margin-top: 0; }
+@media (min-width: 56rem) {
+    .jf-section { grid-template-columns: minmax(14rem, 1fr) minmax(0, 2fr); }
+}
+
+/* Livewire modals (x-modal, x-dialog-modal, x-confirmation-modal) */
+.jm { position: fixed; inset: 0; z-index: var(--z-dialog); display: grid; place-items: center; padding: var(--s-4); overflow-y: auto; }
+.jm__scrim { position: fixed; inset: 0; background: var(--c-scrim); }
+.jm__panel { position: relative; width: min(100%, 34rem); max-height: calc(100dvh - 2rem); overflow-y: auto; background: var(--c-raised); color: var(--c-ink); border: 1px solid var(--c-line); border-radius: var(--r-3); box-shadow: var(--shadow-float); }
+.jm__panel.ds-dialog--sm { width: min(100%, 26rem); }
+.jm__panel.ds-dialog--lg { width: min(100%, 46rem); }
+.jm__head { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-6) var(--s-6) 0; }
+.jm__title { font-size: var(--t-xl); font-stretch: 106%; }
+.jm__warn { color: var(--c-danger); flex: none; }
+.jm__content { padding: var(--s-4) var(--s-6) var(--s-6); color: var(--c-ink-2); }
+.jm__foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--s-2); padding: var(--s-4) var(--s-6); background: var(--c-surface); border-top: 1px solid var(--c-line); }
+.jm-enter { transition: opacity var(--dur-mid) var(--ease-out), transform var(--dur-mid) var(--ease-out); }
+.jm-leave { transition: opacity var(--dur-short) var(--ease-out), transform var(--dur-short) var(--ease-out); }
+.jm-from { opacity: 0; transform: translateY(8px); }
+.jm-to { opacity: 1; transform: none; }
+.jm__scrim.jm-from { transform: none; }
+.jm .ds-btn--danger { background: var(--c-danger-fill); color: var(--c-on-danger-fill); border-color: var(--c-danger-fill); }
+@media (max-width: 40rem) {
+    .jm { place-items: end center; padding: 0; }
+    .jm__panel { width: 100%; max-height: 92dvh; border-radius: var(--r-3) var(--r-3) 0 0; }
+    .jm__foot { flex-direction: column-reverse; }
+    .jm__foot .ds-btn { width: 100%; }
+}
+
+/* Jetstream's remaining utility-class surfaces: team member rows, session list, token lists. */
+.jf-fields .border-t, .jf-fields .border-gray-200 { border-color: var(--c-line); }
+

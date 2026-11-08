@@ -1,48 +1,20 @@
-<x-guest-layout>
-    <x-authentication-card>
-        <x-slot name="logo">
-            <x-authentication-card-logo />
-        </x-slot>
+<x-guest-layout title="Sign in" description="Sign in to Dot.Auction to bid, watch lots and manage your sales.">
 
-        <x-validation-errors class="mb-4" />
+    @session('status')
+        <x-ds.alert tone="info">{{ $value }}</x-ds.alert>
+    @endsession
 
-        @session('status')
-            <div class="mb-4 font-medium text-sm text-[var(--gold-soft)]">
-                {{ $value }}
-            </div>
-        @endsession
-
-        <form method="POST" action="{{ route('login') }}">
-            @csrf
-
-            <div>
-                <x-label for="email" value="{{ __('Email') }}" />
-                <x-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            </div>
-
-            <div class="mt-4">
-                <x-label for="password" value="{{ __('Password') }}" />
-                <x-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="current-password" />
-            </div>
-
-            <div class="block mt-4">
-                <label for="remember_me" class="flex items-center">
-                    <x-checkbox id="remember_me" name="remember" />
-                    <span class="ms-2 text-sm text-[var(--stone)]">{{ __('Remember me') }}</span>
-                </label>
-            </div>
-
-            <div class="flex items-center justify-end mt-4">
-                @if (Route::has('password.request'))
-                    <a class="underline text-sm text-[var(--stone)] hover:text-[var(--paper)] rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--gold)] focus:ring-offset-[var(--ink-soft)]" href="{{ route('password.request') }}">
-                        {{ __('Forgot your password?') }}
-                    </a>
-                @endif
-
-                <x-button class="ms-4">
-                    {{ __('Log in') }}
-                </x-button>
-            </div>
-        </form>
-    </x-authentication-card>
+    <form method="POST" action="{{ route('login') }}">
+        @csrf
+        <x-ds.input label="Email" name="email" type="email" :value="old('email')" required autofocus autocomplete="username" />
+        <x-ds.input label="Password" name="password" type="password" required autocomplete="current-password" />
+        <x-ds.checkbox label="Keep me signed in on this device" name="remember" />
+        <div class="gx-card__row">
+            @if (Route::has('password.request'))
+                <a href="{{ route('password.request') }}" class="gx-card__alt-link">Forgot your password?</a>
+            @endif
+            <x-ds.button type="submit" size="lg">Sign in</x-ds.button>
+        </div>
+    </form>
+    <p class="gx-card__alt">Dot.Auction accounts come from InfoDot. Open Dot.Auction from InfoDot to create yours.</p>
 </x-guest-layout>

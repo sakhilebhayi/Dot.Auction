@@ -1,0 +1,25 @@
+/*
+ * errors: the standalone error pages. Needs no database, no session and no JavaScript beyond the theme button. No Tailwind: this entry
+ * has its own two-line reset and reads the same tokens. Loaded by resources/views/errors/_ecosystem-layout.blade.php.
+ */
+@import "./tokens.css";
+@import "./fonts.css";
+@import "./base.css";
+@import "./ds-core.css";
+@import "./guest.css";
+
+*, *::before, *::after { box-sizing: border-box; }
+
+.er-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-4) var(--gutter); }
+.er-main { max-width: 44rem; padding: var(--s-12) var(--gutter) var(--s-16); display: grid; gap: var(--s-4); justify-items: start; outline: none; }
+.er-code { display: inline-block; padding: 2px var(--s-3); background: var(--c-ink); color: var(--c-ground); font-family: var(--f-mono); font-size: var(--t-lg); font-weight: 700; letter-spacing: 0.02em; line-height: 1.5; }
+.er-icon { color: var(--c-ink-2); }
+.er-title { font-size: var(--t-3xl); font-stretch: 112%; letter-spacing: -0.02em; max-width: 18ch; }
+.er-message { max-width: 52ch; color: var(--c-ink-2); font-size: var(--t-lg); }
+.er-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-2); }
+.er-discover { margin-top: var(--s-12); padding-top: var(--s-5); border-top: 1px solid var(--c-line-strong); width: 100%; }
+.er-discover h2 { font-size: var(--t-md); font-stretch: 100%; font-weight: 650; color: var(--c-ink-2); }
+.er-discover ul { display: flex; flex-wrap: wrap; gap: 0 var(--s-2); margin: var(--s-2) 0 0; padding: 0; list-style: none; }
+.er-discover a { display: inline-flex; align-items: center; min-height: var(--hit); padding: 0 var(--s-2); color: var(--c-link); font-weight: 600; }
+.er-foot { margin-top: auto; }
+.er-body { display: flex; flex-direction: column; }

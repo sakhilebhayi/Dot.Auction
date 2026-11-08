@@ -86,6 +86,7 @@ The pipeline updates a live install; it does not create one. Layout, as on the o
   index.php            shim: <?php require __DIR__.'/auction/public/index.php';
   .htaccess            Laravel rewrite rules
   build -> auction/public/build     (the deploy creates this link if it is missing)
+  fonts -> auction/public/fonts     (the self-hosted Archivo and Chivo Mono; the deploy creates the link, or mirrors the folder, and the smoke check requests both files)
   images -> auction/public/images ; apple-touch-icon.png, favicon-16x16.png, favicon-32x32.png, favicon.ico, robots.txt  (each -> auction/public/<name>)
   auction/                the app folder = DEPLOY_PATH (artisan is here)
 ```

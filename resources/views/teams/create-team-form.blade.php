@@ -12,7 +12,7 @@
             <x-label value="{{ __('Team Owner') }}" />
 
             <div class="flex items-center mt-2">
-                <img class="size-12 rounded-full object-cover" src="{{ $this->user->profile_photo_url }}" alt="{{ $this->user->name }}">
+                <x-ds.avatar :name="$this->user->name" :size="48" />
 
                 <div class="ms-4 leading-tight">
                     <div class="text-gray-900 dark:text-white">{{ $this->user->name }}</div>
