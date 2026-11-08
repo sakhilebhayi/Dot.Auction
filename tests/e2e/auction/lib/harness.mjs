@@ -45,7 +45,7 @@ export async function runSpec(id, title, body, opts = {}) {
     let fatal = null;
 
     const record = (name, ok, detail) => {
-        checks.push({ name, ok: !!ok, detail: detail === undefined ? undefined : String(detail).slice(0, 600) });
+        checks.push({ name, ok: !!ok, detail: detail === undefined ? undefined : String(detail).slice(0, 3000) });
         console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${name}${!ok && detail !== undefined ? '  -> ' + String(detail).slice(0, 300) : ''}`);
         return !!ok;
     };

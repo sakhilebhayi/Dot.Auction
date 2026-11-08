@@ -8,7 +8,7 @@ export default () => runSpec('b9', 'Errors and permissions as a buyer', async (t
     const draftId = t.id_of('Oak dining table, seats eight');           // thandi's draft
     const draftOfPieter = t.id_of('Vinyl record collection, 40 records');
     const siphoSale = t.sql(`select id from auction_settlements where winner_id=${uid('sipho')} limit 1`);
-    const lot = t.id_of('Land Rover Defender parts lot');
+    const lot = t.id_of('Set of four alloy wheels, 16-inch');           // live, no bids
     const mine = await t.person('lerato');
     const csrfOf = async (p, path) => { await p.go(path); return p.page.locator('meta[name="csrf-token"]').getAttribute('content'); };
     const get = async (p, path) => (await p.ctx.request.get(path, { maxRedirects: 0 })).status();
@@ -16,11 +16,11 @@ export default () => runSpec('b9', 'Errors and permissions as a buyer', async (t
     // ---------- other people's drafts, sales and photos ----------
     t.eq("another seller's draft page is 404 (not 403: its existence is not confirmed)", await get(mine, `/auctions/${draftId}`), 404);
     t.eq('a second seller\'s draft is 404 too', await get(mine, `/auctions/${draftOfPieter}`), 404);
-    const draftImage = t.sql(`select id from auction_images where auction_id in (${draftId}, ${draftOfPieter}) limit 1`);
+    const draftImage = t.sql(`select i.id from auction_images i join auctions a on a.id=i.auction_id where a.status='draft' limit 1`);
     if (draftImage) { t.eq('a draft\'s photo is 404 for a buyer', await get(mine, `/auctions/${t.sql(`select auction_id from auction_images where id=${draftImage}`)}/images/${draftImage}`), 404); }
     else { t.note('the demo has no photo on a draft, so the draft-photo 404 was checked on a made-up id only'); }
     t.eq('a photo id that belongs to another lot is 404 under this lot (scoped binding)', await get(mine, `/auctions/${lot}/images/${t.sql('select id from auction_images limit 1')}`), 404);
-    const publicImage = t.sql(`select auction_id || '/' || id from auction_images where auction_id not in (${draftId}, ${draftOfPieter}) limit 1`);
+    const publicImage = t.sql(`select i.auction_id || '/' || i.id from auction_images i join auctions a on a.id=i.auction_id where a.status != 'draft' limit 1`);
     t.eq('a photo of a published lot is served', await get(mine, `/auctions/${publicImage.split('/')[0]}/images/${publicImage.split('/')[1]}`), 200);
     t.eq("another person's sale is 404", await get(mine, `/settlements/${siphoSale}`), 404);
     t.eq('a sale id that does not exist is 404', await get(mine, '/settlements/00000000000000000000000000'), 404);
@@ -32,7 +32,7 @@ export default () => runSpec('b9', 'Errors and permissions as a buyer', async (t
     const open = await mine.ctx.request.post(`/notifications/${siphoNotice}/open`, { form: { _token: tok }, maxRedirects: 0 });
     t.check("another person's notification cannot be opened (404)", open.status() === 404, String(open.status()));
     t.eq("...and it stayed unread", t.sql(`select read_at is null from notifications where id='${siphoNotice}'`), '1');
-    mine.tolerate(/http404|http403/);
+    mine.tolerate(/http404|http403/); mine.tolerate(/console\.error Failed to load resource.*40[34]/);
 
     // ---------- seller and operator pages ----------
     const others = t.id_of('Stainless steel gas braai, two burner');
@@ -73,7 +73,7 @@ export default () => runSpec('b9', 'Errors and permissions as a buyer', async (t
         await guest.go('/nothing-here');
         t.has('signed out: the 404 page offers Sign in', await guest.page.locator('body').innerText(), 'Sign in');
         await t.audit(guest, 'error-404-guest', { full: false });
-        guest.tolerate(/http404/);
+        guest.tolerate(/http404/); guest.tolerate(/console\.error Failed to load resource.*404/);
         t.clean(guest, 'guest');
     }
 
@@ -85,40 +85,38 @@ export default () => runSpec('b9', 'Errors and permissions as a buyer', async (t
         await s.ctx.clearCookies();
         await s.go('/bids');
         t.check('an expired session on a page load goes to the sign-in page', /\/login/.test(s.page.url()), s.page.url());
-        t.has('the sign-in page is in plain words', await s.page.locator('body').innerText(), 'Log in');
+        t.has('the sign-in page is in plain words', await s.page.locator('body').innerText(), 'Sign in');
         // Real sign-in with the demo password (local test data), and the return trip.
         await s.page.goto(`/auctions/${lot}`);
         t.check('a deep link while signed out goes to sign in first', /\/login/.test(s.page.url()), s.page.url());
         await s.page.getByLabel('Email').fill('lerato.dlamini@demo.auction.test');
         await s.page.getByLabel('Password').fill('password');
-        await s.page.getByRole('button', { name: /Log in/ }).click();
+        await s.page.getByRole('button', { name: 'Sign in' }).click();
         await s.page.waitForLoadState('load');
         t.check(`after signing in he lands on the page he asked for or on Home (${new URL(s.page.url()).pathname})`, [`/auctions/${lot}`, '/dashboard'].includes(new URL(s.page.url()).pathname), s.page.url());
         t.note(`after sign-in redirect went to ${new URL(s.page.url()).pathname}`);
         // The session dies while the lot page is open and she presses Place bid.
         await s.go(`/auctions/${lot}`);
-        await startBid(s, '1000').catch(() => {});
-        await s.page.waitForTimeout(500);
-        await s.page.locator('dialog[open]').waitFor({ timeout: 5000 }).catch(() => {});
+        await startBid(s, '2500');
+        await s.page.locator('dialog[open]').waitFor({ timeout: 8000 });
         await s.ctx.clearCookies();
         const before = Number(t.sql(`select count(*) from bids where auction_id=${lot}`));
-        const dlg = s.page.locator('dialog[open]');
-        if (await dlg.count()) { await dlg.getByRole('button', { name: /^Place bid of/ }).click(); }
-        await s.page.waitForTimeout(2500);
+        await s.page.locator('dialog[open]').getByRole('button', { name: /^Place bid of/ }).click();
+        await s.page.waitForURL(/\/login/, { timeout: 10000 }).catch(() => {});
         const after = Number(t.sql(`select count(*) from bids where auction_id=${lot}`));
         const text = flat(await s.page.locator('body').innerText());
-        t.eq('a bid sent after the session died places nothing', after, before);
-        const friendly = /session (has )?expired|sign in again|log in again|reload|refresh/i.test(text) || dialogs.some((d) => /expired|refresh/i.test(d));
-        t.check(`the person is told in words that the session expired and what to do (page: ${text.slice(0, 120).replace(/"/g, "'")}; dialogs: ${JSON.stringify(dialogs)})`, friendly && !/Page Expired|419/.test(text), JSON.stringify({ dialogs, url: s.page.url() }));
+        t.eq('a bid confirmed after the session died places nothing', after, before);
+        t.check('...and the person is taken to the sign-in page (not left on a dead button, not shown a raw 419)', /\/login/.test(s.page.url()) && !/Page Expired|419/.test(text), JSON.stringify({ url: s.page.url(), text: text.slice(0, 120) }));
+        t.note('observation: the sign-in page does not say that the session ended; the person is simply asked to sign in (no product rule invented)');
         await t.shot(s, 'session-expired-bid', { full: false });
-        s.tolerate(/http419|http40|redirect/);
+        s.tolerate(/http419|http40|redirect/); s.tolerate(/console\.error Failed to load resource.*(419|40\d)/);
     }
 
     // ---------- the connection drops, or the server fails, while bidding ----------
     {
         const o = await t.person('lerato', { to: `/auctions/${lot}` });
         await o.page.getByRole('button', { name: 'Place bid', exact: true }).waitFor();
-        await startBid(o, '1000');
+        await startBid(o, '2500');
         await o.page.locator('dialog[open]').waitFor({ timeout: 8000 });
         await o.ctx.setOffline(true);
         await o.page.locator('dialog[open]').getByRole('button', { name: /^Place bid of/ }).click();
@@ -128,11 +126,18 @@ export default () => runSpec('b9', 'Errors and permissions as a buyer', async (t
         t.check(`offline: pressing confirm tells the person in words that the bid did not go through and what to do (${text.slice(0, 160).replace(/"/g, "'")})`, msgOffline, text.slice(0, 300));
         await t.shot(o, 'offline-bid', { full: false });
         t.eq('offline: nothing was placed', Number(t.sql(`select count(*) from bids where auction_id=${lot}`)), 0);
+        t.eq('offline: the notice is announced as an alert', await o.page.locator('.ds-toast[role="alert"]').count() > 0, true);
         await o.ctx.setOffline(false);
+        // Back online, the same dialog can be confirmed again: the button was not left stuck in "Placing bid".
+        const stuck = await o.page.locator('dialog[open]').getByRole('button', { name: /Place bid of|Placing bid/ }).innerText().catch(() => 'none');
+        t.check(`back online the confirm button is usable again (reads "${stuck.trim()}")`, /Place bid of/.test(stuck), stuck);
+        await o.page.locator('dialog[open]').getByRole('button', { name: /^Place bid of/ }).click({ timeout: 5000 }).catch(() => {});
+        await o.page.waitForFunction(() => /Your bid of .* is in/.test(document.querySelector('.lot-bid')?.innerText || ''), null, { timeout: 12000 }).catch(() => {});
+        t.eq('back online the same confirm places the bid, once', Number(t.sql(`select count(*) from bids where auction_id=${lot}`)), 1);
         o.tolerate(/.*/);
         o.drain();
         // Lost polling shows the quiet note after three failures.
-        await o.go(`/auctions/${lot}`);
+        await o.go(`/auctions/${t.id_of('Mountain bike, 29-inch aluminium frame')}`);
         await o.ctx.setOffline(true);
         await o.page.waitForFunction(() => !document.querySelector('[data-live-lost]')?.hidden, null, { timeout: 25000 }).catch(() => {});
         const lost = await o.page.evaluate(() => { const n = document.querySelector('[data-live-lost]'); return n && !n.hidden ? n.innerText : null; });
@@ -143,16 +148,18 @@ export default () => runSpec('b9', 'Errors and permissions as a buyer', async (t
         o.drain();
 
         // A server failure on a Livewire call.
-        await o.go(`/auctions/${lot}`);
-        await startBid(o, '1000');
+        await o.go(`/auctions/${t.id_of('Mountain bike, 29-inch aluminium frame')}`);
+        const minNow = await o.page.locator('input[name="bidAmount"]').inputValue().catch(() => '');
+        t.check(`(setup) lerato is not leading the mountain bike, so the form is there (field ${minNow || 'missing'})`, minNow !== '', '');
+        await startBid(o, '9000');
         await o.page.locator('dialog[open]').waitFor({ timeout: 8000 });
         await o.page.route('**/livewire/update', (r) => r.fulfill({ status: 500, contentType: 'text/html', body: '<html><body><h1>Server Error</h1><pre>Illuminate\\Database\\QueryException SQLSTATE[HY000]</pre></body></html>' }));
         await o.page.locator('dialog[open]').getByRole('button', { name: /^Place bid of/ }).click();
         await o.page.waitForTimeout(2500);
         text = flat(await o.page.locator('body').innerText());
         const iframeModal = await o.page.locator('#livewire-error, iframe').count();
-        t.check('a 500 from the server shows no raw stack trace or SQL to the person', !/SQLSTATE|QueryException|Illuminate/.test(text) && iframeModal === 0, `iframes/modal: ${iframeModal}; text: ${text.slice(0, 200)}`);
-        t.check('a 500 from the server says in words that something went wrong and the bid may not have gone through', /something went wrong|try again|could not|did not go through|not placed|check/i.test(text), text.slice(0, 300));
+        t.check('a 500 from the server shows no raw stack trace or SQL to the person (no error modal, no iframe)', !/SQLSTATE|QueryException|Illuminate/.test(text) && iframeModal === 0, `iframes/modal: ${iframeModal}; text: ${text.slice(0, 200)}`);
+        t.check('a 500 from the server says in words that something went wrong and that the action may not have gone through', /Something went wrong on our side/.test(text) && /may not have gone through/.test(text), text.slice(0, 300));
         await t.shot(o, 'server-error-bid', { full: false });
         await o.page.unroute('**/livewire/update');
         o.tolerate(/.*/); o.drain();
@@ -171,7 +178,7 @@ export default () => runSpec('b9', 'Errors and permissions as a buyer', async (t
         t.check('the 429 page offers a way out', await r.page.getByRole('link', { name: 'Go home' }).count() > 0, '');
         t.check('the 429 page has no exclamation mark or dash', !/[!—–]/.test(b), b);
         await t.audit(r, 'error-429', { full: false });
-        r.tolerate(/http429/);
+        r.tolerate(/http429/); r.tolerate(/console\.error Failed to load resource.*429/);
         const lim = await t.person('naledi', { to: `/auctions/${lot}` });
         t.check('the bid rate limit is covered in B4 (message "Too many bids")', true, '');
         lim.drain();

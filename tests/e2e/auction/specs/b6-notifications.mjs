@@ -7,7 +7,7 @@ export default () => runSpec('b6', 'Notifications: bell, inbox, destinations, po
     const uid = (w) => t.user_id(w);
     const unreadDb = (w) => Number(t.sql(`select count(*) from notifications where notifiable_id=${uid(w)} and read_at is null`));
     const badge = async (p) => { const b = p.page.locator('.ds-iconbtn__badge'); return (await b.count()) ? (await b.first().innerText()).trim() : '0'; };
-    const bellName = async (p) => (await p.page.locator('.nf > button').first().innerText()).replace(/\s+/g, ' ').trim();
+    const bellName = async (p) => (await p.page.locator('.nf > button .sr-only').first().innerText()).replace(/\s+/g, ' ').trim(); // the number on the badge is aria-hidden, so the name is the sr-only text
     const mk = (title, o = {}) => {
         const o2 = { start: 1000, inc: 50, endsMs: 3 * 3600e3, ...o };
         t.sql(`insert into auctions (seller_id, category_id, title, description, starting_price, current_price, bid_increment, status, starts_at, ends_at, created_at, updated_at, snipe_extensions)
@@ -104,30 +104,30 @@ export default () => runSpec('b6', 'Notifications: bell, inbox, destinations, po
     const johan = await t.person('johan');
     const LA = mk('E2E outbid lot');
     await zanele.go(`/auctions/${LA}`);
-    await bidUI(zanele, '1000');
+    await bidUI(zanele, '1050');
     t.eq('zanele has no notifications yet', unreadDb('zanele'), 0);
     await aisha.go(`/auctions/${LA}`);
-    await bidUI(aisha, '1050');
+    await bidUI(aisha, '1100');
     t.eq('being outbid creates exactly one unread notification', unreadDb('zanele'), 1);
     const nrow = JSON.parse(t.sql(`select data from notifications where notifiable_id=${uid('zanele')}`));
     t.eq('its type, title and destination are stored', [nrow.type, nrow.title, new URL(nrow.url, 'http://x').pathname], ['outbid', "You've been outbid", `/auctions/${LA}`]);
-    t.has('its words give the price and the next valid bid, with no relative time', nrow.message, 'The price is now R1,050.00 and the next valid bid is R1,100.00');
+    t.has('its words give the price and the next valid bid, with no relative time', nrow.message, 'The price is now R1,100.00 and the next valid bid is R1,150.00');
     // zanele's open dashboard learns about it from the poll (30 s) with no reload.
     await zanele.go('/dashboard');
     const t0 = Date.now();
     await aisha.go(`/auctions/${LA}`);
     await sipho.go(`/auctions/${LA}`);
-    await bidUI(sipho, '1100'); // outbids aisha, not zanele; zanele gets nothing new
+    await bidUI(sipho, '1150'); // outbids aisha, not zanele; zanele gets nothing new
     t.eq('zanele is not told about a bid that did not displace her', unreadDb('zanele'), 1);
     await zanele.go('/dashboard');
     t.eq('after a reload the badge reads 1', await badge(zanele), '1');
     // Poll: another outbid arrives while the page is open and visible.
     const LB = mk('E2E poll lot');
     await zanele.go(`/auctions/${LB}`);
-    await bidUI(zanele, '1000');
+    await bidUI(zanele, '1050');
     await zanele.go('/dashboard');
     await johan.go(`/auctions/${LB}`);
-    await bidUI(johan, '1050');
+    await bidUI(johan, '1100');
     t.eq('a second outbid is in the database', unreadDb('zanele'), 2);
     const tPoll = Date.now();
     await zanele.page.waitForFunction(() => document.querySelector('.ds-iconbtn__badge')?.innerText.trim() === '2', null, { timeout: 45000 });
@@ -138,10 +138,10 @@ export default () => runSpec('b6', 'Notifications: bell, inbox, destinations, po
     t.clean(zanele, 'poll');
 
     // Won, sold, ending soon, overdue, cancelled: made by the real commands.
-    const LW = mk('E2E won lot', { endsMs: 90e3 });
+    const LW = mk('E2E won lot', { endsMs: 3600e3 });
     await sipho.go(`/auctions/${LW}`);
-    await bidUI(sipho, '1000');
-    await t.sleep(95e3 - 4000 > 0 ? 92e3 : 0);
+    await bidUI(sipho, '1050');
+    t.sql(`update auctions set ends_at='${ts(-5000)}' where id=${LW}`); // the clock reaches the close: the real settle command takes it from here
     const settled = t.artisan('auction:settle-ended');
     t.eq('auction:settle-ended ran', settled.code, 0);
     t.eq('the lot ended with a settlement for sipho', t.sql(`select status from auction_settlements where auction_id=${LW} and winner_id=${uid('sipho')}`), 'awaiting_payment');
@@ -152,8 +152,7 @@ export default () => runSpec('b6', 'Notifications: bell, inbox, destinations, po
     await sipho.page.locator('.nf > button').click();
     const wonItem = sipho.page.locator('#nf-panel .nf-item', { hasText: 'E2E won lot' }).first();
     t.has('the bell shows the win in words', flat(await wonItem.innerText()), 'E2E won lot');
-    await wonItem.click();
-    await sipho.page.waitForLoadState('load');
+    await Promise.all([sipho.page.waitForURL((u) => u.pathname !== '/dashboard', { timeout: 10000 }), wonItem.click()]);
     t.check('a won notice opens the lot or the sale of that lot', new RegExp(`/(auctions/${LW}|settlements/)`).test(new URL(sipho.page.url()).pathname), sipho.page.url());
     t.has('and that page is about the lot', await mainText(sipho.page), 'E2E won lot');
 
@@ -163,11 +162,13 @@ export default () => runSpec('b6', 'Notifications: bell, inbox, destinations, po
     t.sql(`update watchlists set ending_soon_notified_at=NULL`);
     const es = t.artisan('auction:notify-ending-soon');
     t.eq('auction:notify-ending-soon ran', es.code, 0);
-    const soon = t.sql(`select data from notifications where notifiable_id=${uid('lerato')} and type like '%EndingSoon%' and read_at is null order by created_at desc limit 1`);
-    t.check('a watcher got an "ending soon" notice for that lot', soon !== '' && JSON.parse(soon).auction_id === braai, soon.slice(0, 200));
-    t.has('it names the closing time in SAST (no relative time)', JSON.parse(soon || '{"message":""}').message, 'SAST');
+    const soonRows = t.sql(`select data from notifications where notifiable_id=${uid('lerato')} and type like '%EndingSoon%' and read_at is null`).split('\n').filter(Boolean).map((d) => JSON.parse(d));
+    const soon = soonRows.find((d) => d.auction_id === braai);
+    t.check('a watcher got an "ending soon" notice for the lot she watches that closes within the hour', !!soon, JSON.stringify(soonRows).slice(0, 300));
+    t.has('it names the closing time in SAST (no relative time)', soon?.message ?? '', 'SAST');
+    t.eq('she is told once per lot: one notice for each of the two watched lots that close within the hour', soonRows.length, 2);
     await lerato.go('/dashboard');
-    t.eq('the bell shows 1 unread for lerato again', await badge(lerato), '1');
+    t.eq('the bell shows them as unread', await badge(lerato), String(unreadDb('lerato')));
 
     // Overdue and cancelled settlement notices.
     const sale = t.sql(`select id from auction_settlements where status='awaiting_payment' and winner_id=${uid('johan')}`);
@@ -189,8 +190,7 @@ export default () => runSpec('b6', 'Notifications: bell, inbox, destinations, po
     await johan.go('/dashboard');
     await johan.page.locator('.nf > button').click();
     const cancelItem = johan.page.locator('#nf-panel .nf-item.is-unread', { hasText: /cancel/i }).first();
-    await cancelItem.click();
-    await johan.page.waitForLoadState('load');
+    await Promise.all([johan.page.waitForURL((u) => u.pathname !== '/dashboard', { timeout: 10000 }), cancelItem.click()]);
     t.eq('clicking the cancelled-sale notice opens that sale', new URL(johan.page.url()).pathname, `/settlements/${sale}`);
     t.has('and the page says it was cancelled', await mainText(johan.page), 'Cancelled by the seller');
     t.clean(johan, 'cancel notice'); t.clean(sp, 'seller cancel'); t.clean(sipho, 'won notice');

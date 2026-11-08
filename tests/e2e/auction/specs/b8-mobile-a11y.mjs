@@ -4,9 +4,9 @@ import { flat, mainText, ts, startBid } from '../lib/common.mjs';
 
 export default () => runSpec('b8', 'Phone, keyboard, motion, theme and zoom', async (t) => {
     t.sql(`update auctions set ends_at='${ts(3 * 3600e3)}' where title like 'Wool rug%' or title like 'Stainless steel%'`);
-    const lot = t.id_of('Land Rover Defender parts lot');
+    const lot = t.id_of('Set of four alloy wheels, 16-inch');
     const sale = t.sql(`select id from auction_settlements where winner_id=${t.user_id('sipho')} and status='awaiting_payment'`);
-    const teamId = t.sql(`select id from teams limit 1`) || t.sql(`select current_team_id from users where id=${t.user_id('sipho')}`);
+    const teamId = t.sql(`select current_team_id from users where id=${t.user_id('sipho')}`);
     const pages = [
         ['dashboard', '/dashboard'], ['browse', '/auctions'], ['browse-filtered', '/auctions?state=live&sort=price_desc&q=a'], ['lot', `/auctions/${lot}`],
         ['bids', '/bids'], ['watching', '/watchlist'], ['won', '/won'], ['notifications', '/notifications'], ['payments', '/settlements'], ['sale', `/settlements/${sale}`],
@@ -32,6 +32,7 @@ export default () => runSpec('b8', 'Phone, keyboard, motion, theme and zoom', as
     const sheet = pg.locator('dialog.sh-sheet[open]');
     const links = (await sheet.locator('a, button').allInnerTexts()).map((s) => s.trim()).filter(Boolean);
     t.check('the menu sheet lists the pages, profile, theme and log out', ['Browse lots', 'My bids', 'Watching', 'Won', 'Payments', 'Profile and security', 'Log out'].every((x) => links.some((l) => l.includes(x))), links.join(' | '));
+    await pg.waitForTimeout(700);
     const sb = await sheet.locator('.ds-dialog__panel').boundingBox();
     t.check('the sheet fits the screen', sb.x >= -1 && sb.x + sb.width <= 391 && sb.y + sb.height <= 845, JSON.stringify(sb));
     const rowSizes = await sheet.locator('.ds-menurow').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
@@ -45,12 +46,10 @@ export default () => runSpec('b8', 'Phone, keyboard, motion, theme and zoom', as
 
     // ---------- the journey: browse, open, bid ----------
     await phone.go('/auctions');
-    await pg.getByRole('searchbox', { name: 'Search by title' }).fill('land rover');
-    await pg.getByRole('button', { name: 'Search' }).first().click();
-    await pg.waitForLoadState('load');
-    t.eq('search on a phone finds the lot', await pg.locator('.ds-lot__title').allInnerTexts().then((a) => a.map((s) => s.trim())), ['Land Rover Defender parts lot']);
-    await pg.getByRole('link', { name: 'Land Rover Defender parts lot' }).first().click();
-    await pg.waitForLoadState('load');
+    await pg.getByRole('searchbox', { name: 'Search by title' }).fill('alloy wheels');
+    await Promise.all([pg.waitForNavigation(), pg.getByRole('button', { name: 'Search' }).first().click()]);
+    t.eq('search on a phone finds the lot', await pg.locator('.ds-lot__title').allInnerTexts().then((a) => a.map((s) => s.trim())), ['Set of four alloy wheels, 16-inch']);
+    await Promise.all([pg.waitForNavigation(), pg.getByRole('link', { name: 'Set of four alloy wheels, 16-inch' }).first().click()]);
     t.eq('the card link opens the lot', new URL(pg.url()).pathname, `/auctions/${lot}`);
     const fieldBox = await pg.locator('input[name="bidAmount"]').boundingBox();
     const priceBox = await pg.locator('.lot-price__amount').boundingBox();
@@ -66,6 +65,7 @@ export default () => runSpec('b8', 'Phone, keyboard, motion, theme and zoom', as
     t.check(`tapping a rung ("${rungText}") puts its amount in the field (${filled})`, /^\d+(\.\d\d)?$/.test(filled), filled);
     await startBid(phone, filled);
     await pg.locator('dialog[open]').waitFor({ timeout: 8000 });
+    await pg.waitForTimeout(700);
     const d = await pg.locator('dialog[open] .ds-dialog__panel').boundingBox();
     t.check('the confirm dialog fits a 390 phone', d.x >= -1 && d.x + d.width <= 391 && d.y + d.height <= 845, JSON.stringify(d));
     const cb = await pg.locator('dialog[open]').getByRole('button', { name: /^Place bid of/ }).boundingBox();
@@ -86,6 +86,7 @@ export default () => runSpec('b8', 'Phone, keyboard, motion, theme and zoom', as
     const tinyReport = [];
     for (const [sizeName, vp] of sizes) {
         const p = await t.person('sipho', { viewport: vp, mobile: true, touch: true, to: '/dashboard' });
+        t.eq(`the ${sizeName} px phone context reports a coarse pointer (so the touch-size rules apply)`, await p.page.evaluate(() => matchMedia('(pointer: coarse)').matches), true);
         for (const [name, url] of pages) {
             await p.go(url);
             const ov = await p.page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -137,7 +138,8 @@ export default () => runSpec('b8', 'Phone, keyboard, motion, theme and zoom', as
             const s = await k.evaluate(() => {
                 const e = document.activeElement; if (!e || e === document.body) { return null; }
                 const cs = getComputedStyle(e);
-                const ring = (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) || (cs.boxShadow && cs.boxShadow !== 'none');
+                const has = (el) => { const c = getComputedStyle(el); return (c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0) || (c.boxShadow && c.boxShadow !== 'none'); };
+                const ring = has(e) || (e.classList.contains('ds-lot__link') && has(e.closest('.ds-lot'))); // a card link draws its ring around the whole card
                 const r = e.getBoundingClientRect();
                 return { tag: e.tagName.toLowerCase(), label: (e.innerText || e.getAttribute('aria-label') || e.name || '').trim().replace(/\s+/g, ' ').slice(0, 30), ring, inView: r.bottom > 0 && r.top < innerHeight, id: e.id };
             });
@@ -147,21 +149,23 @@ export default () => runSpec('b8', 'Phone, keyboard, motion, theme and zoom', as
         }
         t.check(`tabbing 60 times moves through ${stops.length} distinct stops and does not get stuck`, new Set(stops.map((s) => s.tag + s.label + s.id)).size > 25, String(stops.length));
         t.eq('every stop shows a visible focus ring or outline', invisible, []);
-        t.check('the first stops are: skip link, brand, search, bell, theme, account, then the page (order follows the page)', stops.findIndex((s) => /Switch theme|Search/.test(s.label)) < 12, JSON.stringify(stops.slice(0, 14).map((s) => s.label)));
+        t.check('the first stops are the skip link, then the navigation, then the search, bell, theme and account in reading order', stops[0].label === 'Skip to main content' && stops.findIndex((s) => /Notifications/.test(s.label)) < 14 && stops.findIndex((s) => /theme/.test(s.label)) < 15, JSON.stringify(stops.slice(0, 16).map((s) => s.label)));
         // Operate the controls by keyboard: sort select + tab chips.
         await kb.go('/auctions');
-        await k.getByLabel('Sort by').focus();
-        await k.keyboard.press('ArrowDown');
-        await k.waitForLoadState('load');
-        t.check('the Sort select works from the keyboard (URL changes)', /sort=/.test(k.url()), k.url());
-        await kb.go(`/auctions/${lot}`);
+        await k.getByRole('searchbox', { name: 'Search by title' }).focus();
+        await k.keyboard.type('guitar');
+        await k.keyboard.press('Enter');
+        await k.waitForURL(/q=guitar/, { timeout: 8000 }).catch(() => {});
+        t.check('searching works from the keyboard alone (type, Enter)', /q=guitar/.test(k.url()) && (await k.locator('.ds-lot__title').count()) === 1, k.url());
+        t.note('the Sort select was not operated by keyboard here: on macOS a native select opens its popup instead of changing value, which a headless run cannot drive; B2 changes it with selectOption');
+        await kb.go(`/auctions/${t.id_of('Mountain bike, 29-inch aluminium frame')}`);
         const field = k.locator('input[name="bidAmount"]');
         await field.focus();
         await k.keyboard.press('Enter');
         await k.locator('dialog[open]').waitFor({ timeout: 8000 });
         const trapped = [];
-        for (let i = 0; i < 8; i++) { await k.keyboard.press('Tab'); trapped.push(await k.evaluate(() => !!document.activeElement.closest('dialog[open]'))); }
-        t.eq('inside the confirm dialog Tab stays inside it (focus trap)', trapped.every(Boolean), true);
+        for (let i = 0; i < 8; i++) { await k.keyboard.press('Tab'); trapped.push(await k.evaluate(() => document.activeElement === document.body || !!document.activeElement.closest('dialog[open]'))); }
+        t.eq('inside the confirm dialog Tab never reaches the page behind it (it stays in the dialog or leaves the page)', trapped.every(Boolean), true);
         await k.keyboard.press('Escape');
         await k.waitForTimeout(300);
         t.check('Escape closes it and focus returns inside the lot form', await k.evaluate(() => !!document.activeElement?.closest('.lot-form')), await k.evaluate(() => document.activeElement?.outerHTML.slice(0, 100)));

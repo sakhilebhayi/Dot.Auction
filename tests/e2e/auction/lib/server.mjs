@@ -79,7 +79,7 @@ export async function bootApp(name, extraEnv = {}) {
         if (i === 99) { try { process.kill(-child.pid, 'SIGTERM'); } catch { /* gone */ } throw new Error('server did not start; see ' + logFile); }
     }
 
-    const sql = (q) => execFileSync('sqlite3', ['-separator', '\t', dbFile, q], { encoding: 'utf8' }).trim();
+    const sql = (q) => execFileSync('sqlite3', ['-cmd', '.timeout 8000', '-separator', '\t', dbFile, q], { encoding: 'utf8' }).trim();
     const artisan = (...args) => { const res = php(args); return { code: res.status, out: (res.stdout || '') + (res.stderr || '') }; };
     const stop = async () => { try { process.kill(-child.pid, 'SIGTERM'); } catch { /* already gone */ } log.end(); await new Promise((r2) => setTimeout(r2, 200)); };
 

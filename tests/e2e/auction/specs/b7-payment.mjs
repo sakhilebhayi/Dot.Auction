@@ -17,6 +17,11 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
     const laptop = sale('Dell Latitude laptop, i5, 16 GB');
     const chairs = sale('Six leather dining chairs');
     const nikon = sale('Nikon D3500 camera body');
+    // The demo world already holds attempts on the laptop sale (a started and a failed checkout, for the operator page): judge only what this run adds.
+    const base = { [laptop]: payments(laptop).length, [chairs]: payments(chairs).length, [nikon]: payments(nikon).length };
+    const mine = (id) => payments(id).slice(base[id]);
+    const paidNotices = (uidn) => Number(t.sql(`select count(*) from notifications where type like '%SettlementPaid%' and notifiable_id=${uidn}`));
+    const noticeBase = [paidNotices(uid('sipho')), paidNotices(1)];
     const sipho = await t.person('sipho', { to: `/settlements/${laptop}` });
     const page = sipho.page;
 
@@ -40,7 +45,7 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
     t.check('Pay now sent him to the gateway\'s checkout with our reference', /^AUC-[0-9A-Z]{26}$/.test(ref), ref);
     const row = t.sql(`select status, amount_cents, currency, provider, initiated_by from settlement_payments where reference='${ref}'`).split('\t');
     t.eq('one payment attempt was recorded, initiated, for the sale amount and currency taken from the sale', row, ['initiated', '370000', 'ZAR', 'paystack', String(uid('sipho'))]);
-    t.has('the (fake) checkout shows the right amount', await mainText(page), 'ZAR 3,700.00');
+    t.has('the (fake) checkout shows the right amount', await mainText(page), 'ZAR3,700.00');
     t.eq('the sale is still awaiting payment while he is on the checkout', status(laptop), 'awaiting_payment');
     // He opens a second tab and presses Pay now again: the same checkout is reused, not a second payment.
     {
@@ -49,7 +54,7 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
         await tab2.getByRole('button', { name: 'Pay now' }).click();
         await tab2.waitForURL(/\/dev\/fake-paystack\//, { timeout: 10000 });
         t.eq('Pay now in a second tab reuses the same checkout', new URL(tab2.url()).pathname.split('/').pop(), ref);
-        t.eq('still exactly one attempt', payments(laptop), ['initiated']);
+        t.eq('still exactly one attempt of ours', mine(laptop), ['initiated']);
         await tab2.close();
     }
     await page.locator('#fake-pay').click();
@@ -60,11 +65,11 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
     t.has('it says payment received, titled', body, 'Payment received');
     t.has('it says thank you', body, 'Payment received. Thank you.');
     t.has('the headline is the paid state', body, 'The seller has been told. This was a test payment: no real money moved.');
-    t.eq('the database: settlement paid with a paid_at, attempt paid', [status(laptop), payments(laptop), t.sql(`select paid_at is not null from auction_settlements where id='${laptop}'`)], ['paid', ['paid'], '1']);
+    t.eq('the database: settlement paid with a paid_at, attempt paid', [status(laptop), mine(laptop), t.sql(`select paid_at is not null from auction_settlements where id='${laptop}'`)], ['paid', ['paid'], '1']);
     t.eq('exactly one paid event in the history', events(laptop, 'paid'), 1);
     t.eq('no Pay now button is left', await page.getByRole('button', { name: 'Pay now' }).count(), 0);
     t.has('the receipt reference is shown', body, ref);
-    t.eq('the winner and the seller were each told', [Number(t.sql(`select count(*) from notifications where type like '%SettlementPaid%' and notifiable_id=${uid('sipho')}`)), Number(t.sql(`select count(*) from notifications where type like '%SettlementPaid%' and notifiable_id=1`))], [1, 1]);
+    t.eq('the winner and the seller were each told', [paidNotices(uid('sipho')) - noticeBase[0], paidNotices(1) - noticeBase[1]], [1, 1]);
     await t.audit(sipho, 'sale-paid-return');
     t.clean(sipho, 'success return');
 
@@ -72,12 +77,12 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
     await page.goto(`/settlements/${laptop}/payment/callback`);
     await page.waitForLoadState('load');
     t.has('revisiting the return address says it is paid, not an error', await mainText(page), 'Payment received. Thank you.');
-    t.eq('...and records nothing twice', [payments(laptop), events(laptop, 'paid')], [['paid'], 1]);
+    t.eq('...and records nothing twice', [mine(laptop), events(laptop, 'paid')], [['paid'], 1]);
     const payload = JSON.stringify({ event: 'charge.success', data: { id: 424242, status: 'success', reference: ref, amount: 370000, currency: 'ZAR', paid_at: new Date().toISOString(), metadata: { settlement_id: laptop } } });
     const sig = crypto.createHmac('sha512', KEY).update(payload).digest('hex');
     const hook = async (body2, signature) => sipho.ctx.request.post('/webhooks/paystack', { data: body2, headers: { 'content-type': 'application/json', 'x-paystack-signature': signature } });
     t.eq('a correctly signed duplicate webhook is accepted (200)', (await hook(payload, sig)).status(), 200);
-    t.eq('...and changes nothing', [status(laptop), payments(laptop), events(laptop, 'paid')], ['paid', ['paid'], 1]);
+    t.eq('...and changes nothing', [status(laptop), mine(laptop), events(laptop, 'paid')], ['paid', ['paid'], 1]);
     t.eq('a webhook with a wrong signature is refused (401)', (await hook(payload, 'f'.repeat(128))).status(), 401);
     t.eq('a webhook with no signature is refused (401)', (await hook(payload, '')).status(), 401);
     sipho.tolerate(/http401/);
@@ -86,7 +91,7 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
     const thandi = await t.person('thandi', { to: `/settlements/${laptop}` });
     body = await mainText(thandi.page);
     t.has('the seller sees "The buyer has paid."', body, 'The buyer has paid.');
-    t.has('...and that payout is manual, honestly', body, 'paying sellers out by hand');
+    t.has('...and that payout is manual, honestly', body, 'pays sellers out by hand');
     t.eq('the seller has no Pay now', await thandi.page.getByRole('button', { name: 'Pay now' }).count(), 0);
     await thandi.go('/settlements?role=selling');
     t.has('the seller list shows the sale as Paid', flat(await thandi.page.locator('tr', { hasText: 'Dell Latitude' }).first().innerText()), 'Paid');
@@ -112,7 +117,7 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
     body = await mainText(page);
     t.has('a declined payment is titled and explained', body, 'The payment did not go through');
     t.has('...with "you were not charged"', body, 'you were not charged');
-    t.eq('database: the attempt is failed, the sale is still overdue and unpaid', [payments(chairs), status(chairs)], [['failed'], 'payment_overdue']);
+    t.eq('database: the attempt is failed, the sale is still overdue and unpaid', [mine(chairs), status(chairs)], [['failed'], 'payment_overdue']);
     t.eq('he can try again: Pay now is still offered', await page.getByRole('button', { name: 'Pay now' }).count(), 1);
     await t.audit(sipho, 'sale-failed-return');
     await page.getByRole('button', { name: 'Pay now' }).click();
@@ -121,7 +126,7 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
     t.check('a fresh attempt has a new reference', ref3 !== ref2, ref3);
     await page.locator('#fake-pay').click();
     await page.waitForURL(new RegExp(`/settlements/${chairs}$`));
-    t.eq('the second attempt pays the overdue sale', [status(chairs), payments(chairs)], ['paid', ['failed', 'paid']]);
+    t.eq('the second attempt pays the overdue sale', [status(chairs), mine(chairs)], ['paid', ['failed', 'paid']]);
     t.has('and the page says so', await mainText(page), 'Payment received. Thank you.');
     t.clean(sipho, 'failed then paid');
 
@@ -134,7 +139,7 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
     body = await mainText(jp);
     t.has('an unreachable gateway is explained in plain words, titled', body, 'Payment could not be started');
     t.has('...with "Nothing was charged"', body, 'Nothing was charged');
-    t.eq('...and no half-made payment is left behind', payments(nikon), []);
+    t.eq('...and no half-made payment is left behind', mine(nikon), []);
     t.eq('...the sale is untouched', status(nikon), 'awaiting_payment');
     t.lacks('the message does not leak a key, a URL or a library error', body, 'sk_test');
     t.eq('he can try again', await jp.getByRole('button', { name: 'Pay now' }).count(), 1);
@@ -150,7 +155,7 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
     await jp.locator('#fake-abandon').click();
     await jp.waitForURL(new RegExp(`/settlements/${nikon}$`));
     t.has('closing the checkout without paying: "did not go through, not charged"', await mainText(jp), 'The payment did not go through and you were not charged');
-    t.eq('database: attempt failed, sale unpaid', [payments(nikon), status(nikon)], [['failed'], 'awaiting_payment']);
+    t.eq('database: attempt failed, sale unpaid', [mine(nikon), status(nikon)], [['failed'], 'awaiting_payment']);
     // pending
     await jp.getByRole('button', { name: 'Pay now' }).click();
     await jp.waitForURL(/\/dev\/fake-paystack\//);
@@ -160,42 +165,23 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
     body = await mainText(jp);
     t.has('a payment still being processed is titled so', body, 'Payment is being confirmed');
     t.has('...and says what happens next', body, 'will show it as paid once Paystack confirms');
-    t.eq('database: still initiated, still unpaid', [status(nikon), payments(nikon).at(-1)], ['awaiting_payment', 'initiated']);
+    t.eq('database: still initiated, still unpaid', [status(nikon), mine(nikon).at(-1)], ['awaiting_payment', 'initiated']);
     await t.audit(johan, 'sale-pending-return', { full: false });
-    // paid at the gateway, but we cannot confirm right now
-    await jp.goto(`/dev/fake-paystack/${r5}/complete?result=success`); // lands on callback, confirm works => paid. Undo for the lost-confirmation test below
+    // The shopper paid at the gateway, but the gateway cannot be asked when he comes back: nothing changes, and he is told so.
+    await setMode(johan, 'unreachable');
+    await jp.goto(`/dev/fake-paystack/${r5}/complete?result=success`);
     await jp.waitForURL(new RegExp(`/settlements/${nikon}$`));
-    t.eq('the callback confirmed the payment with the gateway and recorded it (paid)', status(nikon), 'paid');
-    t.clean(johan, 'payment variants');
-
-    // A lost confirmation, on its own sale: the stranger case. Use a fresh sale created for it.
-    t.sql(`insert into auction_settlements (id, auction_id, winning_bid_id, seller_id, winner_id, amount_cents, currency, status, created_at, updated_at, payment_due_at)
-      select 'LOSTCONFIRM0000000000000001', auction_id, winning_bid_id, seller_id, ${uid('aisha')}, 99900, 'ZAR', 'awaiting_payment', created_at, updated_at, '${new Date(Date.now() + 86400e3).toISOString().replace('T', ' ').slice(0, 19)}' from auction_settlements where id='${laptop}'`);
-    const lost = 'LOSTCONFIRM0000000000000001';
-    const aisha = await t.person('aisha', { to: `/settlements/${lost}` });
-    const ap = aisha.page;
-    await ap.getByRole('button', { name: 'Pay now' }).click();
-    await ap.waitForURL(/\/dev\/fake-paystack\//);
-    const r6 = new URL(ap.url()).pathname.split('/').pop();
-    await ap.goto(`/dev/fake-paystack/${r6}/complete?result=success`).catch(() => {});
-    // That redirect already confirmed it; to simulate loss, cut the gateway first on a second attempt:
-    t.eq('(setup) the first confirmation went through', status(lost), 'paid');
-    t.sql(`update auction_settlements set status='awaiting_payment', paid_at=NULL where id='${lost}'`);
-    t.sql(`update settlement_payments set status='initiated', paid_at=NULL, provider_transaction_id=NULL where settlement_id='${lost}'`);
-    await setMode(aisha, 'unreachable');
-    await ap.goto(`/settlements/${lost}/payment/callback`);
-    await ap.waitForLoadState('load');
-    body = await mainText(ap);
+    body = await mainText(jp);
     t.has('when the gateway cannot be asked, the return says it could not confirm', body, 'We could not confirm your payment yet');
     t.has('...and that nothing has changed on the sale', body, 'Nothing has changed on this sale');
-    t.eq('database: still unpaid', status(lost), 'awaiting_payment');
-    await t.audit(aisha, 'sale-unconfirmed-return', { full: false });
-    await setMode(aisha, 'ok');
-    await ap.goto(`/settlements/${lost}/payment/callback`);
-    await ap.waitForLoadState('load');
-    t.has('once the gateway answers, reloading the return confirms it', await mainText(ap), 'Payment received. Thank you.');
-    t.eq('database: paid exactly once', [status(lost), events(lost, 'paid') <= 1], ['paid', true]);
-    t.clean(aisha, 'lost confirmation');
+    t.eq('database: still unpaid', status(nikon), 'awaiting_payment');
+    await t.audit(johan, 'sale-unconfirmed-return', { full: false });
+    await setMode(johan, 'ok');
+    await jp.goto(`/settlements/${nikon}/payment/callback`);
+    await jp.waitForLoadState('load');
+    t.has('once the gateway answers, reloading the return confirms it', await mainText(jp), 'Payment received. Thank you.');
+    t.eq('database: paid, with one paid event', [status(nikon), events(nikon, 'paid')], ['paid', 1]);
+    t.clean(johan, 'payment variants');
 
     // ---------- who may pay ----------
     {
@@ -211,7 +197,7 @@ export default () => runSpec('b7', 'Payment as the winner (fake Paystack)', asyn
         const paidAgain = await johan.ctx.request.post(`/settlements/${nikon}/pay`, { form: { _token: tj, amount: '1', amount_cents: '1' }, maxRedirects: 0 });
         t.check('paying an already paid sale is refused politely (a redirect with a message, never a charge)', [302, 303, 403].includes(paidAgain.status()), String(paidAgain.status()));
         t.eq('a forged amount in the request changed nothing', t.sql(`select amount_cents from auction_settlements where id='${nikon}'`), '520000');
-        t.eq('no new payment attempt was created for the paid sale', payments(nikon).length, 3);
+        t.eq('no new payment attempt was created for the paid sale', mine(nikon).length, 2);
         lerato.tolerate(/http404/); thandi.tolerate(/http403/); johan.tolerate(/http40/);
     }
     for (const p of [sipho, thandi, johan]) { t.clean(p, 'end'); }

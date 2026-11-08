@@ -8,6 +8,8 @@
  *     what happened; it never decides the result from the client clock.
  *  2. The photo gallery: previous and next buttons, thumbnails, arrow keys and the "Photo 2 of 4" count on top of a scroll-snap strip.
  *  3. Focus goes to the bid field when the server refuses what was typed.
+ *  4. When a Livewire call fails (connection lost, session or page expired, server error) the person is told in words, and the
+ *     browser's default (a silent nothing for a lost connection, a full-screen copy of the error page for a 500) is not used.
  */
 
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -28,6 +30,10 @@ const startLive = (component) => {
     const $wire = component.$wire;
     const st = { offset: null, failures: 0, timer: null, busy: false, stopped: false, last: null };
     live.set(root, st);
+
+    // A lost connection leaves Livewire's call hanging, never settled. Without this the poll would wait for ever and never resume.
+    const onNetworkLost = () => { st.failures = 3; lost(true); st.busy = false; schedule(); };
+    window.addEventListener('dot:network-lost', onNetworkLost);
 
     const typed = () => {
         const field = root.querySelector('[data-ds-bid-input]');
@@ -81,12 +87,45 @@ const startLive = (component) => {
     const onVisible = () => { if (!document.hidden) { kick(0); } };
     document.addEventListener('visibilitychange', onVisible);
 
-    st.stop = () => { st.stopped = true; window.clearTimeout(st.timer); document.removeEventListener('visibilitychange', onVisible); };
+    st.stop = () => { st.stopped = true; window.clearTimeout(st.timer); document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('dot:network-lost', onNetworkLost); };
     st.applyOffset = applyOffset;
     kick(echoOn() ? 5000 : nextDelay(null, false));
 };
 
+/* ---------- When a Livewire call fails ---------- */
+// Polls are quiet (the lot page shows its own "Live updates paused" note); what a person asked for is not.
+const QUIET = /"method":"(snapshot|refreshState|refresh|\$refresh)"/;
+let lastNotice = 0;
+const notify = (title, body) => {
+    const now = Date.now();
+    if (now - lastNotice < 8000) { return; } // one notice per burst
+    lastNotice = now;
+    if (typeof window.dsToast === 'function') { window.dsToast({ title, body, tone: 'danger' }); }
+};
+const setupFailures = () => {
+    window.Livewire.hook('request', ({ payload, fail }) => {
+        const quiet = QUIET.test(String(payload || ''));
+        fail(({ status, content, preventDefault }) => {
+            if (content === null) {
+                // The browser could not reach the server at all (Livewire reports 503 with no body).
+                window.dispatchEvent(new CustomEvent('dot:network-lost'));
+                if (!quiet) { notify('No connection', 'Nothing was sent. Check your connection and try again. The page keeps trying by itself.'); }
+                return;
+            }
+            if (quiet) { return; }
+            if (status === 419) {
+                preventDefault();
+                notify('This page has expired', 'Nothing was sent. Reload the page to continue.');
+            } else if (status >= 500) {
+                preventDefault();
+                notify('Something went wrong on our side', 'What you just did may not have gone through. Check the page, then try again.');
+            }
+        });
+    });
+};
+
 const setupLivewire = () => {
+    setupFailures();
     window.Livewire.hook('component.init', ({ component, cleanup }) => {
         startLive(component);
         cleanup(() => live.get(component.el)?.stop?.());
