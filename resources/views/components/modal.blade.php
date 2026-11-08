@@ -23,6 +23,7 @@ $maxWidth = [
     style="display: none;"
     role="dialog"
     aria-modal="true"
+    aria-labelledby="{{ $id }}-title"
 >
     <div x-show="show" class="jm__scrim" x-on:click="show = false"
          x-transition:enter="jm-enter" x-transition:enter-start="jm-from" x-transition:enter-end="jm-to"

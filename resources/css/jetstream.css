@@ -54,6 +54,7 @@ select.ds-in { padding-right: 2.25rem; }
 .jm-to { opacity: 1; transform: none; }
 .jm__scrim.jm-from { transform: none; }
 .jm .ds-btn--danger { background: var(--c-danger-fill); color: var(--c-on-danger-fill); border-color: var(--c-danger-fill); }
+.jm .ds-btn--danger:hover:not(:disabled) { background: var(--red-700); border-color: var(--red-700); }
 @media (max-width: 40rem) {
     .jm { place-items: end center; padding: 0; }
     .jm__panel { width: 100%; max-height: 92dvh; border-radius: var(--r-3) var(--r-3) 0 0; }
