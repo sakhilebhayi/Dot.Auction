@@ -78,6 +78,8 @@
 
 .dc-lotname { color: var(--c-ink); font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
 .dc-lotname:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+/* A name that is the only way into a row is a touch target: 44px high on a phone, not 17px of text. */
+@media (pointer: coarse) { .dc-lotname, .sl-lot__title, .pay-lot a { display: inline-flex; align-items: center; min-height: var(--hit); } }
 .dc-sub { display: block; margin-top: 2px; color: var(--c-ink-3); font-size: var(--t-sm); font-weight: 400; }
 .dc-ledger { margin-top: var(--s-4); }
 .dc-more { margin: var(--s-3) 0 0; }
@@ -148,6 +150,7 @@ button.nf-item:hover { background: var(--c-quiet-hover); }
 }
 .dc-close:hover { background: var(--c-sunken); }
 .dc-close__clock { grid-column: 1 / -1; display: grid; gap: var(--s-2); }
+.dc-close--lg .dc-close__clock { gap: var(--s-1); }
 .dc-close__rail { max-width: 28rem; }
 .dc-close__lot { min-width: 0; grid-column: 1; }
 .dc-close__name { font-size: var(--t-lg); font-weight: 700; line-height: 1.25; }
@@ -158,6 +161,7 @@ button.nf-item:hover { background: var(--c-quiet-hover); }
 .dc-close__price { grid-column: 2; grid-row: 2; display: grid; justify-items: end; gap: 2px; text-align: right; }
 .dc-close__price-label { color: var(--c-ink-3); font-size: var(--t-sm); }
 .dc-close__act { grid-column: 1 / -1; position: relative; z-index: 2; }
+.dc-close--lg .dc-close__name { font-size: var(--t-md); }
 .dc-close__act .ds-lot__watch { margin-left: calc(-1 * var(--s-2)); }
 @media (min-width: 48rem) {
     .dc-close { grid-template-columns: 17rem minmax(0, 1fr) auto auto; padding: var(--s-4) var(--s-4); }
@@ -166,3 +170,4 @@ button.nf-item:hover { background: var(--c-quiet-hover); }
     .dc-close__price { grid-column: 3; grid-row: 1; }
     .dc-close__act { grid-column: 4; }
 }
+.dc-split td[data-label="Deadline"] { white-space: nowrap; }

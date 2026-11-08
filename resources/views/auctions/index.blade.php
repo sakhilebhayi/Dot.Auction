@@ -56,33 +56,12 @@
             </div>
             <ol class="dc-closing__list">
                 @foreach ($closingSoon as $lot)
-                    @php
-                        $cue = ViewerCue::for($lot, $userId, 'ending');
-                        $watching = (bool) $lot->viewer_watching;
-                        $bids = (int) $lot->bids_count;
-                        $hasBids = $bids > 0;
-                    @endphp
-                    <li class="dc-close">
-                        <div class="dc-close__clock">
-                            <x-ds.countdown :ends="$lot->ends_at" size="xl" label="Closes in" :show-at="false" stacked />
-                            <x-ds.rail :starts="$lot->starts_at" :ends="$lot->ends_at" :extensions="(int) $lot->snipe_extensions" thick class="dc-close__rail" />
-                        </div>
-                        <div class="dc-close__lot">
-                            <h3 class="dc-close__name"><a href="{{ route('auctions.show', $lot) }}" class="dc-close__link">{{ $lot->title }}</a></h3>
-                            <p class="dc-close__facts">
-                                <span>{{ $bids }} {{ $bids === 1 ? 'bid' : 'bids' }}</span>
-                                @if ((int) $lot->snipe_extensions > 0)<span>Extended {{ (int) $lot->snipe_extensions }} {{ (int) $lot->snipe_extensions === 1 ? 'time' : 'times' }}</span>@endif
-                                @if ($cue)@php $c = ViewerCue::describe($cue); @endphp<span class="ds-lot__cue ds-lot__cue--{{ $cue }}"><x-ds.icon :name="$c['icon']" :size="14" /> {{ $c['word'] }}</span>@endif
-                            </p>
-                        </div>
-                        <div class="dc-close__price">
-                            <span class="dc-close__price-label">{{ $hasBids ? 'Current bid' : 'Starting bid' }}</span>
-                            <x-ds.money :amount="$hasBids ? $lot->current_price : $lot->starting_price" size="xl" />
-                        </div>
+                    @php $cue = ViewerCue::for($lot, $userId, 'ending'); @endphp
+                    <x-ds.lot-row :auction="$lot" :viewer="$cue">
                         @if ($cue !== 'own')
-                            <div class="dc-close__act"><livewire:buyer.watch-toggle :key="'close-watch-'.$lot->id" :auction-id="$lot->id" :title="$lot->title" :watching="$watching" /></div>
+                            <x-slot name="actions"><livewire:buyer.watch-toggle :key="'close-watch-'.$lot->id" :auction-id="$lot->id" :title="$lot->title" :watching="(bool) $lot->viewer_watching" /></x-slot>
                         @endif
-                    </li>
+                    </x-ds.lot-row>
                 @endforeach
             </ol>
         </section>

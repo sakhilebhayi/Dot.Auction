@@ -22,7 +22,7 @@
     @if ($attention > 0)
         <x-ds.alert tone="danger" :title="$attention === 1 ? '1 payment needs a person' : $attention.' payments need a person'" class="sl-gap">
             Money was reported that could not be applied to a sale. Nothing was marked paid. Decide in Paystack's dashboard whether to refund or reconcile by hand.
-            @unless ($attentionOnly)<a href="{{ route('operator.settlement-payments.index', ['status' => 'unmatched']) }}">Show only these</a>@endunless
+            @unless ($attentionOnly)<a class="sl-link" href="{{ route('operator.settlement-payments.index', ['status' => 'unmatched']) }}">Show only these</a>@endunless
         </x-ds.alert>
     @else
         <x-ds.alert tone="success" class="sl-gap" role="status">No payments need a person.</x-ds.alert>
