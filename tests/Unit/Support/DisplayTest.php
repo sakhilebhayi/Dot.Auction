@@ -61,9 +61,11 @@ class DisplayTest extends TestCase
 
     public function test_routes_that_do_not_exist_yet_link_to_a_harmless_hash(): void
     {
-        $this->assertSame('#', Display::route('buyer.bids'));
-        $this->assertSame('#', auction_route('buyer.watchlist'));
-        $this->assertFalse(auction_route_exists('buyer.won'));
+        // buyer.bids, buyer.watchlist and buyer.won were the first such names; the discover workstream registered them.
+        $this->assertSame('#', Display::route('seller.coupons'));
+        $this->assertSame('#', auction_route('seller.reports'));
+        $this->assertFalse(auction_route_exists('seller.payouts'));
+        $this->assertTrue(auction_route_exists('buyer.won'));
         $this->assertSame(route('dashboard'), auction_route('dashboard'));
         $this->assertTrue(auction_route_exists('dashboard'));
     }

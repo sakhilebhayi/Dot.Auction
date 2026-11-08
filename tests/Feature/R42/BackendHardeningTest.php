@@ -70,7 +70,7 @@ class BackendHardeningTest extends TestCase
         $this->actingAs(User::factory()->withPersonalTeam()->create())
             ->get(route('auctions.index'))
             ->assertOk()
-            ->assertSee('Cameras (2)', false);
+            ->assertSee('Cameras</span><span class="ds-chip__count">2</span>', false);
     }
 
     public function test_another_sellers_draft_looks_exactly_like_an_id_that_does_not_exist(): void

@@ -490,15 +490,21 @@ class ListingManagementTest extends TestCase
     {
         $html = $this->actingAs($this->seller())->get('/dashboard')->assertOk()->getContent();
 
-        $this->assertStringContainsString('You have not listed anything yet', $html);
+        // A brand-new account gets the welcome with both real paths, and no sellers' tools that do not exist.
+        $this->assertStringContainsString('List something to sell', $html);
+        $this->assertStringContainsString('href="'.route('seller.auctions.create').'"', $html);
         $this->assertStringNotContainsString('Seller listing tools are coming soon', $html);
     }
 
-    public function test_the_dashboard_active_count_excludes_auctions_that_have_not_opened(): void
+    public function test_the_dashboard_open_count_excludes_auctions_that_have_not_opened(): void
     {
         $seller = $this->seller();
         Auction::factory()->scheduled()->create(['seller_id' => $seller->id]);
 
-        $this->actingAs($seller)->get('/dashboard')->assertOk()->assertViewHas('activeAuctions', 0);
+        $response = $this->actingAs($seller)->get('/dashboard')->assertOk();
+
+        // The only lot is scheduled: it is counted as scheduled, not as open for bids, and no "open" line is printed.
+        $response->assertViewHas('seller', fn ($s) => $s['live'] === 0 && $s['scheduled'] === 1);
+        $response->assertSee('Scheduled')->assertDontSee('Open for bids');
     }
 }

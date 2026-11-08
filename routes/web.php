@@ -2,6 +2,11 @@
 
 use App\Http\Controllers\Auctions\AuctionController;
 use App\Http\Controllers\Auctions\AuctionImageController;
+use App\Http\Controllers\Buyer\BidsController as BuyerBidsController;
+use App\Http\Controllers\Buyer\WatchlistController as BuyerWatchlistController;
+use App\Http\Controllers\Buyer\WonController as BuyerWonController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Auth\EcosystemAuthController;
 use App\Http\Controllers\CspReportController;
 use App\Http\Controllers\Operator\SettlementPaymentController;
@@ -84,47 +89,6 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/dashboard', function () {
-        // Jetstream's HasTeams::currentTeam() self-heals a null current_team_id
-        // by switching to the user's personal team — but that fallback itself
-        // resolves to null for a user who owns no team at all (e.g. a user
-        // provisioned outside App\Actions\Fortify\CreateNewUser, which is the
-        // only place a personal team gets created). The shared navigation
-        // partial dereferences currentTeam unconditionally, so send such users
-        // to team creation before they hit that instead of crashing there.
-        if (! auth()->user()->currentTeam) {
-            return redirect()->route('teams.create');
-        }
-
-        $userId = auth()->id();
-        $activeAuctions = Auction::where('seller_id', $userId)->where('status', 'active')
-            ->where('starts_at', '<=', now())->where('ends_at', '>', now())->count();
-        $totalAuctions = Auction::where('seller_id', $userId)->count();
-        $totalBids = Bid::whereHas('auction', fn ($q) => $q->where('seller_id', $userId))->count();
-        $recentAuctions = Auction::where('seller_id', $userId)
-            ->with('category')->withCount('bids')->latest('id')->limit(8)->get();
-        $categories = AuctionCategory::withCount([
-            'auctions' => fn ($q) => $q->where('seller_id', $userId),
-        ])->get();
-        // HasUserScope already restricts this query to the authenticated
-        // user's own watchlist rows.
-        $watchlistCount = Watchlist::count();
-        $endingSoon = Auction::query()
-            ->endingSoon(24)
-            ->with('category')
-            ->orderBy('ends_at')
-            ->limit(5)
-            ->get();
-        $pendingReserveProposals = ReserveNotMetProposal::whereHas(
-            'auction', fn ($q) => $q->where('seller_id', $userId)
-        )->where('status', 'pending')->with(['auction', 'bid.bidder'])->get();
-
-        return view('dashboard', compact(
-            'activeAuctions', 'totalAuctions', 'totalBids', 'recentAuctions',
-            'categories', 'watchlistCount', 'endingSoon', 'pendingReserveProposals'
-        ));
-    })->name('dashboard');
-
     Route::get('/auctions', [AuctionController::class, 'index'])->name('auctions.index');
     Route::get('/auctions/{auction}', [AuctionController::class, 'show'])->name('auctions.show');
     // Listing photos sit on a private disk; this is the only way to read one.
@@ -161,6 +125,21 @@ Route::middleware([
     Route::get('/operator/settlement-payments', [SettlementPaymentController::class, 'index'])
         ->middleware('operator')
         ->name('operator.settlement-payments.index');
+
+    // --- discover ---
+    // Home, the buyer pages (my bids, watching, won) and the notification inbox. Everything here reads only the signed-in
+    // person's own rows. The shell links buyer.* through auction_route().
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('/bids', [BuyerBidsController::class, 'index'])->name('buyer.bids');
+    Route::get('/watchlist', [BuyerWatchlistController::class, 'index'])->name('buyer.watchlist');
+    Route::delete('/watchlist/{auction}', [BuyerWatchlistController::class, 'destroy'])->name('buyer.watchlist.destroy');
+    Route::get('/won', [BuyerWonController::class, 'index'])->name('buyer.won');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('/notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
+    // --- /discover ---
 });
 
 // Public sign-up is closed (accounts are created by InfoDot at first sign-in). Keep the named route so any link or

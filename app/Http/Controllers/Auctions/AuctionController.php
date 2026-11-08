@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Auction;
 use App\Models\AuctionCategory;
 use App\Models\AuctionSettlement;
+use App\Services\Auctions\LotBrowser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
@@ -20,44 +21,50 @@ use Illuminate\View\View;
 class AuctionController extends Controller
 {
     /**
-     * Searchable, filterable auction marketplace. Draft auctions are
-     * excluded — they belong to AuctionPolicy::view()'s seller-only rule.
+     * Searchable, filterable, sortable auction marketplace. Draft auctions are excluded: they belong to
+     * AuctionPolicy::view()'s seller-only rule. State, category, search, sort and page all live in the query string, and
+     * every value in it is untrusted: anything that is not a known state, a positive id or a known sort key narrows to
+     * "no filter", never to a 500.
      */
-    public function index(Request $request): View
+    public function index(Request $request, LotBrowser $browser): View
     {
         Gate::authorize('viewAny', Auction::class);
 
-        // Query-string values are untrusted: an array (?q[]=x), text where an id belongs (?category=abc) or a number
-        // too big for the column must narrow to "no filter" or "no results", never become a 500.
+        $user = $request->user();
+        $now = now();
+
         $rawSearch = $request->query('q');
-        $search = is_string($rawSearch) ? trim($rawSearch) : '';
+        $search = is_string($rawSearch) ? mb_substr(trim($rawSearch), 0, 100) : '';
         $category = $this->positiveId($request->query('category'));
-        $status = is_string($request->query('status')) ? $request->query('status') : null;
+        $state = LotBrowser::normaliseState($request->query('state') ?? $request->query('status'));
+        $sort = LotBrowser::normaliseSort($request->query('sort'));
 
-        $auctions = Auction::query()
-            ->browsable()
-            ->with(['category', 'images'])
-            // Case-insensitive on every database (PostgreSQL's LIKE is not), with % and _ taken literally.
-            ->when($search !== '', fn ($q) => $q->whereRaw(
-                'lower(title) like ? escape ?',
-                ['%'.addcslashes(mb_strtolower($search), '\\%_').'%', '\\'],
-            ))
-            ->when($category !== null, fn ($q) => $q->where('category_id', $category))
-            ->when($status, fn ($q) => $q->where('status', $status))
-            ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
-            ->orderBy('ends_at')
-            ->paginate(12)
-            ->withQueryString();
+        $query = $browser->inState($browser->base($search, $category), $state, $now);
+        $browser->withCardData($query, $user);
+        $browser->sorted($query, $sort, $now);
 
-        // The same set the list shows: other sellers' drafts are not counted (nor hinted at).
-        $categories = AuctionCategory::withCount(['auctions' => fn ($q) => $q->browsable()])->orderBy('name')->get();
+        $auctions = $query->paginate(12)->withQueryString();
+
+        // One grouped query each for the tab counts and the category chips, both for the same search the list answers.
+        $counts = $browser->counts($search, $category, $now);
+        $perCategory = $browser->inState($browser->base($search, null), $state, $now)
+            ->toBase()->whereNotNull('category_id')->selectRaw('category_id, count(*) as lots')->groupBy('category_id')
+            ->pluck('lots', 'category_id');
+        $categories = AuctionCategory::query()->orderBy('name')->get()
+            ->each(fn (AuctionCategory $c) => $c->setAttribute('lots', (int) ($perCategory[$c->id] ?? 0)))
+            ->filter(fn (AuctionCategory $c) => $c->lots > 0 || $c->id === $category)
+            ->values();
 
         return view('auctions.index', [
             'auctions' => $auctions,
             'categories' => $categories,
+            'counts' => $counts,
             'search' => $search,
             'category' => $category,
-            'status' => $status,
+            'activeCategory' => $category !== null ? $categories->firstWhere('id', $category) ?? AuctionCategory::find($category) : null,
+            'state' => $state,
+            'sort' => $sort,
+            'userId' => $user->id,
         ]);
     }
 

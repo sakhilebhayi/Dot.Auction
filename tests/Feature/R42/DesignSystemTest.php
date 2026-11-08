@@ -117,18 +117,17 @@ class DesignSystemTest extends TestCase
         $this->assertStringNotContainsString('reserve_price', $html);
     }
 
-    public function test_the_shell_links_buyer_pages_through_the_safe_helper_and_lights_them_up_once_registered(): void
+    public function test_the_shell_links_buyer_pages_through_the_safe_helper_and_they_are_registered(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
 
         $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
-        $this->assertSame(1, substr_count($html, 'data-pending-route') > 0 ? 1 : 0, 'unregistered buyer routes are marked pending');
 
-        Route::middleware('web')->get('/__my-bids', fn () => 'ok')->name('buyer.bids');
-        app('router')->getRoutes()->refreshNameLookups();
-
-        $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
-        $this->assertStringContainsString('href="'.url('/__my-bids').'"', $html, 'a registered route is linked');
+        // The discover workstream registered buyer.bids, buyer.watchlist and buyer.won: the shell links the real pages and nothing is pending.
+        $this->assertStringNotContainsString('data-pending-route', $html);
+        foreach (['buyer.bids', 'buyer.watchlist', 'buyer.won'] as $name) {
+            $this->assertStringContainsString('href="'.route($name).'"', $html, "$name is linked");
+        }
     }
 
     public function test_only_operators_see_payment_operations_in_the_navigation(): void

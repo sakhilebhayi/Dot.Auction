@@ -155,18 +155,24 @@ class ResponsiveShellTest extends TestCase
         }
     }
 
-    public function test_browse_filters_and_the_dashboard_grids_use_the_stacking_classes(): void
+    public function test_browse_filters_and_the_dashboard_tables_use_the_stacking_classes(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
+        Auction::factory()->create(['title' => 'Massey Ferguson 290 tractor']);
 
         $browse = $this->xpath($this->actingAs($user)->get('/auctions')->assertOk()->getContent());
-        $this->assertSame(1, $browse->query('//form[contains(@class,"dot-filter-form")]')->length);
-        $this->assertSame(1, $browse->query('//div[contains(@class,"dot-page")]')->length);
+        $this->assertSame(1, $browse->query('//form[contains(@class,"dc-filters")]')->length);
+        $this->assertSame(1, $browse->query('//ul[contains(@class,"ds-catalogue")]')->length, 'lots sit on the ruled catalogue sheet');
+
+        // A bidder's dashboard shows its tables as the kit's stacked rows (below 40rem each cell prints its own label), not a sideways scroll.
+        $lot = Auction::factory()->create(['title' => 'Hereford heifers, twelve head']);
+        \App\Models\Bid::forceCreate(['auction_id' => $lot->id, 'bidder_id' => $user->id, 'amount' => '240.00', 'is_winning' => true]);
+        $lot->forceFill(['current_price' => '240.00'])->save();
 
         $dashboard = $this->xpath($this->actingAs($user)->get('/dashboard')->assertOk()->getContent());
-        $this->assertSame(1, $dashboard->query('//div[contains(@class,"dot-kpi-grid")]')->length);
-        $this->assertSame(5, $dashboard->query('//div[contains(@class,"dot-kpi-grid")]/div[contains(@class,"dot-kpi")]')->length);
-        $this->assertSame(1, $dashboard->query('//div[contains(@class,"dot-module-grid")]')->length);
+        $this->assertSame(1, $dashboard->query('//table[contains(@class,"is-stackable")]')->length);
+        $this->assertGreaterThanOrEqual(1, $dashboard->query('//table//td[@data-label]')->length);
+        $this->assertSame(0, $dashboard->query('//*[contains(@class,"dot-kpi") or contains(@class,"dot-module-grid")]')->length, 'the old metric tiles and farming modules are gone');
     }
 
     public function test_the_auction_page_stat_grid_and_two_column_layout_stack_on_phones(): void
