@@ -17,6 +17,8 @@
 
 /* ---------- My lots: the ledger ---------- */
 .sl-table { margin-top: var(--s-2); }
+/* From 40rem the lots are a table that needs about 48rem; beside the desktop rail a 40 to 60rem window is narrower than that, so the table scrolls inside its own box instead of widening the page. */
+@media (min-width: 40rem) { .sl-table.ds-tablewrap { overflow-x: auto; } }
 .sl-table td.sl-lot { display: flex; align-items: center; gap: var(--s-3); min-width: 15rem; }
 .sl-thumb { flex: none; display: grid; place-items: center; width: 4rem; height: 4rem; overflow: hidden; background: var(--c-sunken); border: 1px solid var(--c-line); color: var(--c-ink-3); }
 .sl-thumb img { width: 100%; height: 100%; object-fit: cover; }

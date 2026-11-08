@@ -9,6 +9,7 @@
 .lot-cat { color: var(--c-ink-2); font-size: var(--t-sm); font-weight: 550; }
 
 @media (max-width: 40rem) { .sh-page:has(.lot) .ds-pagehead__title { font-size: var(--t-xl); } .sh-page:has(.lot) .ds-pagehead__back { min-height: 2.25rem; } .lot-bid__top, .lot-bid__act { padding-inline: var(--s-4); } }
+@media (pointer: coarse) { .sh-page:has(.lot) .ds-pagehead__back { min-height: var(--hit); } }
 .lot-wrap { container-type: inline-size; container-name: lot; }
 .lot { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-6); align-items: start; }
 .lot__side, .lot-bid { display: contents; }
