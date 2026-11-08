@@ -88,7 +88,9 @@ class Auction extends Model
      */
     public function bids(): HasMany
     {
-        return $this->hasMany(Bid::class)->latest();
+        // created_at has one-second resolution (timestamp(0)), so two bids in the same second tie; id breaks the tie
+        // and keeps "latest first" the same on every request and every database.
+        return $this->hasMany(Bid::class)->latest()->latest('id');
     }
 
     /**

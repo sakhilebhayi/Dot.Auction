@@ -45,7 +45,8 @@ class BidPlaced implements ShouldBroadcast
         return [
             'auction_id' => $this->bid->auction_id,
             'amount' => $this->bid->amount,
-            'bidder' => $this->bid->bidder->name,
+            // Masked, like the bid history: this goes out on a public channel, so it must not carry full names.
+            'bidder' => $this->bid->bidder->maskedName(),
             'current_price' => $this->bid->auction->current_price,
             'ends_at' => $this->bid->auction->ends_at->toIso8601String(),
             'snipe_extensions' => $this->bid->auction->snipe_extensions,

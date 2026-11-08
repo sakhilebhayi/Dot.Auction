@@ -87,6 +87,26 @@ class User extends Authenticatable
     }
 
     /**
+     * How this person appears to other bidders: first name and the initial of the rest ("Sakhile B."), the same
+     * masking the bid history shows. Anything that leaves the server for a wider audience than the auction's own
+     * parties (a broadcast, for instance) must use this, never the full name.
+     */
+    public function maskedName(): string
+    {
+        $parts = preg_split('/\s+/u', trim((string) $this->name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if ($parts === []) {
+            return 'A bidder';
+        }
+
+        $first = $parts[0];
+
+        return count($parts) === 1
+            ? $first
+            : $first.' '.mb_strtoupper(mb_substr($parts[1], 0, 1)).'.';
+    }
+
+    /**
      * Photo files of this user's auctions, to remove once the account delete
      * commits. The auction and image rows go through the database cascade,
      * which fires no model events, so nothing else would clean the files.
