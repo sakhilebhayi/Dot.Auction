@@ -116,6 +116,9 @@ const setupFailures = () => {
             if (status === 419) {
                 preventDefault();
                 notify('This page has expired', 'Nothing was sent. Reload the page to continue.');
+            } else if (status === 429) {
+                preventDefault();
+                notify('Slow down a little', 'Too many requests in a short time. Wait a minute and try again.');
             } else if (status >= 500) {
                 preventDefault();
                 notify('Something went wrong on our side', 'What you just did may not have gone through. Check the page, then try again.');

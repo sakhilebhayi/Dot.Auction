@@ -38,6 +38,7 @@ class LivewireFailureNoticeTest extends TestCase
         $this->assertStringContainsString('No connection', $js);
         $this->assertStringContainsString('Something went wrong on our side', $js);
         $this->assertStringContainsString('This page has expired', $js);
+        $this->assertStringContainsString('Slow down a little', $js, 'the per-person Livewire limit answers 429');
         $this->assertStringContainsString('preventDefault()', $js, 'the raw error page must not open in Livewire\'s modal');
     }
 }
