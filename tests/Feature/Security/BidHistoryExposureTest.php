@@ -34,7 +34,8 @@ class BidHistoryExposureTest extends TestCase
             $this->assertStringContainsString($viewer->is($one) ? 'You' : 'Thabo N.', $html);
             // The money component splits the figure across elements, so read the visible text.
             $this->assertStringContainsString('R120.00', preg_replace('/\s+/', '', strip_tags($html)));
-            foreach (['Nkosifull', 'Brien-Patel', 'hist.test', '987', 'bidder_id'] as $secret) {
+            // '987.65' and 'R987' are the reserve; a bare '987' also matches random tokens in the page and made this test flaky.
+            foreach (['Nkosifull', 'Brien-Patel', 'hist.test', '987.65', '987,65', 'R987', 'bidder_id'] as $secret) {
                 $this->assertStringNotContainsString($secret, $html, "viewer {$viewer->id} can see '{$secret}' in the bid panel");
             }
         }
