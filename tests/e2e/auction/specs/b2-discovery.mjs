@@ -27,7 +27,7 @@ export default () => runSpec('b2', 'Discovery: browse, search, filters, sorts', 
     const p = await t.person('lerato', { to: '/auctions' });
     const page = p.page;
 
-    const cards = async () => page.locator('.ds-catalogue > li').evaluateAll((lis) => lis.map((li) => ({
+    const cards = async () => page.locator('article.ds-lot').evaluateAll((lis) => lis.map((li) => ({
         title: li.querySelector('.ds-lot__title')?.innerText.trim(),
         status: li.querySelector('.ds-status')?.getAttribute('data-state'),
         statusWord: li.querySelector('.ds-status')?.innerText.trim(),
@@ -128,16 +128,16 @@ export default () => runSpec('b2', 'Discovery: browse, search, filters, sorts', 
         t.has('watched lot offers Stop watching', by['Wool rug, 2 m by 3 m']?.watch ?? '', 'Stop watching');
         t.has('unwatched lot offers Watch', by['Land Rover Defender parts lot']?.watch ?? '', 'Watch');
         const sipho = await t.person('sipho', { to: '/auctions' });
-        const sc = await sipho.page.locator('.ds-catalogue > li').evaluateAll((lis) => lis.map((li) => [li.querySelector('.ds-lot__title')?.innerText.trim(), li.querySelector('.ds-lot__cue')?.innerText.trim() ?? null]));
+        const sc = await sipho.page.locator('article.ds-lot').evaluateAll((lis) => lis.map((li) => [li.querySelector('.ds-lot__title')?.innerText.trim(), li.querySelector('.ds-lot__cue')?.innerText.trim() ?? null]));
         const sAll = [];
-        for (let n = 1; n < 5; n++) { await sipho.go(`/auctions?page=${n}`); sAll.push(...await sipho.page.locator('.ds-catalogue > li').evaluateAll((lis) => lis.map((li) => [li.querySelector('.ds-lot__title')?.innerText.trim(), li.querySelector('.ds-lot__cue')?.innerText.trim() ?? null]))); }
+        for (let n = 1; n < 5; n++) { await sipho.go(`/auctions?page=${n}`); sAll.push(...await sipho.page.locator('article.ds-lot').evaluateAll((lis) => lis.map((li) => [li.querySelector('.ds-lot__title')?.innerText.trim(), li.querySelector('.ds-lot__cue')?.innerText.trim() ?? null]))); }
         const m = Object.fromEntries(sAll);
         t.has('sipho won the laptop: card says You won', m['Dell Latitude laptop, i5, 16 GB'] ?? '', 'You won');
         t.has('sipho leads the guitar', m['Yamaha F310 acoustic guitar'] ?? '', 'You lead');
         t.has('sipho was outbid on the rug', m['Wool rug, 2 m by 3 m'] ?? '', 'Outbid');
         const th = await t.person('thandi', { to: '/auctions' });
         const tAll = [];
-        for (let n = 1; n < 5; n++) { await th.go(`/auctions?page=${n}`); tAll.push(...await th.page.locator('.ds-catalogue > li').evaluateAll((lis) => lis.map((li) => ({ t: li.querySelector('.ds-lot__title')?.innerText.trim(), cue: li.querySelector('.ds-lot__cue')?.innerText.trim() ?? null, watch: li.querySelector('.ds-lot__watch') !== null })))); }
+        for (let n = 1; n < 5; n++) { await th.go(`/auctions?page=${n}`); tAll.push(...await th.page.locator('article.ds-lot').evaluateAll((lis) => lis.map((li) => ({ t: li.querySelector('.ds-lot__title')?.innerText.trim(), cue: li.querySelector('.ds-lot__cue')?.innerText.trim() ?? null, watch: li.querySelector('.ds-lot__watch') !== null })))); }
         const own = new Set(dbTitles(`seller_id=${t.user_id('thandi')} and status != 'draft'`));
         t.eq('thandi: every one of her own lots says "Your lot" and offers no Watch', tAll.filter((c) => own.has(c.t) && (!/Your lot/.test(c.cue ?? '') || c.watch)).map((c) => c.t), []);
         t.eq('thandi: lots that are not hers have no "Your lot"', tAll.filter((c) => !own.has(c.t) && /Your lot/.test(c.cue ?? '')).map((c) => c.t), []);

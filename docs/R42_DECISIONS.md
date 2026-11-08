@@ -297,3 +297,13 @@ Executed from `docs/R42_DESIGN_JURY_2.md`. No rule, lifecycle or payment behavio
 * **A leader raising their own bid.** Unchanged (Q-A1, Q-A2 above): no form for a leader, no maximum bid.
 * **Teams.** The Administrator and Editor roles exist because Jetstream ships them; nothing in the auction product reads them (only the team owner can manage the team). Keep teams, rename the roles, or hide teams from the menu?
 * **Support contact.** A `config('auction.support_email')` (or a contact route) would let error pages and payment pages say who to ask. None exists.
+
+## Needs owner (found by the buyer browser run, e2e A, 2026-11-08)
+
+Nothing below was decided or built. Evidence is in `docs/R42_E2E_BUYER.md`.
+
+1. **First bid is the starting price plus one step** (already Q-A5). Seen in the browser: the lot says "Starting bid R1,000.00" while the field is pre-filled "1050.00" and the hint says "Opening bid is at least R1,050.00".
+2. **An expired session during a bid** sends the person to the sign-in page with no word about why, and Livewire's own page-expired prompt is replaced by a notice only when the session itself is still valid. Do you want the sign-in page to say "Your session ended, sign in to continue"?
+3. **A lot whose sale the seller cancelled** reads "Sold" to everyone who is not the buyer or the seller (only they can see the sale). Intended, or should the public page say "Sale cancelled"?
+4. **Home's "Bid again" for a single outbid lot** opens My bids (where each row has its own Bid again) instead of the lot. One click more than necessary; say if it should go straight to the lot when there is exactly one.
+5. **The 403 page** says "different team ... ask whoever owns the workspace", ecosystem wording that does not fit a buyer who followed a seller or operator link. Copy is not mine to change without your say.

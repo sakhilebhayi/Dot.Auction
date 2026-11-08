@@ -38,10 +38,12 @@ return [
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-            'busy_timeout' => null,
+            'busy_timeout' => env('DB_BUSY_TIMEOUT'),
             'journal_mode' => null,
             'synchronous' => null,
-            'transaction_mode' => 'DEFERRED',
+            // The browser suite runs six PHP workers on one SQLite file and sets IMMEDIATE (and a busy timeout) so that two requests
+            // incrementing the same rate-limit counter wait for each other instead of one failing with "database is locked".
+            'transaction_mode' => env('DB_TRANSACTION_MODE', 'DEFERRED'),
         ],
 
         'mysql' => [

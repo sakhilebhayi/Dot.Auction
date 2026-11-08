@@ -120,7 +120,7 @@ export default () => runSpec('b3', 'Lot page: every status, every viewer', async
             if (ex.role === 'seller') {
                 if (watchBtn) { wrong.push(`${tag}: own lot offers Watch`); }
                 if (!(await page.getByRole('link', { name: /Manage your lots/ }).count())) { wrong.push(`${tag}: own lot has no Manage link`); }
-            } else if (['scheduled', 'live', 'pending'].includes(ex.st) && !watchBtn) { wrong.push(`${tag}: Watch missing on a followable lot`); }
+            } else if (['scheduled', 'live'].includes(ex.st) && !watchBtn) { wrong.push(`${tag}: Watch missing on a followable lot`); }
             else if (['sold', 'unsold', 'cancelled'].includes(ex.st) && watchBtn) { /* a closed lot may still be watched; D-6 */ }
             if (ex.role !== 'seller' && await page.getByRole('link', { name: /Manage your lots|Edit lot/ }).count()) { wrong.push(`${tag}: seller controls shown to a buyer`); }
 

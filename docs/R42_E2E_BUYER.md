@@ -67,9 +67,19 @@ Also added, testing only: `E2eFakePaystackClient` plus `/dev/fake-paystack...` r
 * 200 percent and 400 percent zoom were emulated with a 720 px and a 320 px wide window and a doubled root font size, not with the browser's own zoom.
 * axe notes (moderate): `landmark-unique` on the pages that show both the rail and the phone bar (two navigations named "Main"); fine at one size at a time.
 
-## After the polish merge
+## After the polish merge (trunk `f64e40f` merged in `84425e5`)
 
-Trunk's polish round 2 (settlement wording, no Watch on closed lots, compact phone rows) was merged in `84425e5`; where it differs from my branch, trunk's behaviour
-wins (the only textual conflict was the identical lot-title fix). b3's Watch expectation was relaxed to "scheduled and live" to match trunk. b2 and b3 were re-run on the merged tree:
-see the last section of this file if a result is recorded there; the other specs (b1, b4 to b9) were **not** re-run after the merge, so wording-sensitive checks in them
-(for example Home's text for a closed lot, a cancelled sale's copy) may need a one-line update.
+Trunk's behaviour wins wherever it differs from my branch (the only textual conflict was the identical lot-title fix). Re-run on the merged tree:
+
+| Spec | Result on the merged tree |
+|---|---|
+| b1, b3, b4, b5, b6, b7, b9 | PASS (118, 119, 182, 134, 91, 122, 97 checks) |
+| b2 | **Stale, not re-proved.** Trunk's browse now groups "Closing soon" above "Other lots" (and phone rows are compact), so the spec's card selector sees only the second group; 7 of 136 checks fail for that reason (the list shows 8 live lots in the result line and both groups on screen). Needs a selector update, not a product fix. Passed 136 of 136 on the pre-polish tree. |
+| b8 | **Stale.** The phone bar is now Home, Browse, My bids, Watching, More (the spec expected "List a lot" in it) and the phone browse search changed; 2 checks fail and the spec stops there. Passed 119 of 119 on the pre-polish tree. |
+
+The one real finding of the merged run was a SQLite "database is locked" 500 on a Livewire call (the `livewire` rate-limit counter in the database cache is updated by
+several PHP workers at once). It reproduced on the second tree, so it is not only the stalled laptop. Production does not run SQLite, so it is a test-environment fix:
+`config/database.php` now reads `DB_TRANSACTION_MODE` and `DB_BUSY_TIMEOUT` (defaults unchanged: DEFERRED and none) and the suite sets IMMEDIATE and 20 s; b3 then passed 119 of 119.
+
+Full PHPUnit on the merged tree: 1,114 tests, 1,094 passed, 20 skipped (trunk baseline was 881 tests, 13 skipped; the extra tests are trunk's plus 10 mine in `tests/Feature/R42`:
+FlashSurvivesLivewire (3, including the bell check), LotTitleEscaping (1), LivewireFailureNotice (2), E2eFakePaystackGuard (4)).

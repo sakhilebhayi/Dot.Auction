@@ -60,7 +60,7 @@ From `R42_BACKEND_AUDIT.md` (29 findings: 4 High, 10 Medium, 15 Low) and `R42_SE
 | PHPUnit, SQLite | **1114 tests, 1094 passed, 20 skipped, 0 failed** (baseline 553 / 7 skipped) |
 | PHPUnit, PostgreSQL 16 (production engine) | **1114 tests, 1107 passed, 7 skipped, 0 failed** |
 | Signed-in smoke with route, config and event caches | 30 pages, 0 failed, 0 unlisted authenticated routes (the check that would have caught the Dot.Pulse outage) |
-| Browser end to end, buyer side (`tests/e2e/auction/`, `R42_E2E_BUYER.md`) | 9 specs, 1,118 checks, see the document for the one SQLite-lock failure and re-run |
+| Browser end to end, buyer side (`tests/e2e/auction/`, `R42_E2E_BUYER.md`) | 9 specs, 1,118 checks, all passing on the tree before the last polish round. After the last polish round b1, b3, b4, b5, b6, b7, b9 were re-run and pass; **b2 (discovery) and b8 (phone and keyboard) were not re-proved**: their selectors predate the new "Closing soon" grouping and the new phone bar (7 and 2 checks fail on selectors, not on product behaviour) and need updating |
 | Browser end to end, seller/operator/account/platform (`tests/e2e/auction-b/`, `R42_E2E_SELLER.md`) | 7 of 7 specs, 1,149 checks, 101 axe runs, 0 serious or critical |
 | axe-core | 0 serious or critical on every audited page at 1440 and 390, light and dark |
 | Impeccable detector | clean on rendered pages (the one repeated finding is a false positive: it reads `var()` font sizes as 10 to 15 px) |
@@ -101,7 +101,7 @@ Nothing has been deployed. Deploy is a manual workflow (`workflow_dispatch`), an
 
 ## 12. Outstanding defects and risks
 
-Browse tab "Not sold" still counts closed-unsettled lots (flagged); `Display::lotState` depends on a loaded relation and must be eager-loaded on lists; a queued settlement job that fails all retries is repaired within the hour by the sweep rather than instantly; the delete guard on the bid ledger is PostgreSQL-only; two moderate npm advisories remain in a build-time Tailwind typography chain; load tested to 300k bids on one machine.
+Buyer e2e specs b2 and b8 are stale after the last polish round (selector updates needed, section 8). A bidder whose session expires mid-bid reaches a sign-in page that does not say why; non-parties see "Sold" for a lot whose sale was cancelled; Home's "Bid again" for a single outbid lot opens My bids rather than the lot (all recorded in `R42_DECISIONS.md`). Browse tab "Not sold" still counts closed-unsettled lots (flagged); `Display::lotState` depends on a loaded relation and must be eager-loaded on lists; a queued settlement job that fails all retries is repaired within the hour by the sweep rather than instantly; the delete guard on the bid ledger is PostgreSQL-only; two moderate npm advisories remain in a build-time Tailwind typography chain; load tested to 300k bids on one machine.
 
 ## 13. Recommendations
 
