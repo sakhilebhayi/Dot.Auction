@@ -100,6 +100,7 @@ class DashboardTest extends TestCase
 
     public function test_a_winner_with_an_unpaid_sale_is_told_what_to_pay_and_when_with_a_link_to_the_sale(): void
     {
+        config(['paystack.secret_key' => 'sk_test_unit_test_key_0123456789']); // payment is open
         $winner = $this->person('Sipho');
         $lot = $this->endedLot($winner, '400.00', ['title' => 'Oak Table']);
         $sale = $this->sale($lot, $winner, 'awaiting_payment', now()->addDays(2));
@@ -115,6 +116,7 @@ class DashboardTest extends TestCase
 
     public function test_an_overdue_sale_is_urgent_and_the_winner_can_still_pay(): void
     {
+        config(['paystack.secret_key' => 'sk_test_unit_test_key_0123456789']); // payment is open
         $winner = $this->person();
         $lot = $this->endedLot($winner, '400.00', ['title' => 'Late Lot']);
         $sale = $this->sale($lot, $winner, AuctionSettlement::PAYMENT_OVERDUE, now()->subDay());
@@ -184,6 +186,7 @@ class DashboardTest extends TestCase
 
     public function test_a_seller_is_told_when_a_buyer_is_late_paying(): void
     {
+        config(['paystack.secret_key' => 'sk_test_unit_test_key_0123456789']); // payment is open
         $seller = $this->person();
         $winner = $this->person();
         $lot = $this->endedLot($winner, '400.00', ['title' => 'Unpaid Lot', 'seller_id' => $seller->id]);

@@ -4,37 +4,18 @@
 --}}
 @php
     use App\Support\Display;
+    use App\Support\SettlementPosition;
 
     $title = $settlement->auction->title ?? 'Lot #'.$settlement->auction_id;
     $status = $settlement->status;
-    $canPayNow = $payments->canTakePayments();
-    $payable = $settlement->isPayable();
+    // One answer for every page: can this be paid now, is it late, what is owed (App\Support\SettlementPosition).
+    $position = SettlementPosition::of($settlement, $payments);
+    $canPayNow = $position->canPayNow();
     $test = $payments->isTestMode();
 
     // The state of the page in words: one line that says what is going on, then (at most) one action.
-    $headline = match (true) {
-        $isWinner && $status === 'paid' => 'Payment received. Thank you.',
-        $isWinner && $status === 'cancelled' => 'Cancelled by the seller.',
-        $isWinner && $payable && $canPayNow => $status === 'payment_overdue' ? 'Payment is overdue.' : 'Pay to complete your purchase.',
-        $isWinner => 'Nothing is due yet.',
-        $status === 'paid' => 'The buyer has paid.',
-        $status === 'cancelled' => 'You cancelled this sale.',
-        $status === 'payment_overdue' => 'The buyer has not paid on time.',
-        default => 'Waiting for the buyer to pay.',
-    };
-
-    // Why, in one or two sentences.
-    $detail = match (true) {
-        $isWinner && $status === 'paid' => 'The seller has been told.'.($test ? ' This was a test payment: no real money moved.' : ''),
-        $isWinner && $status === 'cancelled' => 'The seller cancelled this sale because payment was overdue. Nothing is due and it can no longer be paid.',
-        $isWinner && $payable && $canPayNow => $status === 'payment_overdue' ? 'You can still pay until the seller cancels the sale.' : null,
-        $isWinner => 'Payment is not available yet, so nothing is due now. You will be told when the payment step opens.',
-        $status === 'paid' => null,
-        $status === 'cancelled' => 'The buyer has been told and can no longer pay. The auction has not been relisted.',
-        $status === 'payment_overdue' => 'They can still pay until you cancel the sale. Dot.Auction does not relist or cancel anything for you.',
-        $canPayNow => 'If they do not pay by the deadline the sale is marked overdue and you decide what to do.',
-        default => 'Payment is not available yet, so the sale is recorded as awaiting payment.',
-    };
+    $headline = $position->headline($isWinner);
+    $detail = $position->detail($isWinner, $test);
 
     // The Paystack return, titled. Only the first alert of the page shows.
     $return = session('payment_state');
@@ -50,11 +31,11 @@
     ][$return] ?? null;
     $problems = collect($errors->all())->reject(fn ($m) => $m === $returnMessage && $returnTone !== null)->values();
 
-    $deadlineLabel = $status === 'payment_overdue' ? 'Was due' : 'Pay by';
+    $deadlineLabel = $position->isOverdue() ? 'Was due' : 'Pay by';
 @endphp
 <x-app-layout :title="'Payment for '.$title" description="Where this sale stands and what to do next." width="narrow" :back="route('settlements.index')" back-label="All payments">
     {{-- No header slot: the layout prints the title prop as the h1, escaped once. A header slot would double-escape a lot title that contains & or <. --}}
-    <x-slot name="meta"><x-ds.status :state="$status" /></x-slot>
+    <x-slot name="meta"><x-ds.status :state="$position->badge()" /></x-slot>
 
     @if ($returnTone && $returnMessage)
         <x-ds.alert :tone="$returnTone" :title="$returnTitle" class="sl-gap">{{ $returnMessage }}</x-ds.alert>
@@ -66,19 +47,19 @@
     @endforeach
 
     <x-ds.section tone="surface" class="pay-next" aria-label="Next step">
-        <p class="pay-next__label">{{ $isWinner ? 'You owe' : 'Sold for' }}</p>
+        <p class="pay-next__label">{{ $position->amountLabel($isWinner) }}</p>
         <p class="pay-next__amount"><x-ds.money :amount="$settlement->amount_cents / 100" size="money" /></p>
         <p class="pay-next__headline">{{ $headline }}</p>
         @if ($detail)<p class="pay-next__detail">{{ $detail }}</p>@endif
 
-        @if ($payable && $canPayNow && $settlement->payment_due_at)
+        @if ($position->showsDeadline())
             <p class="pay-next__due">
                 <x-ds.icon name="clock" :size="18" />
                 <span>{{ $deadlineLabel }} <strong>{{ Display::time($settlement->payment_due_at, 'j M Y, H:i', true) }}</strong>, {{ $settlement->payment_due_at->diffForHumans() }}</span>
             </p>
         @endif
 
-        @if ($isWinner && $payable && $canPayNow)
+        @if ($isWinner && $canPayNow)
             <form method="POST" action="{{ route('settlements.pay', $settlement) }}" class="pay-next__action">
                 @csrf
                 <x-ds.button type="submit" size="lg" icon="lock">Pay now</x-ds.button>
@@ -87,7 +68,7 @@
                     @if ($test) No real money moves in test mode. @endif
                 </p>
             </form>
-        @elseif ($isSeller && $status === 'payment_overdue')
+        @elseif ($isSeller && $position->sellerCanCancel())
             <div class="pay-next__action">
                 <x-ds.confirm :action="route('settlements.cancel', $settlement)" variant="danger" icon="ban" size="lg"
                     title="Cancel this sale?" body="The buyer is told and can no longer pay. It does not relist the auction and does not refund anyone."
@@ -128,6 +109,8 @@
         <ol class="pay-history">
             <li><time datetime="{{ $settlement->created_at->toIso8601ZuluString() }}">{{ Display::time($settlement->created_at, 'j M Y, H:i') }}</time><span>Sale recorded at {{ $settlement->amount() }}.</span></li>
             @foreach ($settlement->events as $event)
+                {{-- While payment is closed, "payment opened" and "deadline passed" would contradict the page: they are history of a state that is not current. --}}
+                @continue($position->isWaiting() && in_array($event->type, ['payment_opened', 'overdue'], true))
                 @php
                     $what = match ($event->type) {
                         'payment_opened' => 'Payment opened for the buyer.',

@@ -29,12 +29,12 @@ class SettlementPagesTest extends TestCase
     {
         return [
             'winner awaiting, on' => ['awaiting_payment', true, 'winner', ['Pay to complete your purchase.', 'Pay now', 'Pay by', 'You owe'], ['Cancel this sale', 'Payout']],
-            'winner awaiting, off' => ['awaiting_payment', false, 'winner', ['Nothing is due yet.', 'Payment is not available yet'], ['Pay now', 'Pay by']],
+            'winner awaiting, off' => ['awaiting_payment', false, 'winner', ['Payment opens soon.', 'You will owe R1,234.50 once it opens', 'Payment is not available yet'], ['Pay now', 'Pay by', 'Nothing is due yet', 'overdue']],
             'winner overdue, on' => ['payment_overdue', true, 'winner', ['Payment is overdue.', 'You can still pay until the seller cancels the sale.', 'Pay now', 'Was due'], ['Cancel this sale']],
             'winner paid' => ['paid', true, 'winner', ['Payment received. Thank you.', 'The seller has been told.', 'Reference'], ['Pay now', 'Cancel this sale']],
             'winner cancelled' => ['cancelled', true, 'winner', ['Cancelled by the seller.', 'it can no longer be paid'], ['Pay now', 'Cancel this sale']],
             'seller awaiting, on' => ['awaiting_payment', true, 'seller', ['Waiting for the buyer to pay.', 'Sold for', 'Your payout'], ['Pay now', 'Cancel this sale']],
-            'seller awaiting, off' => ['awaiting_payment', false, 'seller', ['Waiting for the buyer to pay.', 'Payment is not available yet'], ['Pay now', 'Pay by', 'Cancel this sale']],
+            'seller awaiting, off' => ['awaiting_payment', false, 'seller', ['Waiting for payment to open.', 'Payment is not available yet'], ['Pay now', 'Pay by', 'Cancel this sale']],
             'seller overdue' => ['payment_overdue', true, 'seller', ['The buyer has not paid on time.', 'Cancel this sale', 'does not relist the auction and does not refund anyone'], ['Pay now']],
             'seller paid' => ['paid', true, 'seller', ['The buyer has paid.', 'settlement to seller is manual', 'not with you'], ['Pay now', 'Cancel this sale']],
             'seller cancelled' => ['cancelled', true, 'seller', ['You cancelled this sale.', 'The auction has not been relisted.'], ['Pay now', 'Cancel this sale', 'Your payout']],

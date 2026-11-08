@@ -11,6 +11,12 @@
         </x-ds.alert>
     @endif
 
+    @if ($toPayLater > 0)
+        <x-ds.alert tone="info" title="Payment opens soon" class="sl-gap">
+            Online payment is not available yet, so there is nothing to pay today. You will owe {{ \App\Support\SettlementPosition::money($owedLater) }} across {{ $toPayLater }} won {{ $toPayLater === 1 ? 'lot' : 'lots' }} once it opens, and we will tell you.
+        </x-ds.alert>
+    @endif
+
     @if ($counts['all'] === 0)
         <x-ds.empty-state title="No payments yet" icon="receipt" body="When you win a lot, or one of yours sells, it appears here with what to do next.">
             <x-ds.button :href="route('auctions.index')" icon="browse">Browse lots</x-ds.button>
@@ -38,7 +44,8 @@
                 @foreach ($settlements as $row)
                     @php
                         $won = $row->winner_id === auth()->id();
-                        $canPay = $won && $row->isPayable() && $payments->canTakePayments();
+                        $position = \App\Support\SettlementPosition::of($row, $payments);
+                        $canPay = $won && $position->canPayNow();
                         $title = $row->auction->title ?? 'Lot #'.$row->auction_id;
                     @endphp
                     <tr>
@@ -46,9 +53,11 @@
                         <td data-label="You">{{ $won ? 'You won' : 'You sold' }}</td>
                         <td data-label="Amount" class="num"><x-ds.money :amount="$row->amount_cents / 100" /></td>
                         <td data-label="Status" class="sl-span">
-                            <x-ds.status :state="$row->status" size="sm" />
-                            @if ($row->isPayable() && $row->payment_due_at && $payments->canTakePayments())
-                                <span class="sl-sub">{{ $row->status === 'payment_overdue' ? 'Was due' : ($won ? 'Pay by' : 'Buyer pays by') }} {{ Display::time($row->payment_due_at, 'j M, H:i') }}</span>
+                            <x-ds.status :state="$position->badge()" size="sm" />
+                            @if ($position->showsDeadline())
+                                <span class="sl-sub">{{ $position->isOverdue() ? 'Was due' : ($won ? 'Pay by' : 'Buyer pays by') }} {{ Display::time($row->payment_due_at, 'j M, H:i') }}</span>
+                            @elseif ($won && $position->isWaiting())
+                                <span class="sl-sub">Payment opens soon</span>
                             @elseif ($row->isPaid() && $row->paid_at)
                                 <span class="sl-sub">Paid {{ Display::time($row->paid_at, 'j M, H:i') }}</span>
                             @endif
