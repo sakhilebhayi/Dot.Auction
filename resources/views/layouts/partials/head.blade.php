@@ -2,7 +2,7 @@
   Shared <head> content for every layout (app, guest, welcome, errors).
   Variables: $title (string|null, the page's own name; the app name is appended), $description (string|null), $vite (list of entry files, default app.css + app.js),
              $robots (string|null, e.g. "noindex" for signed-in pages).
-  The inline script applies the saved theme before first paint so there is no flash; everything else about the theme lives in resources/js/ds.js.
+  The inline script applies the saved theme before first paint so there is no flash; everything else about the theme lives in `resources/js/ds.js`.
 --}}
 @php
     $appName = config('app.name', 'Dot.Auction');

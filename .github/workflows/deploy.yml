@@ -181,7 +181,7 @@ jobs:
                   path = os.path.join(root, name)
                   text = open(path, encoding='utf-8', errors='replace').read()
                   if '@vite' in text:
-                      wanted.update(re.findall(r'resources/(?:css|js)/[A-Za-z0-9_./-]+', text))
+                      wanted.update(w.rstrip('.') for w in re.findall(r'resources/(?:css|js)/[A-Za-z0-9_./-]+', text))
           absent = sorted(w for w in wanted if w not in manifest)
           if not wanted or absent:
               sys.exit('views ask for %s; not in the manifest: %s' % (sorted(wanted) or 'nothing', absent or 'n/a'))
