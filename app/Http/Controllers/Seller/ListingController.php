@@ -109,7 +109,13 @@ class ListingController extends Controller
             return back()->withInput()->withErrors(['listing' => $e->getMessage()]);
         }
 
-        return redirect()->route('seller.auctions.edit', $auction)->with('status', 'Changes saved.');
+        // A form opened before the first bid still carries the term fields. They are dropped (only the description may
+        // change once a bid exists), and the seller is told so instead of "Changes saved." for a price that did not move.
+        $droppedTerms = $request->termsLocked() && $request->hasAny(SaveListingRequest::TERM_FIELDS);
+
+        return redirect()->route('seller.auctions.edit', $auction)->with('status', $droppedTerms
+            ? 'Description saved. A bid arrived while this page was open, so the price, reserve, closing time and other terms were not changed.'
+            : 'Changes saved.');
     }
 
     public function publish(Auction $auction): RedirectResponse

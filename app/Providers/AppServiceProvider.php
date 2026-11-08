@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Services\DisplayTime;
+use App\Services\InfoDot\E2eFakeIdentityClient;
+use App\Services\InfoDot\IdentityClient;
 use Carbon\Carbon as BaseCarbon;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Events\DiagnosingHealth;
@@ -20,7 +22,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Browser end-to-end suite only (tests/e2e/auction-b): a stand-in for InfoDot's redeem endpoint. Never bound in production.
+        if ($this->app->environment('local', 'testing') && env('AUCTION_E2E_FAKE_INFODOT')) {
+            $this->app->bind(IdentityClient::class, E2eFakeIdentityClient::class);
+        }
     }
 
     /**
