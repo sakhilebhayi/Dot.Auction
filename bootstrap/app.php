@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureCompanyEntitled;
 use App\Http\Middleware\EnsurePlatformOperator;
 use App\Http\Middleware\KeepFlashForLivewire;
 use App\Http\Middleware\LimitLivewireUpdates;
@@ -32,6 +33,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // A per-person ceiling on Livewire calls (the bid panel's poll, the bell, clicks). In the web group, after the session
         // starts, so it can count per signed-in person rather than per address.
         $middleware->web(append: [LimitLivewireUpdates::class]);
+
+        // R-50: the signed-in area closes when the person's current company no longer holds this platform in InfoDot. In the
+        // web group (after the session starts); it leaves signed-out pages, sign-in, the hand-off, webhooks and /api alone.
+        $middleware->web(append: [EnsureCompanyEntitled::class]);
 
         // Pin the Host header to the production host(s) (config security.trusted_hosts, default the APP_URL host).
         $middleware->trustHosts(at: fn () => TrustedHostList::patterns(), subdomains: false);

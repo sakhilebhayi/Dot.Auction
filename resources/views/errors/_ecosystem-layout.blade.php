@@ -2,7 +2,8 @@
   Standalone error layout (403, 404, 419, 429, 500, 503). It must work when the database, the session and the cache are down, so:
   no @auth (the session may not be readable), no Livewire, no query. The signed-in links are chosen by trying the session once inside rescue().
   Styles come from resources/css/errors.css when the build manifest lists it; the inline fallback keeps the page legible without it.
-  Sections: icon (an icon name), title, message, actions. $code is the HTTP status.
+  Sections: icon (an icon name), title, message, actions, after (optional, below the actions). $code is the HTTP status.
+  $discover = false leaves out the list of other platforms.
 --}}
 @php
     $manifest = public_path('build/manifest.json');
@@ -11,7 +12,7 @@
 
     $nonce = function_exists('csp_nonce') ? csp_nonce() : '';
 
-    $discover = collect(config('ecosystem.platforms', []))
+    $discover = ($discover ?? true) === false ? [] : collect(config('ecosystem.platforms', []))
         ->reject(fn ($p) => ($p['name'] ?? null) === 'Dot.Auction')
         ->reject(fn ($p) => ($p['active'] ?? true) === false)
         ->reject(fn ($p, $k) => ($p['internal'] ?? false) === true || in_array($k, ['memory', 'brain', 'dopemine'], true))
@@ -50,6 +51,7 @@
         <div class="er-actions">
             @yield('actions')
         </div>
+        @yield('after')
 
         @if (! empty($discover))
             <section class="er-discover" aria-labelledby="er-discover">

@@ -72,6 +72,10 @@ return [
         'secret' => env('INFODOT_SERVICE_SECRET'),
         'timeout' => (int) env('INFODOT_REDEEM_TIMEOUT', 5),
         'provision' => (bool) env('INFODOT_PROVISION_USERS', true),
+
+        // R-50: while someone is signed in, ask InfoDot (cached ten minutes per company) whether their current company
+        // still holds this platform, and close the signed-in area when it clearly does not. Any failure lets them carry on.
+        'entitlement_check' => (bool) env('AUCTION_ENTITLEMENT_CHECK', true),
     ],
 
 ];
