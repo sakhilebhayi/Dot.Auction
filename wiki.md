@@ -56,7 +56,7 @@ Relationships worth noting: `Auction::winningBid()` is a dedicated `HasOne` scop
 |---|---|---|---|
 | `BidPlaced` (broadcast) | A bid is recorded on an active auction | Reverb channel `auction.{auction_id}` — anyone watching that auction's live view | `auction_id`, `amount`, `bidder` (name), `current_price` |
 
-Only one domain event is wired today. The natural next events — auction closed/settled, reserve not met, watchlist notification, ecosystem-facing settlement handoff to Dot.Billing — are not yet implemented; see the roadmap.
+Only one domain event is wired today. The natural next events — auction closed/settled, reserve not met, watchlist notification, ecosystem-facing settlement handoff — are not yet implemented; see the roadmap.
 
 ## 5. Connecting to Dot.Brain
 
@@ -84,7 +84,7 @@ Nothing about an auction should publish until it settles (status reaches `ended`
 - [ ] Search integration (Scout + Meilisearch) for auction discovery
 - [x] Winner payment for a sold auction through Paystack, **test mode only** (see README, "Paying for a won auction"): Pay now, server-side verification, signed webhook, 72-hour deadline with overdue state, seller cancel (audited), read-only operator list. Money lands in the platform's Paystack balance.
 - [ ] Seller payouts, commissions/fees, split payments, KYC and refunds (need compliance and finance decisions; seller settlement is manual today)
-- [ ] Ecosystem settlement handoff to Dot.Billing on auction close
+- [ ] Ecosystem settlement handoff on auction close
 
 ## Change Log
 
@@ -106,5 +106,5 @@ Nothing about an auction should publish until it settles (status reaches `ended`
 ## Open Questions
 
 - Should auto-bid execution run as a queued job per new bid, or a scheduled sweep — affects fairness guarantees under concurrent bidding.
-- Where does the settlement job live: a Laravel scheduled command here, or a Dot.Billing-triggered webhook — affects who owns the "auction ended" moment of truth.
+- Where does the settlement job live: a Laravel scheduled command here, or a webhook triggered from elsewhere in the ecosystem — affects who owns the "auction ended" moment of truth.
 - Reserve-price confidentiality (per Dot.Brain's gate: reserves publish only as met/not-met rates, never values) needs to be enforced in the Knowledge Pack publisher once it exists, not left to convention. As of this pass, it's enforced in the buyer-facing UI (`AuctionController@show` never reads `reserve_price`, only `reserveMet()`) — the Knowledge Pack publisher itself still doesn't exist.

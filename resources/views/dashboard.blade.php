@@ -2,6 +2,7 @@
   Home. Everything shown is read from the signed-in person's own rows (App\Http\Controllers\DashboardController): a person can be buyer, seller and
   operator at once, so there is no role switch. The first thing on the page is what needs them, in words, with a direct link; after that only the
   sections that have data. A new account gets a welcome with the two real paths instead of a page of zeros.
+  Above all of it sits the landing block (dashboard._landing): logo, welcome, one dominant action for the person's role, one real lot.
 --}}
 @php
     use App\Support\Display;
@@ -9,13 +10,8 @@
     $watchPlural = fn (int $n) => $n === 1 ? 'lot' : 'lots';
 @endphp
 <x-app-layout title="Home" :description="$summary ?? null" width="wide">
-    <x-slot name="header">Home</x-slot>
-    @unless ($isNew)
-        <x-slot name="actions">
-            <x-ds.button :href="route('auctions.index')" variant="quiet" icon="browse">Browse lots</x-ds.button>
-            <x-ds.button :href="route('seller.auctions.create')" icon="plus">List a lot</x-ds.button>
-        </x-slot>
-    @endunless
+    {{-- The landing block owns the h1 and the page's one dominant action; "Browse lots" and "List a lot" both live there, one of them primary. --}}
+    <x-slot name="hero">@include('dashboard._landing')</x-slot>
 
     @if ($isNew)
         <x-ds.section title="Two ways to start" id="start">
@@ -23,7 +19,7 @@
                 <div class="dc-path">
                     <h3 class="dc-path__title"><x-ds.icon name="bids" :size="24" /> Find a lot and bid</h3>
                     <p class="dc-path__body">Every lot shows its price, the next valid bid and when it closes. Place a bid when you are ready; you are told straight away if someone outbids you.</p>
-                    <x-ds.button :href="route('auctions.index')" icon-right="arrow-right">Browse lots</x-ds.button>
+                    <x-ds.button :href="route('auctions.index')" variant="quiet" icon-right="arrow-right">Browse lots</x-ds.button>
                 </div>
                 <div class="dc-path">
                     <h3 class="dc-path__title"><x-ds.icon name="tag" :size="24" /> List something to sell</h3>

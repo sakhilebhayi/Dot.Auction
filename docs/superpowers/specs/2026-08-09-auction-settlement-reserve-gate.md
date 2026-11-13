@@ -199,5 +199,5 @@ introduced here — matches `BidPanelTest`/`AuctionShowTest`/etc. exactly).
 - The Knowledge Pack publisher settlement handoff to Dot.Brain (wiki.md §6,
   separately unbuilt, depends on this settlement job existing first but is
   its own follow-on piece).
-- Ecosystem settlement handoff to Dot.Billing (same — a real future step,
+- Ecosystem settlement handoff (same — a real future step,
   not this one).
