@@ -41,7 +41,7 @@
         <form method="GET" action="{{ route('auctions.index') }}" class="dc-filters" role="search" aria-label="Search and sort lots">
             @if ($category !== null)<input type="hidden" name="category" value="{{ $category }}">@endif
             @if ($state !== null)<input type="hidden" name="state" value="{{ $state }}">@endif
-            <x-ds.input class="dc-filters__q" label="Search lots" name="q" id="browse-q" type="search" :value="$search" placeholder="Guitar, desk, camera" autocomplete="off" maxlength="100" />
+            <x-dot.filter-search class="dc-filters__q" label="Search lots" name="q" id="browse-q" :value="$search" placeholder="Guitar, desk, camera" maxlength="100" />
             <x-ds.button type="submit" icon="search" variant="quiet" class="dc-filters__go">Search</x-ds.button>
             <x-ds.select class="dc-filters__sort" label="Sort by" name="sort" id="browse-sort" :value="$sort" :options="LotBrowser::SORTS" data-autosubmit />
             <noscript><x-ds.button type="submit" variant="quiet">Apply sort</x-ds.button></noscript>

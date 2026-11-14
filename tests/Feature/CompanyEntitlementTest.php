@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -53,9 +54,22 @@ class CompanyEntitlementTest extends TestCase
         config(['ecosystem.infodot' => [
             'redeem_url' => self::REDEEM, 'platform' => 'auction', 'secret' => $this->bearer, 'timeout' => 2, 'provision' => true, 'entitlement_check' => true,
         ]]);
+
+        // The header's platform switcher (shared Dot UI) reads the same InfoDot endpoint under its own cache key. These
+        // tests count and sequence the ENTITLEMENT check's requests, so the switcher's answer is parked as a recent
+        // failure: it then asks nothing and the counts below stay the entitlement check's own. The switcher has its own
+        // tests (DotUiHeaderTest).
+        foreach ([self::NORTHWIND, self::SECOND, self::PERSONAL] as $uuid) {
+            $this->parkSwitcher($uuid);
+        }
     }
 
     // ---- helpers ----
+
+    private function parkSwitcher(string $uuid): void
+    {
+        Cache::put('infodot:platforms:auction:'.strtolower($uuid), ['ok' => false, 'personal' => false, 'rows' => []], 3600);
+    }
 
     private function team(string $uuid, string $name, string $role = 'owner', ?bool $entitled = null, ?string $access = null, bool $personal = false): array
     {
