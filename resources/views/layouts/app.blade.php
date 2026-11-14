@@ -41,14 +41,13 @@
             <header class="sh-top">
                 <x-ds.brand variant="mark" :width="52" :href="route('dashboard')" class="sh-top__mark" />
                 <div class="sh-search">
-                    {{-- On Browse this is the page's search from 64rem up, so it keeps the tab, category and sort the visitor has chosen.
-                         The hidden fields sit beside the pill's form and join it through the form attribute. --}}
-                    @if (request()->routeIs('auctions.index'))
-                        @foreach (['state', 'category', 'sort'] as $keep)
-                            @if (is_string(request()->query($keep)) && request()->query($keep) !== '')<input type="hidden" form="shell-search-form" name="{{ $keep }}" value="{{ request()->query($keep) }}">@endif
-                        @endforeach
-                    @endif
-                    <x-dot.search id="shell-search" name="q" :value="request()->routeIs('auctions.index') && is_string(request()->query('q')) ? request()->query('q') : ''" placeholder="Search lots" label="Search lots" :action="route('auctions.index')" :form-attributes="['id' => 'shell-search-form']" />
+                    {{-- On Browse this is the page's search from 64rem up, so it keeps the tab, category and sort the visitor has chosen. --}}
+                    @php
+                        $keepFields = request()->routeIs('auctions.index')
+                            ? collect(['state', 'category', 'sort'])->mapWithKeys(fn ($k) => [$k => request()->query($k)])->filter(fn ($v) => is_string($v) && $v !== '')->all()
+                            : [];
+                    @endphp
+                    <x-dot.search id="shell-search" name="q" :value="request()->routeIs('auctions.index') && is_string(request()->query('q')) ? request()->query('q') : ''" placeholder="Search lots" label="Search lots" :action="route('auctions.index')" :form-attributes="['id' => 'shell-search-form']" :hidden-fields="$keepFields" />
                 </div>
                 <div class="sh-top__tools">
                     @isset($topbar){{ $topbar }}@endisset

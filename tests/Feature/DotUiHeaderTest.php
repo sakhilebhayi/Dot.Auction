@@ -103,18 +103,21 @@ class DotUiHeaderTest extends TestCase
         $this->assertStringNotContainsString('dsr-kbd', $html, 'no invented shortcut hint');
     }
 
-    public function test_on_browse_the_pill_keeps_the_tab_category_and_sort_through_the_form_attribute(): void
+    public function test_on_browse_the_pill_keeps_the_tab_category_and_sort_inside_its_form(): void
     {
         $this->fakeInfoDot([self::url(self::ACME) => Http::response(self::body(self::ACME))]);
         $owner = $this->memberOf(self::ACME, 'Acme Ltd');
 
         $html = $this->actingAs($owner)->get(route('auctions.index', ['q' => 'Camera', 'state' => 'live', 'sort' => 'newest']))->assertOk()->getContent();
 
-        $this->assertStringContainsString('<input type="hidden" form="shell-search-form" name="state" value="live">', $html);
-        $this->assertStringContainsString('<input type="hidden" form="shell-search-form" name="sort" value="newest">', $html);
+        $this->assertSame(1, preg_match('/<form role="search".*?id="shell-search-form".*?<\/form>/s', $html, $form));
+        $this->assertStringContainsString('<input type="hidden" name="state" value="live">', $form[0], 'inside the form, no form attribute');
+        $this->assertStringContainsString('<input type="hidden" name="sort" value="newest">', $form[0]);
+        $this->assertStringNotContainsString('name="category"', $form[0]);
+        $this->assertStringNotContainsString('form="shell-search-form"', $html);
 
         $elsewhere = $this->actingAs($owner)->get(route('dashboard'))->assertOk()->getContent();
-        $this->assertStringNotContainsString('form="shell-search-form"', $elsewhere, 'only Browse carries the current filters');
+        $this->assertStringNotContainsString('type="hidden" name="state"', substr($elsewhere, (int) strpos($elsewhere, 'id="shell-search-form"'), 900), 'only Browse carries the current filters');
     }
 
     public function test_a_guest_sees_no_search_and_no_switcher(): void

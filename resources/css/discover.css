@@ -54,7 +54,7 @@
 /* From 64rem the shell's search box is the one search; only the sort stays on the page, its label beside it. */
 @media (min-width: 64rem) {
     .dc-filters { grid-template-columns: auto; width: auto; }
-    .dc-filters__q, .dc-filters__go, .dc-filters .dc-filters__q.dsr-filter { display: none; }  /* the shared filter's own display rule loads later: the longer selector keeps it hidden */
+    .dc-filters__q, .dc-filters__go { display: none; }
     .dc-filters__sort { display: grid; grid-template-columns: auto 14rem; align-items: center; gap: var(--s-3); }
     .dc-filters__sort .ds-label { margin: 0; }
 }
