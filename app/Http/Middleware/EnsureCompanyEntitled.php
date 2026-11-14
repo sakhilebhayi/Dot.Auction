@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
  * It sits in the `web` group and acts only on a signed-in person asking for a page that needs sign-in (or a Livewire
  * call, which is how a bid is placed). Everything a signed-out visitor can reach is untouched: the public pages, sign-in
  * and sign-out, the InfoDot hand-off, the health checks, the Paystack webhook, the CSP report endpoint, and /api.
- * Switching company stays open so a person can move to a company that does hold the platform.
+ * Settlement pages stay open (see SETTLEMENT). Switching company stays open so a person can move to a company that does hold the platform.
  *
  * It only stops requests. It never touches an auction, a bid or a settlement: lots still close on time, standing bids
  * still count, and the scheduled commands (settling, overdue marking, notices) run exactly as before, because console
@@ -27,6 +27,24 @@ class EnsureCompanyEntitled
 {
     /** Signed-in routes that stay open: leaving, and moving to another company. */
     private const OPEN = ['logout', 'current-team.update'];
+
+    /**
+     * Money already owed stays reachable. On deploy no company is switched on yet, so without this a winner could not
+     * open a won lot or pay before the payment window runs out, and a seller could not see a sale awaiting payment.
+     * Only pages and actions that settle a lot already won or sold are listed; each stays behind sign-in and its own
+     * policy (parties to the sale only). Nothing that starts new auction activity is here: no bidding (a Livewire
+     * action), no new lot, no editing, publishing or cancelling a listing, no watchlist, no reserve decision.
+     */
+    public const SETTLEMENT = [
+        'settlements.index',            // what I owe and what is owed to me (winner and seller)
+        'settlements.show',             // the won-lot / sold-lot payment page
+        'settlements.pay',              // winner starts payment
+        'settlements.payment.callback', // winner returns from Paystack and the payment is confirmed
+        'settlements.cancel',           // seller handles an overdue, unpaid sale
+        'buyer.bids',                   // my bids (read only)
+        'buyer.won',                    // my won lots (read only)
+        'seller.auctions.index',        // my listings, including sold lots (read only)
+    ];
 
     /** Where the sign-in hand-off records what InfoDot said (see EcosystemAuthController). */
     public const SESSION_KEY = 'entitlement';
@@ -83,7 +101,7 @@ class EnsureCompanyEntitled
 
         $route = $request->route();
 
-        if ($route === null || in_array($route->getName(), self::OPEN, true)) {
+        if ($route === null || in_array($route->getName(), [...self::OPEN, ...self::SETTLEMENT], true)) {
             return false;
         }
 

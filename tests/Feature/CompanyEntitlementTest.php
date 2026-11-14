@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Concerns\BuildsSettlements;
 use Tests\TestCase;
 
 /**
@@ -25,6 +26,7 @@ use Tests\TestCase;
  */
 class CompanyEntitlementTest extends TestCase
 {
+    use BuildsSettlements;
     use RefreshDatabase;
 
     private const REDEEM = 'https://infodot.test/api/ecosystem/redeem';
@@ -233,7 +235,7 @@ class CompanyEntitlementTest extends TestCase
         $lot = Auction::factory()->create(['title' => 'Walnut Sideboard 1962', 'status' => 'active', 'starts_at' => now()->subHour(), 'ends_at' => now()->addDay()]);
         $this->infodotAnswers([self::NORTHWIND => ['status' => $status, 'entitled' => false]]);
 
-        foreach (['/dashboard', '/auctions', '/auctions/'.$lot->id, '/bids', '/user/profile'] as $path) {
+        foreach (['/dashboard', '/auctions', '/auctions/'.$lot->id, '/watchlist', '/user/profile'] as $path) {
             $this->actingAs($user)->get($path)
                 ->assertStatus(403)
                 ->assertSee($heading)
@@ -479,6 +481,139 @@ class CompanyEntitlementTest extends TestCase
         $this->actingAs($user)->get('/dashboard')->assertOk();
 
         $this->assertSame(0, $this->reads());
+    }
+
+    // ---- money already owed stays reachable ----
+
+    /** InfoDot refuses every company; Paystack (test mode) answers initialise and verify. */
+    private function refusedEverywhereWithPaystack(?string $verifyReference = null, int $cents = 123450): void
+    {
+        $this->enablePaystack();
+        $this->infodotAnswers([self::NORTHWIND => ['status' => 'free_while_pricing_finalised', 'entitled' => false]]);
+        $routes = [
+            self::READ => function (Request $request) {
+                $this->reads++;
+
+                return Http::response($this->platforms(self::NORTHWIND, ['status' => 'free_while_pricing_finalised', 'entitled' => false]));
+            },
+            'api.paystack.co/transaction/initialize' => $this->initializeResponse(),
+        ];
+        if ($verifyReference !== null) {
+            $routes['api.paystack.co/transaction/verify/*'] = $this->verifyResponse($verifyReference, $cents);
+        }
+        Http::swap(new Factory);
+        $this->reads = 0;
+        Http::fake($routes);
+    }
+
+    private function intoCompany(User $user, string $uuid = self::NORTHWIND): User
+    {
+        $team = Team::forceCreate(['user_id' => $user->id, 'name' => 'Northwind Freight', 'personal_team' => false, 'infodot_team_uuid' => $uuid]);
+        $user->switchTeam($team);
+
+        return $user->fresh();
+    }
+
+    public function test_a_refused_companys_winner_can_open_the_won_lot_and_pay_but_not_bid_or_list(): void
+    {
+        [$settlement, $winner] = $this->settlement(123450);
+        $winner = $this->intoCompany($winner);
+        $payment = $this->attempt($settlement);
+        $this->refusedEverywhereWithPaystack($payment->reference);
+        $live = Auction::factory()->create(['status' => 'active', 'starts_at' => now()->subHour(), 'ends_at' => now()->addDay()]);
+        $this->actingAs($winner);
+
+        $this->get(route('buyer.won'))->assertOk();
+        $this->get(route('buyer.bids'))->assertOk();
+        $this->get(route('settlements.index'))->assertOk();
+        $this->get(route('settlements.show', $settlement))->assertOk()->assertSee('Pay now');
+
+        $this->post(route('settlements.pay', $settlement))->assertRedirectContains('https://checkout.paystack.com/');
+        $this->get(route('settlements.payment.callback', $settlement))->assertRedirect(route('settlements.show', $settlement));
+        $this->assertSame(AuctionSettlement::PAID, $settlement->fresh()->status, 'the winner paid inside a refused company');
+        $this->assertSame(0, $this->reads(), 'the exempt pages never ask InfoDot');
+
+        // New auction activity stays closed: bidding (a Livewire action), a lot page, a new lot, the watchlist.
+        $this->post('/livewire/update', ['components' => []], ['X-Livewire' => '1'])->assertStatus(403);
+        $this->get(route('auctions.show', $live))->assertStatus(403);
+        $this->get(route('seller.auctions.create'))->assertStatus(403);
+        $this->post(route('seller.auctions.store'), ['title' => 'Should not exist'])->assertStatus(403);
+        $this->get(route('buyer.watchlist'))->assertStatus(403);
+        $this->assertSame(0, Auction::where('title', 'Should not exist')->count());
+    }
+
+    public function test_a_refused_companys_seller_can_see_and_handle_a_sold_lot_but_not_list_a_new_one(): void
+    {
+        [$settlement, , $seller] = $this->settlement(100000, ['status' => AuctionSettlement::PAYMENT_OVERDUE, 'overdue_at' => now()->subDay(), 'payment_due_at' => now()->subDay()]);
+        $seller = $this->intoCompany($seller);
+        $this->refusedEverywhereWithPaystack();
+        $this->actingAs($seller);
+
+        $this->get(route('seller.auctions.index'))->assertOk();
+        $this->get(route('settlements.index', ['role' => 'selling']))->assertOk();
+        $this->get(route('settlements.show', $settlement))->assertOk()->assertSee('Cancel this sale');
+        $this->post(route('settlements.cancel', $settlement))->assertRedirect(route('settlements.show', $settlement));
+        $this->assertSame(AuctionSettlement::CANCELLED, $settlement->fresh()->status);
+
+        $lot = $settlement->auction;
+        $this->get(route('seller.auctions.create'))->assertStatus(403);
+        $this->post(route('seller.auctions.store'), ['title' => 'Should not exist'])->assertStatus(403);
+        $this->get(route('seller.auctions.edit', $lot))->assertStatus(403);
+        $this->put(route('seller.auctions.update', $lot), ['title' => 'Changed'])->assertStatus(403);
+        $this->post(route('seller.auctions.publish', $lot))->assertStatus(403);
+        $this->post(route('seller.auctions.cancel', $lot))->assertStatus(403);
+        $this->delete(route('seller.auctions.destroy', $lot))->assertStatus(403);
+        $this->assertNotSame('Changed', $lot->fresh()->title);
+    }
+
+    public function test_another_persons_sale_is_still_not_reachable_in_a_refused_company(): void
+    {
+        [$settlement] = $this->settlement();
+        $stranger = $this->memberOf(self::NORTHWIND);
+        $this->refusedEverywhereWithPaystack();
+        $this->actingAs($stranger);
+
+        $this->get(route('settlements.show', $settlement))->assertNotFound();
+        $this->post(route('settlements.pay', $settlement))->assertNotFound();
+        $this->get(route('settlements.payment.callback', $settlement))->assertNotFound();
+        $this->post(route('settlements.cancel', $settlement))->assertNotFound();
+        $this->assertSame(AuctionSettlement::AWAITING_PAYMENT, $settlement->fresh()->status);
+    }
+
+    public function test_a_signed_out_visitor_still_cannot_reach_the_settlement_pages(): void
+    {
+        [$settlement] = $this->settlement();
+
+        $this->get(route('settlements.show', $settlement))->assertRedirect(route('login'));
+        $this->post(route('settlements.pay', $settlement))->assertRedirect(route('login'));
+    }
+
+    public function test_a_closed_personal_workspace_keeps_the_same_exemptions_and_no_more(): void
+    {
+        [$settlement, $winner, $seller] = $this->settlement(123450);
+        $payment = $this->attempt($settlement);
+        $this->refusedEverywhereWithPaystack($payment->reference);
+        $closed = [EnsureCompanyEntitled::SESSION_KEY => ['personal' => false]];
+        $lot = Auction::factory()->create(['status' => 'active', 'starts_at' => now()->subHour(), 'ends_at' => now()->addDay()]);
+
+        // Winner: pays from the personal workspace.
+        $this->withSession($closed)->actingAs($winner);
+        $this->get(route('buyer.won'))->assertOk();
+        $this->get(route('buyer.bids'))->assertOk();
+        $this->get(route('settlements.show', $settlement))->assertOk();
+        $this->post(route('settlements.pay', $settlement))->assertRedirectContains('https://checkout.paystack.com/');
+        $this->get(route('settlements.payment.callback', $settlement))->assertRedirect(route('settlements.show', $settlement));
+        $this->assertSame(AuctionSettlement::PAID, $settlement->fresh()->status);
+        $this->get(route('auctions.show', $lot))->assertStatus(403)->assertSee('needs a company that has switched it on');
+        $this->get(route('seller.auctions.create'))->assertStatus(403);
+        $this->post('/livewire/update', ['components' => []], ['X-Livewire' => '1'])->assertStatus(403);
+
+        // Seller: sees the sold lot, cannot list a new one.
+        $this->asGuest()->withSession($closed)->actingAs($seller);
+        $this->get(route('seller.auctions.index'))->assertOk();
+        $this->get(route('settlements.show', $settlement))->assertOk();
+        $this->get(route('seller.auctions.create'))->assertStatus(403);
+        $this->assertSame(0, $this->reads(), 'a team with no InfoDot uuid is never asked about');
     }
 
     // ---- running auctions ----
