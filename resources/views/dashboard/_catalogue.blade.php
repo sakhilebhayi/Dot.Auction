@@ -2,7 +2,7 @@
 <ol class="dc-closing__list" aria-label="Lots">
     @foreach ($lots as $lot)
         @php $cue = \App\Support\ViewerCue::for($lot, $userId, \App\Support\Display::lotState($lot)); @endphp
-        <x-ds.lot-row :auction="$lot" :viewer="$cue" size="lg">
+        <x-ds.lot-row :auction="$lot" :viewer="$cue" size="lg" :thumb="true">
             @if ($cue !== 'own')
                 <x-slot name="actions"><livewire:buyer.watch-toggle :key="'dash-watch-'.$lot->id" :auction-id="$lot->id" :title="$lot->title" :watching="(bool) $lot->viewer_watching" /></x-slot>
             @endif

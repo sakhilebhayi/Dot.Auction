@@ -21,7 +21,8 @@
         </x-ds.dl>
         <p class="lot-decide__help">Accept it and {{ $who }} wins the lot at {{ $top }}, and a payment step is created. Reject it and the lot ends without a sale. You cannot change your mind afterwards.</p>
         <div class="lot-decide__actions">
-            <x-ds.button data-dialog-open="accept-bid-{{ $proposal->id }}">Accept {{ $top }}</x-ds.button>
+            {{-- Outlined on purpose: an irreversible sale is not the page's brightest object, so the gold fill stays with the page's one primary action. --}}
+            <x-ds.button variant="quiet" class="lot-decide__accept" data-dialog-open="accept-bid-{{ $proposal->id }}">Accept {{ $top }}</x-ds.button>
             <x-ds.button variant="danger" data-dialog-open="reject-bid-{{ $proposal->id }}">Reject the bid</x-ds.button>
         </div>
 

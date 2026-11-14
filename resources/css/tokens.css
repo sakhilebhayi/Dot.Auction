@@ -90,6 +90,8 @@
     --topbar-h: 3.5rem;
     --bar-h: 4rem;
     --hit: 2.75rem;
+    --row: 3.25rem;
+    --strip: 4.25rem;
 
     /* Shape: panels are flush (0), controls and chips 2-4px, dialogs 6px. */
     --r-0: 0;

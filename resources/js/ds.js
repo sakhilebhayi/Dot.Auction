@@ -358,11 +358,45 @@ document.addEventListener('change', (event) => {
     if (field instanceof HTMLElement && field.hasAttribute('data-autosubmit') && field.form) { field.form.requestSubmit(); }
 });
 
+/* ---------- Sortable tables (Home): the server's order is the default, a header button re-sorts the rows already in the page ---------- */
+// Headers carrying data-key inside a table[data-sortable] become buttons here, so without this file they stay plain headings and nothing looks broken.
+// Each row carries the value to sort on as data-<key>; numbers sort as numbers, words with localeCompare. aria-sort names the active column.
+function initSortableTables() {
+    document.querySelectorAll('table[data-sortable]').forEach((table) => {
+        if (table.dataset.sortReady) { return; }
+        table.dataset.sortReady = '1';
+        table.querySelectorAll('thead th[data-key]').forEach((th) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'dc-sort';
+            button.append(...th.childNodes);
+            th.append(button);
+            button.addEventListener('click', () => {
+                const key = th.dataset.key;
+                const direction = th.getAttribute('aria-sort') === 'ascending' ? 'descending' : 'ascending';
+                table.querySelectorAll('thead th').forEach((other) => other.removeAttribute('aria-sort'));
+                th.setAttribute('aria-sort', direction);
+                const body = table.tBodies[0];
+                const rows = Array.from(body.rows);
+                rows.sort((a, b) => {
+                    const x = a.dataset[key] ?? '';
+                    const y = b.dataset[key] ?? '';
+                    const numeric = x !== '' && y !== '' && !Number.isNaN(Number(x)) && !Number.isNaN(Number(y));
+                    const order = numeric ? Number(x) - Number(y) : x.localeCompare(y);
+                    return direction === 'ascending' ? order : -order;
+                });
+                rows.forEach((row) => body.appendChild(row));
+            });
+        });
+    });
+}
+
 /* ---------- Boot ---------- */
 const boot = () => {
     // data-autofocus: the element takes focus when the page loads (an error summary after a failed submit).
     document.querySelector('[data-autofocus]')?.focus();
     initTabsets();
+    initSortableTables();
     $$('dialog[data-open-on-load]').forEach((dialog) => dialogs.open(dialog.id));
     startClocks();
 };

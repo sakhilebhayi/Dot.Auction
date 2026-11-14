@@ -41,7 +41,9 @@ class LandingExperienceTest extends TestCase
         $this->assertSame(route('auctions.index'), $this->primaryAction($response));
         $this->actingAs($user)->get($this->primaryAction($response))->assertOk();
 
-        $this->assertStringContainsString('Welcome to the sale room, Nomsa', $landing);
+        // The repeated welcome headline is gone on purpose: the h1 states where the person stands.
+        $this->assertStringContainsString('No lot is open for bids right now.', $landing);
+        $this->assertStringNotContainsString('Welcome to the sale room', $landing);
         $this->assertStringContainsString('No lot is open for bids on Dot.Auction right now.', $landing);
         $this->assertStringContainsString('Nothing is live right now', $landing);
         // Nothing is seeded, so the block may not show a single figure: no count, no price, no clock.
@@ -68,15 +70,17 @@ class LandingExperienceTest extends TestCase
         $this->assertSame(route('auctions.index'), $this->primaryAction($response));
         $this->actingAs($buyer)->get($this->primaryAction($response))->assertOk();
 
-        // Two lots are open (the scheduled one and the closed one are not), and the one that closes first is shown.
+        // Two lots are open (the scheduled one and the closed one are not).
         $this->assertStringContainsString('2 lots are open for bids on Dot.Auction right now.', $landing);
-        $this->assertStringContainsString('Closing next on the floor', $landing);
-        $this->assertStringContainsString('Steel Shelving', $landing);
-        $this->assertStringNotContainsString('Oak Desk', $landing);
-        $this->assertStringContainsString('1 bid', $landing);
-        $this->assertStringContainsString('R480.00', preg_replace('/\s+/', '', strip_tags($landing)));
-        // The clock counts to the stored closing time, to the millisecond.
-        $this->assertStringContainsString('data-target="'.$next->fresh()->ends_at->getTimestampMs().'"', $response->getContent());
+        // The stage follows the person's own lot (the first row of My bids), not the floor's.
+        $this->assertStringContainsString('Oak Desk', $landing);
+        $this->assertStringNotContainsString('Steel Shelving', $landing);
+        $this->assertStringContainsString('data-stage="bid"', $landing);
+        // The lot that closes next on the floor is a closing strip further down, with its real price and clock, to the millisecond.
+        $html = $response->getContent();
+        $this->assertStringContainsString('Steel Shelving', $html);
+        $this->assertStringContainsString('R480.00', preg_replace('/\s+/', '', strip_tags($html)));
+        $this->assertStringContainsString('data-target="'.$next->fresh()->ends_at->getTimestampMs().'"', $html);
     }
 
     public function test_a_seller_lands_on_listing_a_lot_with_their_own_count_and_their_own_next_lot(): void
@@ -94,11 +98,11 @@ class LandingExperienceTest extends TestCase
         $this->assertSame(route('seller.auctions.create'), $this->primaryAction($response));
         $this->actingAs($seller)->get($this->primaryAction($response))->assertOk();
 
-        $this->assertStringContainsString('Welcome to the sale room, Thandi', $landing);
+        $this->assertStringContainsString('You are selling 2 lots.', $landing);
         $this->assertStringContainsString('You have 2 lots open for bids on Dot.Auction.', $landing);
-        $this->assertStringContainsString('Your next lot to close', $landing);
+        $this->assertStringContainsString('data-stage="selling"', $landing);
         $this->assertStringContainsString('Wool Rug', $landing);
-        $this->assertStringContainsString('0 bids', $landing);
+        $this->assertStringContainsString('<dt>Bids</dt><dd>0</dd>', $landing);
         $this->assertStringContainsString('Starting bid', $landing);
         $this->assertStringContainsString('R900.00', preg_replace('/\s+/', '', strip_tags($landing)));
         $this->assertStringNotContainsString('Somebody Else', $landing);
@@ -151,23 +155,24 @@ class LandingExperienceTest extends TestCase
         $this->assertStringContainsString('You are here for Patel & Sons Hardware, and no lot is open for bids', html_entity_decode($named));
     }
 
-    public function test_the_landing_shows_the_original_logo_files_and_the_way_back_to_infodot(): void
+    public function test_home_shows_the_original_logo_files_once_in_the_shell_and_never_again_in_the_band(): void
     {
         foreach (self::LOGO_SHA256 as $file => $hash) {
             $this->assertFileExists(public_path($file));
             $this->assertSame($hash, hash_file('sha256', public_path($file)), $file.' is not the original artwork.');
         }
 
-        config(['ecosystem.platforms.infodot.url' => 'https://infodot.co.za/']);
         $response = $this->actingAs($this->person())->get('/dashboard')->assertOk();
-        $landing = $this->landing($response);
+        $html = $response->getContent();
 
         foreach (array_keys(self::LOGO_SHA256) as $file) {
-            $this->assertStringContainsString('src="'.asset($file).'"', $landing);
+            $this->assertStringContainsString('src="'.asset($file).'"', $html);
         }
-        $this->assertMatchesRegularExpression('#<a href="https://infodot\.co\.za/home">InfoDot</a>#', $landing);
-        $this->assertMatchesRegularExpression('#<a href="https://infodot\.co\.za/platforms">Platforms</a>#', $landing);
-        $this->assertSame(1, substr_count($response->getContent(), '<h1'));
+        // The rail lockup and the phone mark are the shell's; the arrival band draws no second logo and no InfoDot/Platforms links (the switcher does that).
+        $this->assertSame(2, substr_count($html, 'src="'.asset('images/logo.png').'"'));
+        $this->assertStringNotContainsString('ld__logo', $html);
+        $this->assertDoesNotMatchRegularExpression('#<nav class="ld__back"#', $html);
+        $this->assertSame(1, substr_count($html, '<h1'));
     }
 
     public function test_the_platform_list_holds_only_platforms_that_still_exist(): void
@@ -179,14 +184,17 @@ class LandingExperienceTest extends TestCase
     /** The landing block's markup. */
     private function landing(TestResponse $response): string
     {
-        $this->assertSame(1, preg_match('#<header class="ld".*?</header>#s', $response->getContent(), $m), 'The landing block is missing.');
+        $html = $response->getContent();
+        $this->assertSame(1, preg_match('#<header class="arrive".*?</header>#s', $html, $band), 'The arrival band is missing.');
+        $this->assertSame(1, preg_match('#<aside class="stage".*?</aside>#s', $html, $stage), 'The stage is missing.');
 
-        return $m[0];
+        // The band (headline, sentence, the one action) and the stage (the lot, its clock and price) are what the landing used to be.
+        return $band[0].$stage[0];
     }
 
     private function role(TestResponse $response): string
     {
-        preg_match('#<header class="ld" data-landing="([a-z]+)"#', $response->getContent(), $m);
+        preg_match('#<header class="arrive" data-landing="([a-z]+)"#', $response->getContent(), $m);
 
         return $m[1] ?? '';
     }

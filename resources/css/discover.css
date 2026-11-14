@@ -68,35 +68,6 @@
 .dc-active { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
 
 /* ---------- Home ---------- */
-.dc-needs { margin: 0; padding: 0; list-style: none; }
-.dc-need { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-2) var(--s-4); padding: var(--s-4) 0; border-bottom: 1px solid var(--c-line); }
-.dc-need:last-child { border-bottom: 0; }
-.dc-need__icon { color: var(--c-ink-2); }
-.dc-need--urgent .dc-need__icon { color: var(--c-urgent); }
-.dc-need--notice .dc-need__icon { color: var(--c-notice); }
-.dc-need__text { margin: 0; max-width: var(--measure); font-weight: 550; }
-@media (max-width: 39.99rem) {
-    .dc-need { grid-template-columns: auto minmax(0, 1fr); }
-    .dc-need__action { grid-column: 2; justify-self: start; }
-}
-.dc-calm { display: flex; align-items: center; gap: var(--s-3); margin: 0; padding: var(--s-4) 0; color: var(--c-ink-2); }
-.dc-calm .ds-icon { color: var(--c-live); }
-
-.dc-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-10) var(--s-8); margin-top: var(--s-10); }
-.dc-split > .ds-section { margin-top: 0; }
-@media (min-width: 64rem) { .dc-split { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dc-split:has(> :only-child) { grid-template-columns: minmax(0, 1fr); } }
-
-.dc-paths { display: grid; grid-template-columns: minmax(0, 1fr); }
-.dc-path { display: grid; align-content: start; justify-items: start; gap: var(--s-3); padding: var(--s-6) 0; }
-.dc-path + .dc-path { border-top: 1px solid var(--c-line); }
-.dc-path__title { display: flex; align-items: center; gap: var(--s-3); font-size: var(--t-xl); }
-.dc-path__body { margin: 0; max-width: 46ch; color: var(--c-ink-2); }
-@media (min-width: 48rem) {
-    .dc-paths { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .dc-path { padding: var(--s-8) var(--s-8) var(--s-8) 0; }
-    .dc-path + .dc-path { border-top: 0; border-left: 1px solid var(--c-line); padding: var(--s-8) 0 var(--s-8) var(--s-8); }
-}
-
 .dc-lotname { color: var(--c-ink); font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
 .dc-lotname:hover { text-decoration: underline; text-underline-offset: 0.2em; }
 @media (pointer: coarse) { .dc-lotname { display: inline-flex; align-items: center; min-height: var(--hit); } }
@@ -192,46 +163,199 @@ button.nf-item:hover { background: var(--c-quiet-hover); }
     .dc-close__price { grid-column: 3; grid-row: 1; }
     .dc-close__act { grid-column: 4; }
 }
-.dc-split td[data-label="Deadline"] { white-space: nowrap; }
 
-/* ---------- Home: the landing block (dashboard._landing) ---------- */
-/* Logo and the way back on one line, then the welcome with its one gold action beside one real lot: the clock, the rail, the price. A ruled band, not a card. */
-.ld { margin-bottom: var(--s-12); }
-.ld__mast { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-6); margin-bottom: var(--s-8); }
-.ld__back { display: flex; gap: var(--s-5); margin-right: calc(-1 * var(--s-1)); }
-.ld__back a { display: inline-flex; align-items: center; min-height: var(--hit); padding: 0 var(--s-1); color: var(--c-ink-2); font-size: var(--t-sm); font-weight: 600; text-decoration: underline; text-decoration-color: var(--c-line-strong); text-underline-offset: 0.25em; }
-.ld__back a:hover { color: var(--c-ink); text-decoration-color: currentColor; }
-.ld__body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-8); align-items: start; }
-.ld__lead { min-width: 0; }
-.ld__title { max-width: 16ch; min-width: 0; font-size: clamp(var(--t-2xl), 1.1rem + 2.6vw, 2.75rem); font-stretch: 112%; letter-spacing: -0.02em; line-height: 1.08; text-wrap: balance; overflow-wrap: break-word; }
-.ld__copy { max-width: 50ch; margin: var(--s-4) 0 0; color: var(--c-ink-2); font-size: var(--t-lg); line-height: 1.5; }
-.ld__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-5); margin-top: var(--s-6); }
-.ld__lot { min-width: 0; padding: var(--s-5); background: var(--c-surface); border-top: 2px solid var(--c-ink); }
-.ld__lot-title { font-size: var(--t-md); font-weight: 650; color: var(--c-ink-2); }
-.ld__clock { display: grid; gap: var(--s-3); margin-top: var(--s-4); }
-.ld__lot-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-3) var(--s-6); margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--c-line); }
-.ld__lot-what { min-width: 0; flex: 1 1 12rem; }
-.ld__lot-name { display: inline-flex; align-items: center; min-height: var(--hit); color: var(--c-ink); font-size: var(--t-lg); font-weight: 700; line-height: 1.25; text-decoration: none; overflow-wrap: anywhere; }
-.ld__lot-name:hover { text-decoration: underline; text-underline-offset: 0.2em; }
-.ld__lot-facts { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin: 0; color: var(--c-ink-2); font-size: var(--t-sm); }
-.ld__lot-price { display: grid; justify-items: end; gap: 2px; text-align: right; }
-.ld__lot-label { color: var(--c-ink-3); font-size: var(--t-sm); }
-.ld__lot-empty { max-width: 44ch; margin: var(--s-2) 0 var(--s-4); color: var(--c-ink-2); }
-.ld__lot-empty:last-child { margin-bottom: 0; }
-@media (max-width: 39.99rem) {
-    .ld__actions .ds-btn--primary { flex: 1 1 100%; }
-    .ld__lot-price { flex: 1 1 100%; justify-items: start; text-align: left; }
+/* ---------- Home (R-51 dashboard) ----------
+ * One arrival band (a sentence about where the person stands and one gold action), what needs them, a table of their lots with the selected lot beside it
+ * (the stage), what they owe, what closes soon, and a foot of live counts. Flat panels and ruled rows: no shadow, no card floating in a gutter, no equal tiles.
+ * Row heights come from --row (52px) and --strip (68px) in tokens.css. Colour only through the tokens. */
+
+/* Arrival band */
+.arrive { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); padding-bottom: var(--s-6); border-bottom: 1px solid var(--c-line); }
+.arrive__lead { min-width: 0; }
+.arrive__title { min-width: 0; font-size: var(--t-2xl); line-height: var(--lh-tight); font-weight: 700; font-stretch: 108%; letter-spacing: -0.012em; text-wrap: balance; overflow-wrap: break-word; }
+.arrive__copy { max-width: var(--measure); margin: var(--s-2) 0 0; color: var(--c-ink-2); }
+.arrive__art { display: none; }
+.arrive__rung { fill: var(--c-line-strong); }
+.arrive__rung--top { fill: var(--c-action); }
+/* The primary action comes first in the DOM (it is the first control a keyboard or a screen reader reaches); beside the headline it sits at the right edge. */
+.arrive__act { display: flex; flex-direction: column; align-items: stretch; gap: var(--s-2); }
+.arrive__act .ds-btn--primary { width: 100%; }
+.arrive__act .ds-btn--link { align-self: center; }
+@media (min-width: 48rem) {
+    .arrive { grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-6); align-items: end; }
+    .arrive__act { flex-direction: row-reverse; align-items: center; }
+    .arrive__act .ds-btn--primary { width: auto; }
 }
 @media (min-width: 64rem) {
-    .ld__body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-12); }
-    .ld__lot { padding: var(--s-6); }
-    /* From 64rem the rail beside the block already carries the same lockup from the same file; a second one 15rem away would be an echo. */
-    .ld__logo { display: none; }
-    .ld__mast { justify-content: flex-end; margin-bottom: var(--s-4); }
+    .arrive { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .arrive__art { display: block; align-self: center; width: 9rem; height: auto; }
 }
-/* The one authored entrance on Home: the welcome and its action strike up 10px and stop. Transform only, so the words are at full strength from the
-   first frame even where frames never tick (a background tab, a capture) and with scripts off; none under reduced motion. */
+
+/* Sections on Home */
+.dc-sec .ds-section__head { margin-bottom: var(--s-3); }
+.dc-sec .ds-section__title { font-size: var(--t-lg); font-stretch: 106%; letter-spacing: -0.01em; }
+.dc-sec .ds-section__desc { font-size: var(--t-sm); color: var(--c-ink-3); }
+.dc-meta { color: var(--c-ink-3); font-size: var(--t-sm); }
+.dc-rows { margin: 0; padding: 0; list-style: none; }
+.dc-rows > li { border-bottom: 1px solid var(--c-line); }
+.arrive + .dc-sec, .arrive + .dc-desk { margin-top: var(--s-8); }
+.arrive + .dc-sec .ds-section__head { padding-top: 0; border-top: 0; }
+
+/* Needs you: a word before a colour, then the sentence, then its action on one edge */
+.dc-need { display: grid; grid-template-columns: 10.5rem minmax(0, 1fr) auto; align-items: center; gap: var(--s-4); min-height: var(--row); padding: var(--s-2); }
+.dc-need__tag { display: flex; }
+.dc-need__text { max-width: var(--measure); margin: 0; font-weight: 500; }
+.dc-need__action { min-width: 6.5rem; }
+.dc-calm { display: flex; align-items: center; gap: var(--s-3); min-height: var(--row); margin: 0; padding: 0 var(--s-2); color: var(--c-ink-2); }
+.dc-calm .ds-icon { color: var(--c-live); }
+
+/* The desk: the tables on the left, the selected lot beside them */
+.dc-desk { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-8); align-items: start; margin-top: var(--s-10); }
+.dc-desk__tables { min-width: 0; }
+.dc-desk__tables > .ds-section:first-child { margin-top: 0; }
+@media (min-width: 64rem) {
+    .dc-desk { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-10); }
+    .dc-desk .stage { position: sticky; top: calc(var(--topbar-h) + var(--s-4)); }
+}
+
+/* Tables: the whole row is the link (the name's stretched ::after), the selected row is tinted gavel gold */
+.dc-tbl { width: 100%; border-collapse: collapse; }
+.dc-tbl th { padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--c-line-strong); color: var(--c-ink-3); font-size: var(--t-sm); font-weight: 600; text-align: left; white-space: nowrap; }
+.dc-tbl th.num { text-align: right; }
+.dc-tbl th.act { width: 1%; }
+.dc-sort { display: inline-flex; align-items: center; gap: 4px; min-height: 2.25rem; margin: 0 -2px; padding: 0 2px; background: transparent; color: inherit; border: 0; border-radius: var(--r-1); font: inherit; cursor: pointer; }
+.dc-sort::after { content: ""; width: 0; height: 0; margin-top: 4px; border: 4px solid transparent; border-top-color: currentColor; opacity: 0; }
+.dc-sort:hover { color: var(--c-ink); }
+th[aria-sort] .dc-sort { color: var(--c-ink); }
+th[aria-sort="ascending"] .dc-sort::after { margin-top: -4px; border-top-color: transparent; border-bottom-color: currentColor; opacity: 1; }
+th[aria-sort="descending"] .dc-sort::after { opacity: 1; }
+.dc-tbl tbody tr { position: relative; height: var(--row); border-bottom: 1px solid var(--c-line); }
+.dc-tbl tbody tr:hover { background: var(--c-quiet-hover); }
+.dc-tbl tbody tr[aria-current="true"] { background: color-mix(in srgb, var(--gold-500) 18%, var(--c-ground)); }
+.dc-tbl tbody tr[aria-current="true"] .dc-lotname { font-weight: 800; }
+.dc-tbl td { padding: var(--s-2) var(--s-3); vertical-align: middle; }
+.dc-tbl .dc-lotname::after { content: ""; position: absolute; inset: 0; }
+.dc-tbl .dc-lotname:focus-visible { outline: none; }
+.dc-tbl tbody tr:has(.dc-lotname:focus-visible) { outline: 2px solid var(--c-focus); outline-offset: -2px; }
+.dc-tbl .act { text-align: right; }
+.dc-tbl .act .ds-btn { position: relative; z-index: 1; }
+.dc-deadline { white-space: nowrap; }
+.dc-lotcell__in { display: flex; align-items: center; gap: var(--s-3); }
+.dc-lotcell__txt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+.dc-thumb { flex: none; display: block; width: 3rem; height: 2.25rem; overflow: hidden; background: var(--c-sunken); }
+.dc-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* The stage: a flat panel with one hairline frame */
+.stage { background: var(--c-surface); border: 1px solid var(--c-line-strong); }
+.stage__media { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--c-sunken); }
+.stage__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.stage__nophoto { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: var(--s-2); color: var(--c-ink-3); font-size: var(--t-sm); }
+.stage__media--empty { display: grid; place-items: center; aspect-ratio: auto; height: 8rem; }
+.stage__art { width: 7.5rem; height: auto; }
+.stage__body { padding: var(--s-5); }
+.stage__title { font-size: var(--t-xl); line-height: var(--lh-tight); font-weight: 700; font-stretch: 108%; letter-spacing: -0.012em; overflow-wrap: anywhere; }
+.stage__lot { margin: var(--s-2) 0 0; }
+.stage__who { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-top: var(--s-2); }
+.stage__empty { max-width: 44ch; margin: var(--s-2) 0 0; color: var(--c-ink-2); }
+.stage__clock { display: grid; gap: var(--s-2); margin-top: var(--s-5); }
+.stage__facts { margin-top: var(--s-4); }
+.stage__facts .ds-dl__row { padding: var(--s-2) 0; }
+.stage__act { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-5); }
+.stage__empty + .stage__act { margin-top: var(--s-4); }
+/* The current price sits on one gold rung: the product's single gold fill besides the page's primary action, and the same hue as the selected row's tint. */
+.rung { position: relative; isolation: isolate; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-1) var(--s-3); margin-top: var(--s-5); padding: var(--s-2) var(--s-3); color: var(--c-on-action); }
+.rung::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--c-action); border-radius: var(--r-1); transform-origin: left center; }
+.rung__label { font-size: var(--t-sm); font-weight: 650; }
+.rung .ds-money { color: var(--c-on-action); }
+@media (min-width: 48rem) and (max-width: 63.99rem) {
+    .dc-desk--solo .stage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+    .dc-desk--solo .stage__media { aspect-ratio: auto; min-height: 100%; }
+}
+@media (min-width: 64rem) {
+    .dc-desk--solo { grid-template-columns: minmax(0, 1fr); }
+    .dc-desk--solo .stage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); position: static; }
+    .dc-desk--solo .stage__media { aspect-ratio: auto; min-height: 100%; }
+}
+
+/* New account: the two paths as rows */
+.dc-path { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-4); min-height: 5rem; padding: var(--s-4) var(--s-2); }
+.dc-path__title { display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-md); font-weight: 700; }
+.dc-path__body { max-width: 52ch; margin: 2px 0 0; color: var(--c-ink-2); font-size: var(--t-sm); }
+
+/* Lower band: what is owed, what closes soon */
+.dc-lower { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-8); align-items: start; margin-top: var(--s-10); }
+.dc-lower > .ds-section:first-child, .dc-closing-col > .ds-section:first-child { margin-top: 0; }
+.dc-closing-col { min-width: 0; }
+@media (min-width: 64rem) {
+    .dc-lower { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-10); }
+    .dc-lower--one { grid-template-columns: minmax(0, 1fr); }
+}
+/* Closing strips on Home: the clock is the headline, the photo (when there is one) is a small thumbnail, the strip is compact in the narrow column. */
+.dc-sec .dc-closing__list { border-top: 0; }
+.dc-sec .dc-close { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "clock price" "lot act"; gap: var(--s-1) var(--s-4); min-height: var(--strip); padding: var(--s-3) var(--s-2); }
+.dc-sec .dc-close.has-thumb { grid-template-columns: 4rem minmax(0, 1fr) auto; grid-template-areas: "thumb clock price" "thumb lot act"; }
+.dc-sec .dc-close__clock { grid-area: clock; }
+.dc-sec .dc-close__lot { grid-area: lot; }
+.dc-sec .dc-close__price { grid-area: price; grid-row: auto; }
+.dc-sec .dc-close__act { grid-area: act; justify-self: end; }
+.dc-close__thumb { grid-area: thumb; align-self: center; width: 4rem; height: 3rem; overflow: hidden; background: var(--c-sunken); }
+.dc-close__thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dc-sec .dc-close__rail { max-width: 9rem; }
+.dc-sec .dc-close__name { font-size: var(--t-md); }
+
+/* Foot: live counts only */
+.dc-foot { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-6); margin-top: var(--s-12); padding-top: var(--s-3); border-top: 1px solid var(--c-line); color: var(--c-ink-3); font-size: var(--t-sm); }
+.dc-foot dl { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-6); margin: 0; }
+.dc-foot dl > div { display: flex; gap: 6px; }
+.dc-foot dd { order: -1; margin: 0; color: var(--c-ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+.dc-foot p { margin: 0 0 0 auto; }
+
+/* Phones: a row is a block. Needs stack with a full-width action; a table row is the lot name over three label-over-value columns. */
+@media (max-width: 47.99rem) {
+    .dc-need { grid-template-columns: minmax(0, 1fr); gap: var(--s-2); padding: var(--s-3) var(--s-1); }
+    .dc-need__action { width: 100%; min-height: var(--hit); }
+    .dc-path { grid-template-columns: minmax(0, 1fr); }
+    .dc-path .ds-btn { width: 100%; }
+    .dc-tbl thead { display: none; }
+    .dc-tbl, .dc-tbl tbody, .dc-tbl tr, .dc-tbl td { display: block; }
+    .dc-tbl tbody tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2) var(--s-3); height: auto; padding: var(--s-3) var(--s-1); }
+    .dc-tbl td { padding: 0; }
+    .dc-tbl td:first-child { grid-column: 1 / -1; }
+    .dc-tbl td[data-label]::before { content: attr(data-label); display: block; color: var(--c-ink-3); font-size: var(--t-xs); text-align: left; }
+    .dc-tbl td.num { text-align: left; }
+    .dc-tbl .dc-lotname { display: flex; align-items: center; min-height: var(--hit); }
+    .dc-tbl--pay tbody tr { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dc-tbl--pay td.act { grid-column: 1 / -1; }
+    .dc-tbl--pay td.act .ds-btn { width: 100%; min-height: var(--hit); }
+    .stage__body { padding: var(--s-4); }
+    .rung .ds-money--money { font-size: 2.125rem; }
+    .stage__act .ds-btn { flex: 1 1 100%; min-height: var(--hit); }
+    .dc-foot p { margin-left: 0; }
+}
+
+/* Motion: one orchestrated arrival, content only; the rail, the bar and the foot never move. Transform and opacity, 240-320ms, ease-out, once.
+ * The clocks and the closing rails are not touched: they keep showing the true time left from the first frame, and nothing here counts up to a figure
+ * (a price is its stored value in every frame; only the gold behind it sweeps in). */
+@keyframes dc-rise { from { opacity: 0; transform: translateY(8px); } }
+@keyframes dc-sweep { from { transform: scaleX(0); } }
+@keyframes dc-settle { from { transform: scale(1.04); } }
 @media (prefers-reduced-motion: no-preference) {
-    .ld__lead { animation: ld-strike var(--dur-mid) var(--ease-out) backwards; }
+    .arrive__lead { animation: dc-rise 280ms var(--ease-out) backwards; }
+    .arrive__act { animation: dc-rise 280ms var(--ease-out) 60ms backwards; }
+    .arrive__rung { transform-box: fill-box; transform-origin: left center; animation: dc-sweep 320ms var(--ease-out) backwards; }
+    .arrive__rung:nth-child(2) { animation-delay: 50ms; }
+    .arrive__rung:nth-child(3) { animation-delay: 100ms; }
+    .arrive__rung:nth-child(4) { animation-delay: 150ms; }
+    .arrive__rung:nth-child(5) { animation-delay: 200ms; }
+    .dc-need, .dc-tbl tbody tr { animation: dc-rise 240ms var(--ease-out) calc(120ms + min(var(--i, 0), 7) * 40ms) backwards; }
+    .stage { animation: dc-rise 320ms var(--ease-out) 160ms backwards; }
+    .stage__media img { animation: dc-settle 480ms var(--ease-out) 160ms backwards; }
+    .rung::before { animation: dc-sweep 260ms var(--ease-out) 320ms backwards; }
+    .dc-thumb img, .dc-close__thumb img { transition: transform var(--dur-mid) var(--ease-out); }
 }
-@keyframes ld-strike { from { transform: translateY(10px); } }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .dc-tbl tbody tr:hover .dc-thumb img, .dc-close:hover .dc-close__thumb img { transform: scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .arrive__lead, .arrive__act, .arrive__rung, .dc-need, .dc-tbl tbody tr, .stage, .stage__media img, .rung::before { animation: none; }
+}
