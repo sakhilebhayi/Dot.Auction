@@ -143,3 +143,4 @@
 .lot-watch { display: inline-block; }
 
 @media (prefers-reduced-motion: reduce) { .lot-gallery__track { scroll-behavior: auto; } }
+.lot-decide__accept { border-width: 2px; border-color: var(--c-ink); }

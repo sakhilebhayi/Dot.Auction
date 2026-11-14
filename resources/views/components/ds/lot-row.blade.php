@@ -1,17 +1,20 @@
 {{--
   ds.lot-row: a lot that is closing as a ruled strip, with the clock as the headline figure. For short lists of lots that close soon (the Closing soon row on Browse,
   the lots closing in 24 hours on Home). A strip, not a card: nothing floats, and a list of one fills the width instead of leaving a blank cell.
-  Props: auction (required; load with LotBrowser::withCardData), viewer=null (ViewerCue word), size='xl' (the countdown size: lg | xl).
+  Props: auction (required; load with LotBrowser::withCardData), viewer=null (ViewerCue word), size='xl' (the countdown size: lg | xl),
+         thumb=false (show the lot's first photo as a small thumbnail when it has one; needs `images` loaded, which withCardData does).
   Slot: actions (the watch control).
 --}}
-@props(['auction', 'viewer' => null, 'size' => 'xl'])
+@props(['auction', 'viewer' => null, 'size' => 'xl', 'thumb' => false])
 @php
     use App\Support\ViewerCue;
     $bids = (int) ($auction->bids_count ?? 0);
     $hasBids = $bids > 0;
     $ext = (int) $auction->snipe_extensions;
+    $photo = $thumb ? $auction->images->first() : null;
 @endphp
-<li {{ $attributes->class(['dc-close', 'dc-close--'.$size]) }}>
+<li {{ $attributes->class(['dc-close', 'dc-close--'.$size, 'has-thumb' => (bool) $photo]) }}>
+    @if ($photo)<span class="dc-close__thumb" aria-hidden="true"><img src="{{ $auction->imageUrl($photo, 'thumb') }}" alt="" width="64" height="48" loading="lazy" decoding="async"></span>@endif
     <div class="dc-close__clock">
         <x-ds.countdown :ends="$auction->ends_at" :size="$size" label="Closes in" :show-at="false" stacked />
         <x-ds.rail :starts="$auction->starts_at" :ends="$auction->ends_at" :extensions="$ext" thick class="dc-close__rail" />

@@ -10,6 +10,7 @@ use App\Services\Auctions\ViewerActivity;
 use App\Services\Paystack\PaystackConfig;
 use App\Support\SettlementPosition;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -44,6 +45,8 @@ class DashboardController extends Controller
                 'endingSoon' => $activity->endingSoonOnPlatform($user, 4, $now),
                 'needs' => [],
                 'summary' => null,
+                'selected' => null,
+                'selectedKind' => null,
             ]);
         }
 
@@ -63,8 +66,12 @@ class DashboardController extends Controller
 
         $needs = $this->needs($decisions->count(), $positions, $outbid->count(), $leadingSoon->count(), $lateBuyers, $operatorQueue, $resultPending);
 
+        $landing = $this->landing($user, $activity, $seller, $openBids->count() + $resultPending->count() + $salesToPay->count(), $now);
+        $sellingNow = $seller && $seller['live'] > 0 ? $activity->sellingNow($user, 6, $now) : collect();
+        $desk = $this->desk($request->query('lot'), $openBids->concat($resultPending)->values(), $sellingNow, $landing);
+
         return view('dashboard', [
-            'landing' => $this->landing($user, $activity, $seller, $openBids->count() + $resultPending->count() + $salesToPay->count(), $now),
+            'landing' => $landing,
             'isNew' => false,
             'needs' => $needs,
             'summary' => $this->summary($leading->count(), $outbid->count(), $seller),
@@ -75,7 +82,10 @@ class DashboardController extends Controller
             'salesToPay' => $positions,
             'decisions' => $decisions,
             'seller' => $seller,
-            'sellingNow' => $seller && $seller['live'] > 0 ? $activity->sellingNow($user, 6, $now) : collect(),
+            'sellingNow' => $sellingNow,
+            'bidRows' => $desk['bidRows'],
+            'selected' => $desk['selected'],
+            'selectedKind' => $desk['selectedKind'],
             'watchedSoon' => $activity->watchedEndingSoon($user, 4, $now),
             'watchingCount' => $activity->watchingCount($user),
             'endingSoon' => $activity->endingSoonOnPlatform($user, 4, $now),
@@ -118,13 +128,68 @@ class DashboardController extends Controller
     }
 
     /**
+     * The master-detail pair on Home: which lot the stage beside the tables shows. `?lot=<id>` is accepted only when it is one of
+     * this person's own rows already loaded for the page (lots they bid on that are open or waiting for a result, and their own open
+     * lots), so the parameter can never reveal another person's lot; anything else (missing, malformed, someone else's) is ignored and
+     * the default stands: the first row of the first table (outbid lots come first, then the soonest close). With no row at all the stage
+     * shows the lot the landing block already chose (the floor's next close), or says nothing is live.
+     *
+     * The first six rows of the bids table are what the page lists; the photos for the listed rows and the selected lot are read
+     * in one query, so the cost does not grow with the number of lots.
+     *
+     * @param  Collection<int, Auction>  $bidRows  open bids then results pending, the whole set
+     * @param  Collection<int, Auction>  $sellingNow  the person's own open lots (at most six)
+     * @param  array<string, mixed>  $landing
+     * @return array{bidRows: Collection<int, Auction>, selected: ?Auction, selectedKind: ?string}
+     */
+    private function desk(mixed $requested, Collection $bidRows, Collection $sellingNow, array $landing): array
+    {
+        $id = is_string($requested) && ctype_digit($requested) && strlen($requested) < 19 ? (int) $requested : null;
+
+        $selected = null;
+        $kind = null;
+
+        if ($id !== null) {
+            if ($found = $bidRows->firstWhere('id', $id)) {
+                [$selected, $kind] = [$found, 'bid'];
+            } elseif ($found = $sellingNow->firstWhere('id', $id)) {
+                [$selected, $kind] = [$found, 'selling'];
+            }
+        }
+
+        if ($selected === null) {
+            // Same order as the tables: the seller's lots lead for a seller, the bids lead for everyone else.
+            $order = $landing['role'] === 'seller'
+                ? [['selling', $sellingNow], ['bid', $bidRows]]
+                : [['bid', $bidRows], ['selling', $sellingNow]];
+
+            foreach ($order as [$k, $rows]) {
+                if ($rows->isNotEmpty()) {
+                    [$selected, $kind] = [$rows->first(), $k];
+                    break;
+                }
+            }
+        }
+
+        if ($selected === null && $landing['lot'] !== null) {
+            [$selected, $kind] = [$landing['lot'], 'floor'];
+        }
+
+        // One query for every photo the page can show: the listed rows and the stage.
+        $shown = $bidRows->take(6)->concat($sellingNow)->when($selected, fn ($c) => $c->push($selected))->unique('id')->values();
+        (new EloquentCollection($shown->all()))->loadMissing('images');
+
+        return ['bidRows' => $bidRows, 'selected' => $selected, 'selectedKind' => $kind];
+    }
+
+    /**
      * The "needs you" lines, most pressing first. Each is a sentence in plain words and a link that goes straight to the
      * place to act: ['tone' => urgent|notice|info, 'icon' => ..., 'text' => ..., 'action' => label, 'href' => url].
      *
      * @param  Collection<int, SettlementPosition>  $positions  the winner's unpaid sales
      * @param  Collection<int, AuctionSettlement>  $lateBuyers
      * @param  Collection<int, Auction>  $resultPending  lots bid on whose result has not landed
-     * @return list<array{tone: string, icon: string, text: string, action: ?string, href: ?string}>
+     * @return list<array{tone: string, icon: string, label: string, text: string, action: ?string, href: ?string}>
      */
     private function needs(int $decisions, $positions, int $outbid, int $leadingSoon, $lateBuyers, int $operatorQueue, $resultPending): array
     {
@@ -133,7 +198,7 @@ class DashboardController extends Controller
 
         if ($decisions > 0) {
             $needs[] = [
-                'tone' => 'notice', 'icon' => 'pause',
+                'tone' => 'notice', 'icon' => 'pause', 'label' => 'Your decision',
                 'text' => $decisions === 1
                     ? 'A lot of yours ended below its reserve. Accept the top bid or end it unsold.'
                     : $decisions.' of your lots ended below their reserve. Accept the top bids or end them unsold.',
@@ -148,7 +213,7 @@ class DashboardController extends Controller
         if ($overdue->isNotEmpty()) {
             $first = $overdue->first();
             $needs[] = [
-                'tone' => 'urgent', 'icon' => 'alert',
+                'tone' => 'urgent', 'icon' => 'alert', 'label' => 'Overdue',
                 'text' => $overdue->count() === 1
                     ? $first->winnerLine($first->settlement->auction->title)
                     : 'Payment is overdue on '.$overdue->count().' sales. You can still pay until the sellers cancel them.',
@@ -160,7 +225,7 @@ class DashboardController extends Controller
         if ($due->isNotEmpty()) {
             $first = $due->first();
             $needs[] = [
-                'tone' => 'notice', 'icon' => 'clock',
+                'tone' => 'notice', 'icon' => 'clock', 'label' => 'Payment due',
                 'text' => $due->count() === 1
                     ? $first->winnerLine($first->settlement->auction->title)
                     : 'You owe '.SettlementPosition::money((int) $due->sum(fn ($p) => $p->owedNowCents())).' across '.$due->count().' won lots.',
@@ -173,7 +238,7 @@ class DashboardController extends Controller
         if ($waiting->isNotEmpty()) {
             $first = $waiting->first();
             $needs[] = [
-                'tone' => 'info', 'icon' => 'clock',
+                'tone' => 'info', 'icon' => 'clock', 'label' => 'Waiting',
                 'text' => $waiting->count() === 1
                     ? 'Waiting for payment to open on '.$first->settlement->auction->title.'. You will owe '.$first->settlement->amount().' once it does.'
                     : 'Waiting for payment to open on '.$waiting->count().' won lots. You will owe '.SettlementPosition::money((int) $waiting->sum(fn ($p) => $p->owedLaterCents())).' once it does.',
@@ -187,7 +252,7 @@ class DashboardController extends Controller
 
         if ($deciding->isNotEmpty()) {
             $needs[] = [
-                'tone' => 'info', 'icon' => 'pause',
+                'tone' => 'info', 'icon' => 'pause', 'label' => 'Seller deciding',
                 'text' => $deciding->count() === 1
                     ? 'The seller is deciding on '.$deciding->first()->title.', where you hold the top bid. Nothing to do yet.'
                     : 'The seller is deciding on '.$deciding->count().' lots where you hold the top bid. Nothing to do yet.',
@@ -198,7 +263,7 @@ class DashboardController extends Controller
 
         if ($settling->isNotEmpty()) {
             $needs[] = [
-                'tone' => 'info', 'icon' => 'clock',
+                'tone' => 'info', 'icon' => 'clock', 'label' => 'Settling',
                 'text' => $settling->count() === 1
                     ? 'Bidding closed on '.$settling->first()->title.'. The result is being recorded and shows here within a few minutes.'
                     : 'Bidding closed on '.$settling->count().' lots you bid on. The results are being recorded and show here within a few minutes.',
@@ -209,7 +274,7 @@ class DashboardController extends Controller
 
         if ($outbid > 0) {
             $needs[] = [
-                'tone' => 'urgent', 'icon' => 'bids',
+                'tone' => 'urgent', 'icon' => 'bids', 'label' => 'Outbid',
                 'text' => 'You were outbid on '.$outbid.' '.$plural($outbid, 'lot', 'lots').' that '.$plural($outbid, 'is', 'are').' still open.',
                 'action' => 'Bid again', 'href' => auction_route('buyer.bids').'#outbid',
             ];
@@ -217,7 +282,7 @@ class DashboardController extends Controller
 
         if ($leadingSoon > 0) {
             $needs[] = [
-                'tone' => 'info', 'icon' => 'hourglass',
+                'tone' => 'info', 'icon' => 'hourglass', 'label' => 'Closing soon',
                 'text' => $leadingSoon === 1
                     ? 'A lot you lead closes within 24 hours.'
                     : $leadingSoon.' lots you lead close within 24 hours.',
@@ -227,14 +292,14 @@ class DashboardController extends Controller
 
         foreach ($lateBuyers->take(2) as $sale) {
             $needs[] = [
-                'tone' => 'notice', 'icon' => 'clock',
+                'tone' => 'notice', 'icon' => 'clock', 'label' => 'Late payment',
                 'text' => 'The buyer has not paid for '.$sale->auction->title.' by the deadline. You can wait or cancel the sale.',
                 'action' => 'Open the sale', 'href' => route('settlements.show', $sale),
             ];
         }
         if ($lateBuyers->count() > 2) {
             $needs[] = [
-                'tone' => 'notice', 'icon' => 'clock',
+                'tone' => 'notice', 'icon' => 'clock', 'label' => 'Late payment',
                 'text' => ($lateBuyers->count() - 2).' more buyers are late paying.',
                 'action' => 'See payments', 'href' => route('settlements.index'),
             ];
@@ -242,7 +307,7 @@ class DashboardController extends Controller
 
         if ($operatorQueue > 0) {
             $needs[] = [
-                'tone' => 'urgent', 'icon' => 'shield',
+                'tone' => 'urgent', 'icon' => 'shield', 'label' => 'Operator',
                 'text' => $operatorQueue === 1
                     ? 'One payment matched no sale and needs an operator.'
                     : $operatorQueue.' payments matched no sale and need an operator.',

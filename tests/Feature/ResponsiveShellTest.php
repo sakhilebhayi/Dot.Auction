@@ -156,13 +156,13 @@ class ResponsiveShellTest extends TestCase
         $this->assertSame(1, $browse->query('//form[contains(@class,"dc-filters")]')->length);
         $this->assertSame(1, $browse->query('//ul[contains(@class,"ds-catalogue")]')->length, 'lots sit on the ruled catalogue sheet');
 
-        // A bidder's dashboard shows its tables as the kit's stacked rows (below 40rem each cell prints its own label), not a sideways scroll.
+        // A bidder's dashboard shows its tables as stacked rows (below 48rem each cell prints its own label), not a sideways scroll.
         $lot = Auction::factory()->create(['title' => 'Hereford heifers, twelve head']);
         Bid::forceCreate(['auction_id' => $lot->id, 'bidder_id' => $user->id, 'amount' => '240.00', 'is_winning' => true]);
         $lot->forceFill(['current_price' => '240.00'])->save();
 
         $dashboard = $this->xpath($this->actingAs($user)->get('/dashboard')->assertOk()->getContent());
-        $this->assertSame(1, $dashboard->query('//table[contains(@class,"is-stackable")]')->length);
+        $this->assertSame(1, $dashboard->query('//table[contains(@class,"dc-tbl")]')->length);
         $this->assertGreaterThanOrEqual(1, $dashboard->query('//table//td[@data-label]')->length);
         $this->assertSame(0, $dashboard->query('//*[contains(@class,"dot-kpi") or contains(@class,"dot-module-grid")]')->length, 'the old metric tiles and farming modules are gone');
     }
