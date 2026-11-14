@@ -136,7 +136,7 @@ class CompanyEntitlementTest extends TestCase
         $team = Team::where('infodot_team_uuid', self::NORTHWIND)->firstOrFail();
         $this->assertAuthenticatedAs($user);
         $this->assertSame($team->id, $user->current_team_id);
-        $this->assertSame(['personal' => false, 'companies' => [self::NORTHWIND]], session(EnsureCompanyEntitled::SESSION_KEY));
+        $this->assertNull(session(EnsureCompanyEntitled::SESSION_KEY), 'the answer said nothing about a personal workspace');
     }
 
     public function test_a_company_marked_not_entitled_is_not_synced_and_cannot_become_current(): void
@@ -200,10 +200,10 @@ class CompanyEntitlementTest extends TestCase
         $this->assertSame(0, Team::count());
     }
 
-    public function test_a_person_admitted_through_the_personal_workspace_follows_what_redeem_said(): void
+    public function test_personal_workspace_true_carries_on_and_is_never_asked_about(): void
     {
         $this->signIn('ann@northwind.test', [$this->team(self::PERSONAL, "Ann's Team", 'owner', true, null, personal: true)], self::PERSONAL)->assertRedirect(route('dashboard'));
-        $this->assertSame(['personal' => true, 'companies' => []], session(EnsureCompanyEntitled::SESSION_KEY));
+        $this->assertSame(['personal' => true], session(EnsureCompanyEntitled::SESSION_KEY));
 
         $this->infodotAnswers([]);
         $this->get('/dashboard')->assertOk();
@@ -391,40 +391,87 @@ class CompanyEntitlementTest extends TestCase
         $this->actingAs($user->fresh())->get('/dashboard')->assertOk();
     }
 
-    public function test_switching_to_the_personal_team_does_not_get_round_a_company_that_lost_the_platform(): void
+    public function test_personal_workspace_false_closes_the_personal_team_and_offers_the_entitled_company(): void
     {
         $this->signIn('ann@northwind.test', [
             $this->team(self::NORTHWIND, 'Northwind Freight', 'owner', true),
             $this->team(self::PERSONAL, "Ann's Team", 'owner', false, 'no_personal_access', personal: true),
-        ], self::NORTHWIND)->assertRedirect(route('dashboard'));
+        ], self::PERSONAL)->assertRedirect(route('dashboard'));
+        $this->assertSame(['personal' => false], session(EnsureCompanyEntitled::SESSION_KEY));
+
         $user = User::where('email', 'ann@northwind.test')->firstOrFail();
         $personal = $user->allTeams()->firstWhere('personal_team', true);
+        $company = Team::where('infodot_team_uuid', self::NORTHWIND)->firstOrFail();
+        $this->assertSame($company->id, $user->current_team_id, 'sign-in lands on the company, not the closed personal team');
 
-        $this->infodotAnswers([self::NORTHWIND => ['status' => 'subscription_expired', 'entitled' => false]]);
-        $this->get('/dashboard')->assertStatus(403);
+        $lot = Auction::factory()->create(['title' => 'Walnut Sideboard 1962', 'status' => 'active', 'starts_at' => now()->subHour(), 'ends_at' => now()->addDay()]);
+        $this->infodotAnswers([self::NORTHWIND => ['status' => 'active', 'entitled' => true]]);
+        $this->get('/dashboard')->assertOk();
 
+        // The local personal team is not a way round the check.
         $this->put(route('current-team.update'), ['team_id' => $personal->id])->assertRedirect();
-        $this->get('/dashboard')->assertStatus(403)->assertSee('Dot.Auction access has ended for your company');
-    }
+        $readsBefore = $this->reads();
 
-    public function test_a_person_on_a_personal_team_stays_in_while_any_admitting_company_still_holds_the_platform(): void
-    {
-        $this->signIn('ann@northwind.test', [
-            $this->team(self::NORTHWIND, 'Northwind Freight', 'editor', true),
-            $this->team(self::SECOND, 'Second Company', 'editor', true),
-        ], self::NORTHWIND)->assertRedirect(route('dashboard'));
-        // An ordinary member does not create the company here, so the person is on their personal team.
-        $this->assertSame(0, Team::whereNotNull('infodot_team_uuid')->count());
+        foreach (['/dashboard', '/auctions', '/auctions/'.$lot->id, '/user/profile'] as $path) {
+            $this->get($path)
+                ->assertStatus(403)
+                ->assertSee('Dot.Auction needs a company that has switched it on')
+                ->assertSee('https://infodot.test/platforms/auction', false)
+                ->assertSee('Northwind Freight')
+                ->assertDontSee('Walnut Sideboard');
+        }
+        $this->post('/livewire/update', ['components' => []], ['X-Livewire' => '1'])->assertStatus(403);
+        $this->assertSame($readsBefore, $this->reads(), 'a team with no InfoDot uuid is never asked about');
+        $this->assertNotNull($personal->fresh(), 'nothing in the personal workspace is deleted');
 
-        $this->infodotAnswers([
-            self::NORTHWIND => ['status' => 'suspended', 'entitled' => false],
-            self::SECOND => ['status' => 'active', 'entitled' => true],
-        ]);
-
+        // Back to the company that holds the platform.
+        $this->put(route('current-team.update'), ['team_id' => $company->id])->assertRedirect();
         $this->get('/dashboard')->assertOk();
     }
 
-    public function test_a_person_with_no_infodot_company_and_no_redeem_answer_is_not_checked(): void
+    public function test_personal_workspace_false_with_no_company_here_shows_the_page_with_nothing_to_switch_to(): void
+    {
+        // An ordinary member does not create the company here, so the person is left on their personal team.
+        $this->signIn('ann@northwind.test', [
+            $this->team(self::NORTHWIND, 'Northwind Freight', 'editor', true),
+            $this->team(self::PERSONAL, "Ann's Team", 'owner', false, 'no_personal_access', personal: true),
+        ], self::NORTHWIND)->assertRedirect(route('dashboard'));
+        $this->infodotAnswers([]);
+
+        $this->get('/dashboard')
+            ->assertStatus(403)
+            ->assertSee('Dot.Auction needs a company that has switched it on')
+            ->assertDontSee('current-team', false);
+        $this->assertSame(0, $this->reads());
+
+        // Everything a signed-out person can reach, and leaving, stay open.
+        $this->get('/')->assertOk();
+        $this->post('/logout')->assertRedirect();
+    }
+
+    public function test_personal_workspace_absent_carries_on_as_before(): void
+    {
+        // An older InfoDot: no `entitled` key anywhere, so nothing is remembered.
+        $this->signIn('ann@northwind.test', [
+            $this->team(self::NORTHWIND, 'Northwind Freight', 'editor'),
+            $this->team(self::PERSONAL, "Ann's Team", 'owner', personal: true),
+        ], self::PERSONAL)->assertRedirect(route('dashboard'));
+        $this->assertNull(session(EnsureCompanyEntitled::SESSION_KEY));
+        $this->infodotAnswers([]);
+
+        $this->get('/dashboard')->assertOk();
+        $this->assertSame(0, $this->reads());
+    }
+
+    public function test_the_flag_off_also_leaves_a_closed_personal_workspace_open(): void
+    {
+        config(['ecosystem.infodot.entitlement_check' => false]);
+        $user = User::factory()->withPersonalTeam()->create();
+
+        $this->actingAs($user)->withSession([EnsureCompanyEntitled::SESSION_KEY => ['personal' => false]])->get('/dashboard')->assertOk();
+    }
+
+    public function test_a_session_that_began_without_a_redeem_answer_is_not_checked(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
         $this->infodotAnswers([]);

@@ -27,6 +27,9 @@ class CompanyEntitlement
 
     public const FAILURE_SECONDS = 60;
 
+    /** Not a status from InfoDot: the person is in a personal workspace, which does not hold this platform. */
+    public const NEEDS_COMPANY = 'needs_company';
+
     public function enabled(): bool
     {
         return (bool) config('ecosystem.infodot.entitlement_check', true);
@@ -136,11 +139,12 @@ class CompanyEntitlement
     /**
      * Which of the four wordings fits a status from the read endpoint or a reason from the redeem answer.
      *
-     * @return 'off'|'suspended'|'payment'|'ended'
+     * @return 'off'|'suspended'|'payment'|'ended'|'company'
      */
     public static function kind(?string $status): string
     {
         return match ($status) {
+            self::NEEDS_COMPANY, 'no_personal_access', 'company_required' => 'company',
             'suspended' => 'suspended',
             'payment_required' => 'payment',
             'subscription_expired', 'expired', 'trial_ended', 'cancelled' => 'ended',

@@ -62,6 +62,20 @@ class SyncTeamsFromInfoDot
             // to a company it admits, or to their personal team.
             $current = $user->currentTeam;
 
+            // The same when they are on a personal team that InfoDot says does not hold this platform.
+            $personalClosed = collect($identity['teams'] ?? [])->contains(fn ($t) => is_array($t) && ($t['personal'] ?? false)
+                && array_key_exists('entitled', $t) && $t['entitled'] !== true);
+
+            if ($personalClosed && (! $current instanceof Team || blank($current->infodot_team_uuid))) {
+                $company = $user->allTeams()->first(fn ($t) => $admitted->has((string) $t->infodot_team_uuid));
+
+                if ($company) {
+                    $user->switchTeam($company);
+                }
+
+                return;
+            }
+
             if ($current instanceof Team && in_array($current->infodot_team_uuid, $refused, true)) {
                 $next = $user->allTeams()->first(fn ($t) => $admitted->has((string) $t->infodot_team_uuid))
                     ?? $user->allTeams()->first(fn ($t) => $t->personal_team);

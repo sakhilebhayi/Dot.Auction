@@ -121,9 +121,10 @@ class EcosystemAuthController extends Controller
         // Auth::login() also regenerates the session id (no fixation).
         Auth::login($user);
 
-        // What InfoDot said, for the session check on a personal workspace (EnsureCompanyEntitled). Nothing when it said nothing.
-        if ($said !== null) {
-            $request->session()->put(EnsureCompanyEntitled::SESSION_KEY, ['personal' => $said['personal'], 'companies' => $said['companies']]);
+        // What InfoDot said about the person's personal workspace for this platform, for the session check
+        // (EnsureCompanyEntitled). Nothing is remembered when it said nothing.
+        if ($said !== null && $said['personal_answer'] !== null) {
+            $request->session()->put(EnsureCompanyEntitled::SESSION_KEY, ['personal' => $said['personal_answer']]);
         } else {
             $request->session()->forget(EnsureCompanyEntitled::SESSION_KEY);
         }
@@ -136,7 +137,7 @@ class EcosystemAuthController extends Controller
      * `entitled` key is absent everywhere, and sign-in behaves as it always has).
      *
      * @param  array<string, mixed>  $identity
-     * @return array{personal: bool, companies: list<string>, reason: ?string, name: ?string}|null
+     * @return array{personal: bool, personal_answer: ?bool, companies: list<string>, reason: ?string, name: ?string}|null
      */
     private function entitlementSaid(array $identity): ?array
     {
@@ -152,7 +153,11 @@ class EcosystemAuthController extends Controller
             ?? $teams->first(fn ($t) => ! ($t['personal'] ?? false))
             ?? $teams->first();
 
+        $personal = $teams->first(fn ($t) => (bool) ($t['personal'] ?? false));
+
         return [
+            // Exactly what was said about the personal workspace: true, false, or null when it was not mentioned.
+            'personal_answer' => $personal === null ? null : $personal['entitled'] === true,
             'personal' => $held->contains(fn ($t) => (bool) ($t['personal'] ?? false)),
             'companies' => $held->reject(fn ($t) => (bool) ($t['personal'] ?? false))->pluck('uuid')->filter(fn ($u) => is_string($u) && $u !== '')->values()->all(),
             'reason' => is_string($about['access'] ?? null) ? $about['access'] : null,

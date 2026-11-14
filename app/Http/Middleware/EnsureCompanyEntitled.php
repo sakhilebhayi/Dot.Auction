@@ -56,28 +56,23 @@ class EnsureCompanyEntitled
                 : $next($request);
         }
 
-        // A personal workspace or a team InfoDot does not know: follow what InfoDot said at sign-in. If it admitted the
-        // person through the personal workspace, or said nothing about entitlement, there is nothing to ask. If it
-        // admitted them through companies only, the person stays in while any one of those still holds the platform.
+        // A personal team, or a team InfoDot does not know (owner decision 2026-11-14: individuals hold the free core
+        // only). Follow what InfoDot said about the person's personal workspace at sign-in: exactly false closes the
+        // signed-in area until they are in a company that has switched this platform on; true (the free core) or nothing
+        // remembered (an older InfoDot, a session from before this release, a local sign-in) carries on as before.
+        // The read endpoint is never asked about a team that has no InfoDot uuid.
+        if ($this->personalAnswer($request) === false) {
+            return $this->refuse($request, $user, CompanyEntitlement::NEEDS_COMPANY, null);
+        }
+
+        return $next($request);
+    }
+
+    private function personalAnswer(Request $request): ?bool
+    {
         $said = $request->hasSession() ? $request->session()->get(self::SESSION_KEY) : null;
 
-        if (! is_array($said) || ($said['personal'] ?? false) === true || empty($said['companies']) || ! is_array($said['companies'])) {
-            return $next($request);
-        }
-
-        $status = null;
-
-        foreach ($said['companies'] as $company) {
-            $answer = is_string($company) ? $this->entitlement->check($company) : null;
-
-            if ($answer === null || $answer['entitled'] === true) {
-                return $next($request);
-            }
-
-            $status ??= $answer['status'];
-        }
-
-        return $this->refuse($request, $user, $status, null);
+        return is_array($said) && is_bool($said['personal'] ?? null) ? $said['personal'] : null;
     }
 
     private function covers(Request $request): bool
@@ -103,8 +98,13 @@ class EnsureCompanyEntitled
 
     private function refuse(Request $request, User $user, ?string $status, ?string $company): Response
     {
-        // Only the person's own memberships, by name; no other company's data is read to decide anything.
-        $others = $user->allTeams()->reject(fn ($team) => $team->id === $user->current_team_id)->values();
+        // Only the person's own memberships, by name; no other company's data is read to decide anything. A team with no
+        // InfoDot uuid is offered only when the personal workspace is not itself closed.
+        $personalClosed = $this->personalAnswer($request) === false;
+        $others = $user->allTeams()
+            ->reject(fn ($team) => $team->id === $user->current_team_id)
+            ->reject(fn ($team) => $personalClosed && blank($team->infodot_team_uuid))
+            ->values();
 
         return $this->entitlement->refusal($request, $status, $company, $others);
     }
