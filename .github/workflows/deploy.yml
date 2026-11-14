@@ -452,6 +452,19 @@ jobs:
             echo "== docroot fonts/ did not exist; linked to $APPDIR/public/fonts"
           fi
 
+          # ---- shared Dot UI (R-51): the pages load /dot-ui/css, /js, /fonts and /img. public/dot-ui is tracked, so the checkout above
+          # refreshed it, but a docroot that is not <app>/public serves its own dot-ui/ (a link, or a stale copy). Same three cases as fonts/.
+          UILINK="$DOCROOT/dot-ui"
+          if [ -L "$UILINK" ]; then
+            echo "== docroot dot-ui/ is a symlink; nothing to copy"
+          elif [ -d "$UILINK" ]; then
+            rsync -a --delete public/dot-ui/ "$UILINK/"
+            echo "== docroot dot-ui/ is a real directory; mirrored from public/dot-ui"
+          else
+            ln -s "$APPDIR/public/dot-ui" "$UILINK"
+            echo "== docroot dot-ui/ did not exist; linked to $APPDIR/public/dot-ui"
+          fi
+
           # ---- database
           echo "== Pending migrations:"
           $PHP artisan migrate:status --pending 2>&1 | tail -25 || true
@@ -606,6 +619,12 @@ jobs:
             CODE=$(status "$SITE_URL/$FONT")
             SIZE=$(curl -s --max-time 30 -o /dev/null -w '%{size_download}' "$SITE_URL/$FONT" || echo 0)
             if [ "$CODE" = "200" ] && [ "${SIZE:-0}" -gt 10000 ]; then echo "200 $SITE_URL/$FONT (${SIZE} bytes)"; else echo "::error::$SITE_URL/$FONT answered ${CODE:-no response}, ${SIZE:-0} bytes (expected 200 and a font file): the docroot is not serving public/fonts"; FAILED=1; fi
+          done
+          # Shared Dot UI (R-51): the search pill and the platform switcher load from /dot-ui; a docroot that does not serve it leaves the
+          # header unstyled with a 200 for the page itself.
+          for UIFILE in dot-ui/css/dot-search.css dot-ui/css/dot-switcher.css dot-ui/js/dot-switcher.js; do
+            CODE=$(status "$SITE_URL/$UIFILE")
+            if [ "$CODE" = "200" ]; then echo "200 $SITE_URL/$UIFILE"; else echo "::error::$SITE_URL/$UIFILE answered ${CODE:-no response} (expected 200): the docroot is not serving public/dot-ui"; FAILED=1; fi
           done
           # A GET-only route answering POST is a harmless 405: ~1 KB in
           # production, an ~840 KB stack-trace page when APP_DEBUG is on.

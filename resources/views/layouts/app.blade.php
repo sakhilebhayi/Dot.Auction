@@ -15,6 +15,13 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     @include('layouts.partials.head', ['title' => $title, 'description' => $description, 'robots' => 'noindex'])
+    {{-- Shared Dot UI (search pill, platform switcher), served from this site's own public/dot-ui. The host mapping block is in resources/css/shell.css. --}}
+    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-fonts.css') }}">
+    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-tokens.css') }}">
+    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-search.css') }}">
+    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-switcher-fonts.css') }}">
+    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-switcher.css') }}">
+    <script src="{{ asset('dot-ui/js/dot-switcher.js') }}" nonce="{{ csp_nonce() }}" defer></script>
     @livewireStyles(['nonce' => csp_nonce()])
 </head>
 <body class="sh-body">
@@ -33,17 +40,16 @@
         <div class="sh-col">
             <header class="sh-top">
                 <x-ds.brand variant="mark" :width="52" :href="route('dashboard')" class="sh-top__mark" />
-                <form class="sh-search" method="GET" action="{{ route('auctions.index') }}" role="search">
-                    {{-- On Browse this is the page's search from 64rem up, so it keeps the tab, category and sort the visitor has chosen. --}}
+                <div class="sh-search">
+                    {{-- On Browse this is the page's search from 64rem up, so it keeps the tab, category and sort the visitor has chosen.
+                         The hidden fields sit beside the pill's form and join it through the form attribute. --}}
                     @if (request()->routeIs('auctions.index'))
                         @foreach (['state', 'category', 'sort'] as $keep)
-                            @if (is_string(request()->query($keep)) && request()->query($keep) !== '')<input type="hidden" name="{{ $keep }}" value="{{ request()->query($keep) }}">@endif
+                            @if (is_string(request()->query($keep)) && request()->query($keep) !== '')<input type="hidden" form="shell-search-form" name="{{ $keep }}" value="{{ request()->query($keep) }}">@endif
                         @endforeach
                     @endif
-                    <label for="shell-search" class="sr-only">Search lots</label>
-                    <x-ds.icon name="search" :size="18" class="sh-search__icon" />
-                    <input id="shell-search" type="search" name="q" value="{{ request()->routeIs('auctions.index') && is_string(request()->query('q')) ? request()->query('q') : '' }}" placeholder="Search lots" autocomplete="off">
-                </form>
+                    <x-dot.search id="shell-search" name="q" :value="request()->routeIs('auctions.index') && is_string(request()->query('q')) ? request()->query('q') : ''" placeholder="Search lots" label="Search lots" :action="route('auctions.index')" :form-attributes="['id' => 'shell-search-form']" />
+                </div>
                 <div class="sh-top__tools">
                     @isset($topbar){{ $topbar }}@endisset
                     @if ($payMode === 'test')
@@ -51,6 +57,7 @@
                     @elseif ($payMode === 'live')
                         <x-ds.badge tone="urgent" title="Real money moves">Live mode</x-ds.badge>
                     @endif
+                    <x-dot.switcher platform="auction" :company="$user->currentTeam?->infodot_team_uuid" :company-name="$user->currentTeam?->name" logos="/dot-ui/img/platforms" />
                     <livewire:notification-bell />
                     <x-ds.theme-toggle />
                     <div class="sh-top__user">@include('layouts.partials.user-menu')</div>
