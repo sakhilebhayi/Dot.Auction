@@ -266,7 +266,7 @@ th[aria-sort="descending"] .dc-sort::after { opacity: 1; }
 .rung { position: relative; isolation: isolate; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-1) var(--s-3); margin-top: var(--s-5); padding: var(--s-2) var(--s-3); color: var(--c-on-action); }
 .rung::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--c-action); border-radius: var(--r-1); transform-origin: left center; }
 .rung__label { font-size: var(--t-sm); font-weight: 650; }
-.rung .ds-money { color: var(--c-on-action); }
+.rung .ds-money, .rung .ds-money__sym, .rung .ds-money__cents { color: var(--c-on-action); opacity: 1; }
 @media (min-width: 48rem) and (max-width: 63.99rem) {
     .dc-desk--solo .stage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
     .dc-desk--solo .stage__media { aspect-ratio: auto; min-height: 100%; }
