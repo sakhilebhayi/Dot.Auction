@@ -21,6 +21,9 @@ use Laravel\Jetstream\Jetstream;
  *   someone in InfoDot removes their access here at their next sign-in.
  * - The company InfoDot says is active becomes the person's current team.
  * - Personal teams are never linked or removed.
+ * - (R-50) A company InfoDot marks `entitled: false` for this platform is left exactly as it is here: not created, not
+ *   renamed, no role change, and it cannot be or stay the person's current company. Their existing membership and data
+ *   are untouched. An answer without the `entitled` key (an older InfoDot) is treated as before.
  */
 class SyncTeamsFromInfoDot
 {
@@ -33,8 +36,12 @@ class SyncTeamsFromInfoDot
             ->filter(fn ($t) => is_array($t) && filled($t['uuid'] ?? null) && ! ($t['personal'] ?? false))
             ->keyBy('uuid');
 
-        DB::transaction(function () use ($user, $listed, $identity) {
-            foreach ($listed as $uuid => $info) {
+        // Exactly true admits; the key being absent admits as before; anything else present is a refusal.
+        $admitted = $listed->filter(fn ($t) => ! array_key_exists('entitled', $t) || $t['entitled'] === true);
+        $refused = $listed->keys()->diff($admitted->keys())->all();
+
+        DB::transaction(function () use ($user, $listed, $admitted, $refused, $identity) {
+            foreach ($admitted as $uuid => $info) {
                 $this->apply($user, (string) $uuid, $info);
                 $this->forgetCachedTeams($user);
             }
@@ -43,10 +50,39 @@ class SyncTeamsFromInfoDot
             $this->forgetCachedTeams($user);
 
             $active = $identity['current_team_uuid'] ?? null;
-            $team = $active ? Team::where('infodot_team_uuid', $active)->first() : null;
+            $team = $active && $admitted->has($active) ? Team::where('infodot_team_uuid', $active)->first() : null;
 
             if ($team && $user->belongsToTeam($team)) {
                 $user->switchTeam($team);
+
+                return;
+            }
+
+            // Left over from an earlier sign-in: the person's current company here is one InfoDot now refuses. Move them
+            // to a company it admits, or to their personal team.
+            $current = $user->currentTeam;
+
+            // The same when they are on a personal team that InfoDot says does not hold this platform.
+            $personalClosed = collect($identity['teams'] ?? [])->contains(fn ($t) => is_array($t) && ($t['personal'] ?? false)
+                && array_key_exists('entitled', $t) && $t['entitled'] !== true);
+
+            if ($personalClosed && (! $current instanceof Team || blank($current->infodot_team_uuid))) {
+                $company = $user->allTeams()->first(fn ($t) => $admitted->has((string) $t->infodot_team_uuid));
+
+                if ($company) {
+                    $user->switchTeam($company);
+                }
+
+                return;
+            }
+
+            if ($current instanceof Team && in_array($current->infodot_team_uuid, $refused, true)) {
+                $next = $user->allTeams()->first(fn ($t) => $admitted->has((string) $t->infodot_team_uuid))
+                    ?? $user->allTeams()->first(fn ($t) => $t->personal_team);
+
+                if ($next) {
+                    $user->switchTeam($next);
+                }
             }
         });
     }

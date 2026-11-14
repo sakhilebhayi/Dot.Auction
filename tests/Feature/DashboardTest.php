@@ -276,7 +276,11 @@ class DashboardTest extends TestCase
         $response = $this->actingAs($me)->get('/dashboard')->assertOk();
 
         $response->assertViewHas('isNew', true)->assertDontSee('Someone Elses Sale')->assertDontSee('Awaiting your decision');
-        $this->assertStringNotContainsString('Someone Elses Bid', strip_tags(explode('id="closing"', $response->getContent())[0]));
+        // An open lot is public: it may show where the floor's lots are listed (the landing's "Closing next on the floor" and the closing
+        // list), never among this person's own bids, sales or decisions.
+        $mine = preg_replace('#<header class="ld".*?</header>#s', '', explode('id="closing"', $response->getContent())[0]);
+        $this->assertStringNotContainsString('Someone Elses Bid', strip_tags($mine));
+        $response->assertDontSee('You lead')->assertDontSee('Outbid');
     }
 
     public function test_home_has_no_dead_placeholder_links_and_uses_the_configured_currency(): void

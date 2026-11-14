@@ -308,6 +308,23 @@ final class ViewerActivity
     }
 
     /**
+     * The floor as this person meets it on Home: how many lots other people have open for bids right now, and the one
+     * that closes next (with the viewer's own bid facts, so the page can say "You lead" or "Outbid"). Two reads, real rows only.
+     *
+     * @return array{open: int, next: ?Auction}
+     */
+    public function floor(User $user, ?CarbonInterface $now = null): array
+    {
+        $now ??= now();
+        $open = fn () => $this->lots->inState($this->lots->base()->where('auctions.seller_id', '!=', $user->id), 'live', $now);
+
+        return [
+            'open' => $open()->count(),
+            'next' => $this->lots->withCardData($open(), $user)->orderBy('auctions.ends_at')->orderBy('auctions.id')->first(),
+        ];
+    }
+
+    /**
      * Payments that need a person (money that matched no sale). Only operators ever ask.
      */
     public function paymentsNeedingAPerson(): int

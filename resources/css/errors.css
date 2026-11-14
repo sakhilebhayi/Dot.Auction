@@ -21,5 +21,6 @@
 .er-discover h2 { font-size: var(--t-md); font-stretch: 100%; font-weight: 650; color: var(--c-ink-2); }
 .er-discover ul { display: flex; flex-wrap: wrap; gap: 0 var(--s-2); margin: var(--s-2) 0 0; padding: 0; list-style: none; }
 .er-discover a { display: inline-flex; align-items: center; min-height: var(--hit); padding: 0 var(--s-2); color: var(--c-link); font-weight: 600; }
+.er-switch ul { gap: var(--s-2); margin-top: var(--s-3); } /* the person's other companies on the entitlement page: buttons, not links */
 .er-foot { margin-top: auto; }
 .er-body { display: flex; flex-direction: column; }

@@ -2,6 +2,7 @@
   The signed-in shell: a rail on wide screens, a top bar and a bottom bar on phones. See DESIGN.md "Shell".
   Rendered by App\View\Components\AppLayout (props: title, description, width, back, backLabel, titleVisible; slots: header, meta, actions, topbar).
   Landmarks: skip link, banner (top bar), navigation (rail or phone bar), main (one h1). Slots a UI agent may fill:
+    $hero     a page's own heading block, in place of the page header (it must hold the h1)
     $header   the page's h1 text      $meta     chips above the h1      $actions   buttons beside the h1      $topbar   extra controls in the top bar
   The notification bell is the Livewire component <livewire:notification-bell /> (its content belongs to the discover workstream).
 --}}
@@ -65,7 +66,10 @@
                             ? html_entity_decode(strip_tags((string) $header), ENT_QUOTES | ENT_HTML5, 'UTF-8')
                             : $title;
                     @endphp
-                    @if ($headTitle)
+                    @isset($hero)
+                        {{-- A page that draws its own heading block (Home's landing) owns the one h1, id="page-title" included. --}}
+                        {{ $hero }}
+                    @elseif ($headTitle)
                         <x-ds.page-header :title="$headTitle" :back="$back" :back-label="$backLabel" :meta="$meta ?? null" :actions="$actions ?? null" :hidden="! $titleVisible" />
                     @endif
 

@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Auction;
 use App\Models\AuctionSettlement;
+use App\Models\Team;
+use App\Models\User;
 use App\Services\Auctions\ViewerActivity;
 use App\Services\Paystack\PaystackConfig;
 use App\Support\SettlementPosition;
+use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -35,6 +39,7 @@ class DashboardController extends Controller
 
         if (! $activity->hasAnyHistory($user)) {
             return view('dashboard', [
+                'landing' => $this->landing($user, $activity, null, 0, $now),
                 'isNew' => true,
                 'endingSoon' => $activity->endingSoonOnPlatform($user, 4, $now),
                 'needs' => [],
@@ -59,6 +64,7 @@ class DashboardController extends Controller
         $needs = $this->needs($decisions->count(), $positions, $outbid->count(), $leadingSoon->count(), $lateBuyers, $operatorQueue, $resultPending);
 
         return view('dashboard', [
+            'landing' => $this->landing($user, $activity, $seller, $openBids->count() + $resultPending->count() + $salesToPay->count(), $now),
             'isNew' => false,
             'needs' => $needs,
             'summary' => $this->summary($leading->count(), $outbid->count(), $seller),
@@ -74,6 +80,41 @@ class DashboardController extends Controller
             'watchingCount' => $activity->watchingCount($user),
             'endingSoon' => $activity->endingSoonOnPlatform($user, 4, $now),
         ]);
+    }
+
+    /**
+     * The landing block at the top of Home: who arrived, which of the two things this product does they are here for, and
+     * one real lot with its clock. Nothing is stored and no role flag exists, so the role is read from the person's own rows:
+     *
+     *   seller  they have listed at least one lot, may list another (AuctionPolicy::create), and have at least as many lots
+     *           of their own in play (open, scheduled, awaiting their decision, drafts) as lots they are buying (open bids,
+     *           results pending, wins not paid for). Their one action is listing a lot.
+     *   buyer   everyone else, a brand-new member included. Their one action is browsing the lots that are open.
+     *
+     * Every figure is a count or a row read here: the open-lot count, and the lot that closes next (the seller's own, or the
+     * floor's). When nothing is open the block says so.
+     *
+     * @param  array{live: int, closing_soon: int, scheduled: int, pending: int, drafts: int, total: int}|null  $seller
+     * @return array{role: string, firstName: string, company: ?string, open: int, lot: ?Auction, seller: ?array<string, int>, infodot: string}
+     */
+    private function landing(User $user, ViewerActivity $activity, ?array $seller, int $buyingInPlay, CarbonInterface $now): array
+    {
+        $sellingInPlay = $seller ? $seller['live'] + $seller['scheduled'] + $seller['pending'] + $seller['drafts'] : 0;
+        $isSeller = $seller !== null && $user->can('create', Auction::class) && ($buyingInPlay === 0 || $sellingInPlay >= $buyingInPlay);
+
+        $team = $user->currentTeam;
+        $floor = $isSeller ? null : $activity->floor($user, $now);
+
+        return [
+            'role' => $isSeller ? 'seller' : 'buyer',
+            'firstName' => Str::of($user->name)->trim()->before(' ')->toString(),
+            // A personal team is named after the person ("Thandi's Team"); only a company InfoDot listed is named as one.
+            'company' => $team instanceof Team && ! $team->personal_team ? $team->name : null,
+            'open' => $isSeller ? $seller['live'] : $floor['open'],
+            'lot' => $isSeller ? $activity->sellingNow($user, 1, $now)->first() : $floor['next'],
+            'seller' => $seller,
+            'infodot' => rtrim((string) config('ecosystem.platforms.infodot.url', 'https://infodot.co.za'), '/'),
+        ];
     }
 
     /**

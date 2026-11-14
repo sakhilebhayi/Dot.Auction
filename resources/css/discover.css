@@ -193,3 +193,45 @@ button.nf-item:hover { background: var(--c-quiet-hover); }
     .dc-close__act { grid-column: 4; }
 }
 .dc-split td[data-label="Deadline"] { white-space: nowrap; }
+
+/* ---------- Home: the landing block (dashboard._landing) ---------- */
+/* Logo and the way back on one line, then the welcome with its one gold action beside one real lot: the clock, the rail, the price. A ruled band, not a card. */
+.ld { margin-bottom: var(--s-12); }
+.ld__mast { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-6); margin-bottom: var(--s-8); }
+.ld__back { display: flex; gap: var(--s-5); margin-right: calc(-1 * var(--s-1)); }
+.ld__back a { display: inline-flex; align-items: center; min-height: var(--hit); padding: 0 var(--s-1); color: var(--c-ink-2); font-size: var(--t-sm); font-weight: 600; text-decoration: underline; text-decoration-color: var(--c-line-strong); text-underline-offset: 0.25em; }
+.ld__back a:hover { color: var(--c-ink); text-decoration-color: currentColor; }
+.ld__body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-8); align-items: start; }
+.ld__lead { min-width: 0; }
+.ld__title { max-width: 16ch; min-width: 0; font-size: clamp(var(--t-2xl), 1.1rem + 2.6vw, 2.75rem); font-stretch: 112%; letter-spacing: -0.02em; line-height: 1.08; text-wrap: balance; overflow-wrap: break-word; }
+.ld__copy { max-width: 50ch; margin: var(--s-4) 0 0; color: var(--c-ink-2); font-size: var(--t-lg); line-height: 1.5; }
+.ld__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-5); margin-top: var(--s-6); }
+.ld__lot { min-width: 0; padding: var(--s-5); background: var(--c-surface); border-top: 2px solid var(--c-ink); }
+.ld__lot-title { font-size: var(--t-md); font-weight: 650; color: var(--c-ink-2); }
+.ld__clock { display: grid; gap: var(--s-3); margin-top: var(--s-4); }
+.ld__lot-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-3) var(--s-6); margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--c-line); }
+.ld__lot-what { min-width: 0; flex: 1 1 12rem; }
+.ld__lot-name { display: inline-flex; align-items: center; min-height: var(--hit); color: var(--c-ink); font-size: var(--t-lg); font-weight: 700; line-height: 1.25; text-decoration: none; overflow-wrap: anywhere; }
+.ld__lot-name:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+.ld__lot-facts { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin: 0; color: var(--c-ink-2); font-size: var(--t-sm); }
+.ld__lot-price { display: grid; justify-items: end; gap: 2px; text-align: right; }
+.ld__lot-label { color: var(--c-ink-3); font-size: var(--t-sm); }
+.ld__lot-empty { max-width: 44ch; margin: var(--s-2) 0 var(--s-4); color: var(--c-ink-2); }
+.ld__lot-empty:last-child { margin-bottom: 0; }
+@media (max-width: 39.99rem) {
+    .ld__actions .ds-btn--primary { flex: 1 1 100%; }
+    .ld__lot-price { flex: 1 1 100%; justify-items: start; text-align: left; }
+}
+@media (min-width: 64rem) {
+    .ld__body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-12); }
+    .ld__lot { padding: var(--s-6); }
+    /* From 64rem the rail beside the block already carries the same lockup from the same file; a second one 15rem away would be an echo. */
+    .ld__logo { display: none; }
+    .ld__mast { justify-content: flex-end; margin-bottom: var(--s-4); }
+}
+/* The one authored entrance on Home: the welcome and its action strike up 10px and stop. Transform only, so the words are at full strength from the
+   first frame even where frames never tick (a background tab, a capture) and with scripts off; none under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+    .ld__lead { animation: ld-strike var(--dur-mid) var(--ease-out) backwards; }
+}
+@keyframes ld-strike { from { transform: translateY(10px); } }
