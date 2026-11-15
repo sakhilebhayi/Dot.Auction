@@ -27,6 +27,8 @@
 @if (! empty($dotUiBundle))
 <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-ui.min.css') }}">
 @else
+{{-- Signed-out pages keep the latin preload: their text is the largest paint and, without it, the sign-in card reflows when Roboto arrives (CLS 0.08 at 320px). The signed-in shell drops it (it delayed the dashboard LCP). --}}
+<link rel="preload" as="font" type="font/woff2" href="{{ asset('dot-ui/fonts/roboto/roboto-latin-wght-normal.woff2') }}" crossorigin>
 <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-roboto.min.css') }}">
 <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-type.min.css') }}">
 @endif
