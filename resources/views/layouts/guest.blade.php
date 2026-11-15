@@ -4,7 +4,7 @@
   variant 'document': a reading page (terms, privacy, cookies) with a back link.
 --}}
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dot-roboto" data-dh-theme-class="dark" data-dh-theme-key="dot-theme">
 <head>
     @include('layouts.partials.head', ['title' => $title, 'description' => $description])
 </head>

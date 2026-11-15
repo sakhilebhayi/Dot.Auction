@@ -1,8 +1,10 @@
 {{--
   Shared <head> content for every layout (app, guest, welcome, errors).
   Variables: $title (string|null, the page's own name; the app name is appended), $description (string|null), $vite (list of entry files, default app.css + app.js),
-             $robots (string|null, e.g. "noindex" for signed-in pages).
-  The inline script applies the saved theme before first paint so there is no flash; everything else about the theme lives in `resources/js/ds.js`.
+             $robots (string|null, e.g. "noindex" for signed-in pages),
+             $dotUiBundle (bool: the signed-in shell links dot-ui.min.css, the one bundle with header, search and switcher, before the host CSS).
+  Roboto and the type scale come from the shared dot-ui (public/dot-ui/css, self-hosted). The theme is applied before first paint by dot-ui's external
+  dot-theme-boot.min.js, driven by the data-dh-theme-* attributes on <html> (no inline script); the toggle logic lives in `resources/js/ds.js` and dot-ui's account menu.
 --}}
 @php
     $appName = config('app.name', 'Dot.Auction');
@@ -22,16 +24,13 @@
 <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
 <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
 <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
-<link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/archivo-var-latin.woff2') }}" crossorigin>
-<script @if ($nonce) nonce="{{ $nonce }}" @endif>
-    (function () {
-        try {
-            var saved = localStorage.getItem('dot-theme');
-            var mode = (saved === 'dark' || saved === 'light') ? saved : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            var root = document.documentElement;
-            root.dataset.theme = mode;
-            root.classList.toggle('dark', mode === 'dark');
-        } catch (e) {}
-    })();
-</script>
+@if (! empty($dotUiBundle))
+<link rel="stylesheet" href="{{ asset('dot-ui/css/dot-ui.min.css') }}">
+@else
+{{-- Signed-out pages keep the latin preload: their text is the largest paint and, without it, the sign-in card reflows when Roboto arrives (CLS 0.08 at 320px). The signed-in shell drops it (it delayed the dashboard LCP). --}}
+<link rel="preload" as="font" type="font/woff2" href="{{ asset('dot-ui/fonts/roboto/roboto-latin-wght-normal.woff2') }}" crossorigin>
+<link rel="stylesheet" href="{{ asset('dot-ui/css/dot-roboto.min.css') }}">
+<link rel="stylesheet" href="{{ asset('dot-ui/css/dot-type.min.css') }}">
+@endif
+<script src="{{ asset('dot-ui/js/dot-theme-boot.min.js') }}"></script>
 @vite($entries)

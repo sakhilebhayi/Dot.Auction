@@ -24,6 +24,7 @@ class NotificationBell extends Component
 
     private const READ_LIMIT = 5;
 
+    /** Kept for callers and tests that read it. The panel itself is dot-ui's (it opens and closes in the browser, not on the server). */
     public bool $open = false;
 
     /**

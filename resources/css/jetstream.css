@@ -25,13 +25,13 @@ select.ds-in { padding-right: 2.25rem; }
 
 .jf-rule { display: none; }
 .jf-intro { min-width: 0; }
-.jf-intro__title { font-size: var(--t-lg); font-stretch: 106%; }
+.jf-intro__title { font-size: var(--t-lg); }
 .jf-intro__text { margin-top: var(--s-2); max-width: 44ch; color: var(--c-ink-2); font-size: var(--t-sm); }
 .jf-body { min-width: 0; }
 .jf-fields { display: block; min-width: 0; }
 .jf-fields p, .jf-fields .text-sm { line-height: 1.5; }
 .jf-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-4); margin-top: var(--s-5); }
-.jf-saved { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--c-ok); font-size: var(--t-sm); font-weight: 650; }
+.jf-saved { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--c-ok); font-size: var(--t-sm); font-weight: 600; }
 .jf-fields .col-span-6 + .col-span-6 { margin-top: 0; }
 @media (min-width: 56rem) {
     .jf-section { grid-template-columns: minmax(14rem, 1fr) minmax(0, 2fr); }
@@ -44,7 +44,7 @@ select.ds-in { padding-right: 2.25rem; }
 .jm__panel.ds-dialog--sm { width: min(100%, 26rem); }
 .jm__panel.ds-dialog--lg { width: min(100%, 46rem); }
 .jm__head { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-6) var(--s-6) 0; }
-.jm__title { font-size: var(--t-xl); font-stretch: 106%; }
+.jm__title { font-size: var(--t-xl); }
 .jm__warn { color: var(--c-danger); flex: none; }
 .jm__content { padding: var(--s-4) var(--s-6) var(--s-6); color: var(--c-ink-2); }
 .jm__foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--s-2); padding: var(--s-4) var(--s-6); background: var(--c-surface); border-top: 1px solid var(--c-line); }
@@ -70,12 +70,12 @@ select.ds-in { padding-right: 2.25rem; }
 .tm-roles .ds-check { padding: var(--s-3) var(--s-4); border: 1px solid var(--c-line-strong); border-radius: var(--r-2); background: var(--c-raised); }
 .tm-roles .ds-check + .ds-check { margin-top: var(--s-2); }
 .tm-roles .ds-check:has(input:checked) { border-color: var(--c-ink); outline: 1px solid var(--c-ink); }
-.tm-roles .ds-check:has(input:checked) .ds-check__text { font-weight: 650; }
+.tm-roles .ds-check:has(input:checked) .ds-check__text { font-weight: 600; }
 .tm-roles .ds-check:has(input:focus-visible) { outline: 2px solid var(--c-focus); outline-offset: 2px; }
 .tm-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--c-line); }
 .tm-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); }
 .tm-row__who { display: grid; flex: 1 1 12rem; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
 .tm-row__sub { font-weight: 400; font-size: var(--t-sm); color: var(--c-ink-2); }
-.tm-row__role { font-size: var(--t-sm); font-weight: 650; color: var(--c-ink-2); }
+.tm-row__role { font-size: var(--t-sm); font-weight: 600; color: var(--c-ink-2); }
 .tm-row__act { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-left: auto; }
 .tm-empty { margin: var(--s-4) 0 0; color: var(--c-ink-2); font-size: var(--t-sm); }

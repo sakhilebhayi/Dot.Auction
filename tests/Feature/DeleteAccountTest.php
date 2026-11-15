@@ -67,7 +67,9 @@ class DeleteAccountTest extends TestCase
         $html = $this->actingAs($user)->get('/user/profile')->assertOk()->getContent();
 
         preg_match_all('/role="dialog"[^>]*aria-labelledby="([^"]+)"/s', $html, $named);
-        $this->assertSame(substr_count($html, 'role="dialog"'), count($named[1]), 'A dialog has no aria-labelledby.');
+        // R-52: the shared header's drawer is a dialog named by aria-label ("Menu"); every other dialog is named by a heading it points at.
+        preg_match_all('/role="dialog"[^>]*aria-label="[^"]+"/s', $html, $labelled);
+        $this->assertSame(substr_count($html, 'role="dialog"'), count($named[1]) + count($labelled[0]), 'A dialog has no accessible name.');
         foreach ($named[1] as $id) {
             $this->assertStringContainsString('id="'.$id.'"', $html, 'aria-labelledby points at nothing: '.$id);
         }

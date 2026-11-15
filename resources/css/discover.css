@@ -10,7 +10,7 @@
 .ds-lot__actions { position: relative; z-index: 2; display: flex; padding: 0 var(--s-4) var(--s-3); }
 .ds-lot__watch {
     display: inline-flex; align-items: center; gap: var(--s-2); min-height: 2.25rem; margin-left: calc(-1 * var(--s-2)); padding: 0 var(--s-2);
-    background: transparent; color: var(--c-ink-2); border: 0; border-radius: var(--r-2); font: inherit; font-size: var(--t-sm); font-weight: 650; cursor: pointer;
+    background: transparent; color: var(--c-ink-2); border: 0; border-radius: var(--r-2); font: inherit; font-size: var(--t-sm); font-weight: 600; cursor: pointer;
     transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
 }
 .ds-lot__watch:hover { color: var(--c-ink); background: var(--c-quiet-hover); }
@@ -51,8 +51,8 @@
 .dc-filters noscript { grid-column: 1 / -1; }
 .dc-resultbar + .ds-catalogue, .dc-tabs { margin-top: 0; }
 @media (min-width: 40rem) { .dc-filters { grid-template-columns: minmax(0, 1fr) auto 14rem; } .dc-filters__sort { grid-column: auto; } }
-/* From 64rem the shell's search box is the one search; only the sort stays on the page, its label beside it. */
-@media (min-width: 64rem) {
+/* From 861px the header's search box is the one search; only the sort stays on the page, its label beside it. */
+@media (min-width: 53.8125rem) {
     .dc-filters { grid-template-columns: auto; width: auto; }
     .dc-filters__q, .dc-filters__go { display: none; }
     .dc-filters__sort { display: grid; grid-template-columns: auto 14rem; align-items: center; gap: var(--s-3); }
@@ -68,7 +68,7 @@
 .dc-active { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
 
 /* ---------- Home ---------- */
-.dc-lotname { color: var(--c-ink); font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
+.dc-lotname { color: var(--c-ink); font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
 .dc-lotname:hover { text-decoration: underline; text-underline-offset: 0.2em; }
 @media (pointer: coarse) { .dc-lotname { display: inline-flex; align-items: center; min-height: var(--hit); } }
 /* A name that is the only way into a row is a touch target: 44px high on a phone, not 17px of text. */
@@ -85,22 +85,10 @@
 .dc-step { display: inline-flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
 
 /* ---------- Notifications: the bell panel and the inbox ---------- */
-.nf { position: relative; }
-.nf-panel {
-    position: absolute; z-index: var(--z-menu); top: calc(100% + 6px); right: 0; display: flex; flex-direction: column;
-    width: min(24rem, calc(100vw - 1.5rem)); max-height: min(34rem, calc(100dvh - var(--topbar-h) - 1.5rem));
-    background: var(--c-raised); border: 1px solid var(--c-line-strong); border-radius: var(--r-3); box-shadow: var(--shadow-float);
-    animation: ds-pop var(--dur-short) var(--ease-out); transform-origin: top right;
-}
-@media (max-width: 39.99rem) { .nf-panel { position: fixed; top: calc(var(--topbar-h) + 6px); left: var(--s-3); right: var(--s-3); width: auto; } }
-.nf-panel__head, .nf-panel__foot { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-2) var(--s-3); }
-.nf-panel__head { border-bottom: 1px solid var(--c-line); }
-.nf-panel__foot { border-top: 1px solid var(--c-line); }
-.nf-panel__title { font-size: var(--t-md); font-stretch: 100%; letter-spacing: 0; }
 .nf-list { flex: 1 1 auto; min-height: 0; margin: 0; padding: 0; list-style: none; overflow-y: auto; overscroll-behavior: contain; }
 .nf-list > li + li, .nf-page > li + li { border-top: 1px solid var(--c-line); }
 .nf-empty { display: grid; justify-items: center; gap: var(--s-1); padding: var(--s-8) var(--s-6); text-align: center; color: var(--c-ink-3); }
-.nf-empty__title { margin: var(--s-2) 0 0; color: var(--c-ink); font-weight: 650; }
+.nf-empty__title { margin: var(--s-2) 0 0; color: var(--c-ink); font-weight: 600; }
 .nf-empty__body { margin: 0; font-size: var(--t-sm); }
 
 .nf-item {
@@ -112,7 +100,7 @@ button.nf-item:hover { background: var(--c-quiet-hover); }
 .nf-item.is-unread:hover { background: var(--c-quiet-hover); }
 .nf-item__icon { padding-top: 1px; color: var(--c-ink-2); }
 .nf-item__text { display: grid; gap: 2px; min-width: 0; }
-.nf-item__title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); font-weight: 650; }
+.nf-item__title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); font-weight: 600; }
 .nf-item__new { padding: 0 6px; background: var(--c-ink); color: var(--c-ground); border-radius: var(--r-1); font-size: var(--t-xs); font-weight: 700; line-height: 1.5; }
 .nf-item__body { color: var(--c-ink-2); font-size: var(--t-sm); line-height: 1.45; overflow-wrap: anywhere; }
 .nf-item__time { color: var(--c-ink-3); font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
@@ -133,7 +121,7 @@ button.nf-item:hover { background: var(--c-quiet-hover); }
 /* A different family from the catalogue below: ruled strips, the countdown is the headline figure and the rail runs under it. */
 .dc-closing { margin: var(--s-2) 0 var(--s-8); border-top: 2px solid var(--c-urgent); }
 .dc-closing__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-4); padding: var(--s-3) 0; }
-.dc-closing__title { font-size: var(--t-xl); font-stretch: 108%; letter-spacing: -0.012em; color: var(--c-urgent); }
+.dc-closing__title { font-size: var(--t-xl); letter-spacing: -0.012em; color: var(--c-urgent); }
 .dc-closing__title--rest { margin: 0 0 var(--s-3); color: var(--c-ink); }
 .dc-closing__sub { margin: 0; color: var(--c-ink-2); font-size: var(--t-sm); }
 .dc-closing__list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--c-line-strong); }
@@ -172,7 +160,7 @@ button.nf-item:hover { background: var(--c-quiet-hover); }
 /* Arrival band */
 .arrive { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); padding-bottom: var(--s-6); border-bottom: 1px solid var(--c-line); }
 .arrive__lead { min-width: 0; }
-.arrive__title { min-width: 0; font-size: var(--t-2xl); line-height: var(--lh-tight); font-weight: 700; font-stretch: 108%; letter-spacing: -0.012em; text-wrap: balance; overflow-wrap: break-word; }
+.arrive__title { min-width: 0; font-size: var(--t-2xl); line-height: var(--lh-tight); font-weight: 700; letter-spacing: -0.012em; text-wrap: balance; overflow-wrap: break-word; }
 .arrive__copy { max-width: var(--measure); margin: var(--s-2) 0 0; color: var(--c-ink-2); }
 .arrive__art { display: none; }
 .arrive__rung { fill: var(--c-line-strong); }
@@ -193,7 +181,7 @@ button.nf-item:hover { background: var(--c-quiet-hover); }
 
 /* Sections on Home */
 .dc-sec .ds-section__head { margin-bottom: var(--s-3); }
-.dc-sec .ds-section__title { font-size: var(--t-lg); font-stretch: 106%; letter-spacing: -0.01em; }
+.dc-sec .ds-section__title { font-size: var(--t-lg); letter-spacing: -0.01em; }
 .dc-sec .ds-section__desc { font-size: var(--t-sm); color: var(--c-ink-3); }
 .dc-meta { color: var(--c-ink-3); font-size: var(--t-sm); }
 .dc-rows { margin: 0; padding: 0; list-style: none; }
@@ -232,7 +220,7 @@ th[aria-sort="descending"] .dc-sort::after { opacity: 1; }
 .dc-tbl tbody tr { position: relative; height: var(--row); border-bottom: 1px solid var(--c-line); }
 .dc-tbl tbody tr:hover { background: var(--c-quiet-hover); }
 .dc-tbl tbody tr[aria-current="true"] { background: color-mix(in srgb, var(--gold-500) 18%, var(--c-ground)); }
-.dc-tbl tbody tr[aria-current="true"] .dc-lotname { font-weight: 800; }
+.dc-tbl tbody tr[aria-current="true"] .dc-lotname { font-weight: 700; }
 .dc-tbl td { padding: var(--s-2) var(--s-3); vertical-align: middle; }
 .dc-tbl .dc-lotname::after { content: ""; position: absolute; inset: 0; }
 .dc-tbl .dc-lotname:focus-visible { outline: none; }
@@ -253,7 +241,7 @@ th[aria-sort="descending"] .dc-sort::after { opacity: 1; }
 .stage__media--empty { display: grid; place-items: center; aspect-ratio: auto; height: 8rem; }
 .stage__art { width: 7.5rem; height: auto; }
 .stage__body { padding: var(--s-5); }
-.stage__title { font-size: var(--t-xl); line-height: var(--lh-tight); font-weight: 700; font-stretch: 108%; letter-spacing: -0.012em; overflow-wrap: anywhere; }
+.stage__title { font-size: var(--t-xl); line-height: var(--lh-tight); font-weight: 700; letter-spacing: -0.012em; overflow-wrap: anywhere; }
 .stage__lot { margin: var(--s-2) 0 0; }
 .stage__who { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-top: var(--s-2); }
 .stage__empty { max-width: 44ch; margin: var(--s-2) 0 0; color: var(--c-ink-2); }
@@ -265,7 +253,7 @@ th[aria-sort="descending"] .dc-sort::after { opacity: 1; }
 /* The current price sits on one gold rung: the product's single gold fill besides the page's primary action, and the same hue as the selected row's tint. */
 .rung { position: relative; isolation: isolate; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-1) var(--s-3); margin-top: var(--s-5); padding: var(--s-2) var(--s-3); color: var(--c-on-action); }
 .rung::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--c-action); border-radius: var(--r-1); transform-origin: left center; }
-.rung__label { font-size: var(--t-sm); font-weight: 650; }
+.rung__label { font-size: var(--t-sm); font-weight: 600; }
 .rung .ds-money, .rung .ds-money__sym, .rung .ds-money__cents { color: var(--c-on-action); opacity: 1; }
 @media (min-width: 48rem) and (max-width: 63.99rem) {
     .dc-desk--solo .stage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
@@ -307,7 +295,7 @@ th[aria-sort="descending"] .dc-sort::after { opacity: 1; }
 .dc-foot { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-6); margin-top: var(--s-12); padding-top: var(--s-3); border-top: 1px solid var(--c-line); color: var(--c-ink-3); font-size: var(--t-sm); }
 .dc-foot dl { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-6); margin: 0; }
 .dc-foot dl > div { display: flex; gap: 6px; }
-.dc-foot dd { order: -1; margin: 0; color: var(--c-ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+.dc-foot dd { order: -1; margin: 0; color: var(--c-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .dc-foot p { margin: 0 0 0 auto; }
 
 /* Phones: a row is a block. Needs stack with a full-width action; a table row is the lot name over three label-over-value columns. */
@@ -358,4 +346,14 @@ th[aria-sort="descending"] .dc-sort::after { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
     .arrive__lead, .arrive__act, .arrive__rung, .dc-need, .dc-tbl tbody tr, .stage, .stage__media img, .rung::before { animation: none; }
+}
+
+/* R-52 touch targets: 44px up to 1024px and on any coarse pointer. A title link is inline (it sits inside a clamped heading), so its vertical padding widens
+   the touch box without moving a line; the whole card is already the link through ::after. */
+@media (max-width: 1024px), (pointer: coarse) {
+    .ds-lot__link, .dc-close__link { padding-block: 14px; }
+    .ds-catalogue .ds-lot__watch, .ds-lot__watch, .dc-sort { min-height: var(--hit); }
+    .dc-sort { min-width: var(--hit); }
+    /* The foot's count that links to the decisions list (seller, one item awaiting a decision) is a tap target too. */
+    .dc-foot dd a { display: inline-flex; align-items: center; justify-content: center; min-width: var(--hit); min-height: var(--hit); }
 }

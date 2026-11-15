@@ -2,7 +2,7 @@
 
 .ds-field { display: block; min-width: 0; }
 .ds-field + .ds-field { margin-top: var(--s-5); }
-.ds-label { display: block; margin-bottom: var(--s-2); font-size: var(--t-sm); font-weight: 650; color: var(--c-ink); padding: 0; }
+.ds-label { display: block; margin-bottom: var(--s-2); font-size: var(--t-sm); font-weight: 600; color: var(--c-ink); padding: 0; }
 .ds-label__opt { margin-left: var(--s-2); font-weight: 400; color: var(--c-ink-3); }
 .ds-hint { margin-top: var(--s-2); font-size: var(--t-sm); color: var(--c-ink-3); line-height: 1.45; }
 .ds-hint--top { margin: calc(-1 * var(--s-1)) 0 var(--s-2); }
@@ -65,7 +65,7 @@
 .ds-toggle input:checked + .ds-toggle__track .ds-toggle__knob { transform: translateX(1.25rem); background: var(--c-ground); }
 .ds-toggle input:focus-visible + .ds-toggle__track { outline: 2px solid var(--c-focus); outline-offset: 2px; }
 .ds-toggle__text { color: var(--c-ink); }
-.ds-toggle__state { font-size: var(--t-sm); font-weight: 650; color: var(--c-ink-2); min-width: 2.5ch; }
+.ds-toggle__state { font-size: var(--t-sm); font-weight: 600; color: var(--c-ink-2); min-width: 2.5ch; }
 .ds-toggle__state .on { display: none; }
 .ds-toggle input:checked ~ .ds-toggle__state .on { display: inline; }
 .ds-toggle input:checked ~ .ds-toggle__state .off { display: none; }

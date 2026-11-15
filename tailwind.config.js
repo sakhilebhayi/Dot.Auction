@@ -1,6 +1,7 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
+import dotPreset from './dot-ui/tailwind/tailwind-preset.cjs';
 
 /**
  * Tailwind stays for layout utilities and for Jetstream's stock markup, but it owns no colour of its own: every scale below
@@ -16,6 +17,9 @@ const ramp = (map) => Object.fromEntries(Object.entries(map).map(([step, name]) 
 
 /** @type {import('tailwindcss').Config} */
 export default {
+    // The shared type scale (Roboto): font-sans and text-dot-*. The app keeps its own mono below.
+    presets: [dotPreset],
+
     // Only this app's views: Jetstream's and the pagination views are all published into resources/views, so scanning the vendor
     // stubs (which still carry their old Tailwind palettes and a thick left border) only added unused classes.
     content: ['./resources/views/**/*.blade.php', './resources/js/**/*.js'],
@@ -59,7 +63,6 @@ export default {
                 action: token('--c-action'),
             },
             fontFamily: {
-                sans: ['var(--f-ui)', ...defaultTheme.fontFamily.sans],
                 mono: ['var(--f-mono)', ...defaultTheme.fontFamily.mono],
             },
         },

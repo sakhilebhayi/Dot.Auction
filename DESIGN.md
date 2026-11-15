@@ -37,36 +37,33 @@ colors:
   dusk-graphite: "#93bde6"
 typography:
   display:
-    fontFamily: Archivo
+    fontFamily: Roboto
     fontSize: 2.125rem
     fontWeight: 700
     lineHeight: 1.15
     letterSpacing: -0.012em
-    fontVariation: "'wdth' 112"
   headline:
-    fontFamily: Archivo
+    fontFamily: Roboto
     fontSize: 1.4375rem
     fontWeight: 700
     lineHeight: 1.15
     letterSpacing: -0.012em
-    fontVariation: "'wdth' 108"
   body:
-    fontFamily: Archivo
+    fontFamily: Roboto
     fontSize: 1rem
     fontWeight: 400
     lineHeight: 1.55
   label:
-    fontFamily: Archivo
+    fontFamily: Roboto
     fontSize: 0.875rem
-    fontWeight: 650
+    fontWeight: 600
     lineHeight: 1.3
   money:
-    fontFamily: Archivo
+    fontFamily: Roboto
     fontSize: 2.75rem
     fontWeight: 700
     lineHeight: 1
     letterSpacing: -0.03em
-    fontVariation: "'wdth' 106"
     fontFeature: "'tnum' 1, 'lnum' 1"
   clock:
     fontFamily: Chivo Mono
@@ -196,17 +193,17 @@ The script that produced this table checks 100+ pairs on every run (see `docs/R4
 
 ## Typography
 
-One family with a width axis, plus one mono used for exactly two jobs.
+One text family, shared by every Dot platform, plus one mono used for exactly three data readouts (R-52).
 
-- **Archivo** (variable, weight 100 to 900, width 62 to 125, Latin subset, SIL OFL, self-hosted at `public/fonts/archivo-var-latin.woff2`). UI, display and money. Headings run at width 108 to 112; body at 100. Tabular lining numerals (`tnum`, `lnum`) are switched on for every price. Its zero is narrower than its O, so `R100 000` and `ROO` cannot be mistaken (checked in the specimen). Width is the signature: a lot number or a price can stand wide, a dense table can stand narrow, without a second family.
-- **Chivo Mono** (variable weight, SIL OFL, `public/fonts/chivo-mono-var-latin.woff2`). Only the **sale-room clock** and **lot numbers** (the paddle tab, the error code): fixed-width digits so a ticking clock never shifts its neighbours.
-- Fallbacks are metric-matched (`size-adjust`, `ascent-override`) so the swap does not move the layout. `font-display: swap`. No Google Fonts, no icon font, no CDN.
+- **Roboto** (variable weight 100 to 900, Latin and Latin-extended subsets, SIL OFL), shipped by the shared dot-ui at `public/dot-ui/fonts/roboto/` and declared by `public/dot-ui/css/dot-roboto.css`. Every heading, paragraph, button, form control, table, menu, dialog, notification and price. The tokens `--f-ui` and Tailwind's `font-sans` resolve to it (`dot-ui/tailwind/tailwind-preset.cjs`); `class="dot-roboto"` on `<html>` makes controls inherit it. Weights are the real ones: 400 body, 500 labels and rail items, 600 titles and prices, 700 display. Archivo, used before R-52, and its width axis (`font-stretch`, 104 to 114) are gone: headings keep their size and tracking and lose only the width. Tabular lining numerals (`tnum`, `lnum`) stay switched on for every price.
+- **Chivo Mono** (variable weight, SIL OFL, `public/fonts/chivo-mono-var-latin.woff2`), kept as a documented exception for **data readouts** only: the **sale-room clock** (`.ds-countdown__value`), **lot numbers** (the paddle tab, the error code) and **payment references**. Fixed-width digits so a ticking clock never shifts its neighbours, and an identifier reads character by character. It is not a text face and carries no word of the interface.
+- Fallbacks are metric-matched (`Roboto Fallback` from dot-ui, `Chivo Mono Fallback`) so the swap does not move the layout. `font-display: swap`. No Google Fonts, no icon font, no CDN.
 
 Scale (ratio about 1.2, tokens `--t-*`): 12 / 14 / 16 / 19 / 23 / 28 / 34 / 44 (money only). Body is 16px, line height 1.55, measure 66ch. Labels, table heads, tags and nav are the body face in sentence case, never tracked capitals. Figures that align are right-aligned and tabular. Display never exceeds 6rem (welcome headline is a clamp to 4.25rem).
 
 ## Layout
 
-- **Shell:** from 64rem a 15rem **rail** (brand, then Home, Buying: Browse lots, My bids, Watching, Won; Selling: My lots, Payments; Operations for operators), a sticky top bar (search, test or live badge, bell, theme, account) and a page column of 80rem (`default`), 54rem (`narrow`, forms and reading), 96rem (`wide`) or full. Below 64rem the rail goes away: a top bar with the logo mark and the bell, and a **bottom bar** of five items (Home, Browse, My bids, Watching, More). More opens a bottom sheet with every other destination (**List a lot** first among the selling ones), the account links, the theme switch and log out. *Decision (design jury 1, polish round):* the bar used to carry **List a lot** in gold in the centre, which put selling above buying for a person who mostly bids. Buying is the core of the bar now; listing stays one tap away in More, on Home (the landing block's gold button for a seller, a link beside Browse live lots for a buyer) and on My lots, where a seller is already looking. The bar has no primary action of its own: the page owns it (the bid, Place bid, Pay now). Narrow reading and form pages (`narrow`) share the left edge of every other page from 64rem; they are not centred.
+- **Shell (R-52):** one shared dot-ui header at every width (56px; 52px on a phone): the logo (lockup from 861px, the mark on a phone), the search (centred on the header grid from 861px, a full-screen sheet on a phone opened by the search button), the Test or Live mode badge (from 861px; in the drawer on a phone), the Dot Apps platform switcher, the bell (the shared panel bell) and the account menu (profile, team settings, create team, team switch, theme, log out). From 861px (the header's own breakpoint) a 15rem **rail** sits under the header (Home, Buying: Browse lots, My bids, Watching, Won; Selling: My lots, Payments; Operations for operators) and a page column of 80rem (`default`), 54rem (`narrow`, forms and reading), 96rem (`wide`) or full. Below 861px the rail goes away and the same destinations are in the shared **drawer** (the menu button in the header, or **More** in the bottom bar), grouped Buying, Selling and Operations, with the account at the bottom; a **bottom bar** of five items (Home, Browse, My bids, Watching, More) stays for the thumb, each at least 44px. The old top bar, the phone menu sheet and the duplicated theme button are gone. Buying stays the core of the bar: **List a lot** is the first row of Selling in the drawer, on Home and on My lots, never in the bar. The countdown, the bid ladder and the rail of a lot keep their real server-time logic (`resources/js/ds.js`); no motion in the header or the drawer says anything about time left.
 - **Grid:** one page container, a 4px base spacing scale (`--s-*`), a 1rem gutter (2rem from 64rem). Sections are bands divided by a 1px strong rule on top, not floating cards. Lots sit on a **ruled catalogue sheet** (`.ds-catalogue`: collapsed 1px borders), 17rem minimum cell. **Below 40rem a lot is a row, not a card**: a photo column, then status, title, price with its label, time left and bids, and the watch control at the right of the last line (twelve lots are about 1,700px, not 7,400). The card layout returns from 40rem.
 - **Home's landing block** (`dashboard._landing`, the layout's `hero` slot): the logo lockup and the way back (InfoDot, Platforms) on one line, then the welcome h1 with one sentence and the page's one gold action (`data-primary-action`) beside one real lot: its clock, its rail, its price. The role is read from the person's own rows (`DashboardController::landing`): a seller's action is List a lot, a buyer's is Browse live lots; the other is a link. From 64rem the rail's lockup stands for the block's. With nothing open the block says so and shows no figure. Its entrance (the lead rises 10px once, transform only) is Home's one authored motion.
 - **Stats:** never four equal tiles. Use one headline `ds.stat` (money size) beside a `ds.dl` ledger, or at most three figures of different weight, or a ledger only. A figure always names its baseline ("since 8 Nov, 09:00").

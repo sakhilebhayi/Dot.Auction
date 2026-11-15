@@ -12,25 +12,78 @@
     $user = auth()->user();
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dot-roboto" data-dh-theme-class="dark" data-dh-theme-key="dot-theme">
 <head>
-    @include('layouts.partials.head', ['title' => $title, 'description' => $description, 'robots' => 'noindex'])
-    {{-- Shared Dot UI (search pill, platform switcher), served from this site's own public/dot-ui. The host mapping block is in resources/css/shell.css. --}}
-    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-fonts.css') }}">
-    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-tokens.css') }}">
-    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-search.css') }}">
-    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-switcher-fonts.css') }}">
-    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-switcher.css') }}">
-    <script src="{{ asset('dot-ui/js/dot-switcher.js') }}" nonce="{{ csp_nonce() }}" defer></script>
+    @include('layouts.partials.head', ['title' => $title, 'description' => $description, 'robots' => 'noindex', 'dotUiBundle' => true])
+    {{-- Shared Dot UI 0.6.1 (header, search pill, platform switcher: dot-ui.min.css is linked first in the head partial, dot-ui-core.min.js here), served from this site's own public/dot-ui.
+         The host mapping block is in resources/css/shell.css. --}}
+    <script src="{{ asset('dot-ui/js/dot-ui-core.min.js') }}" nonce="{{ csp_nonce() }}" defer></script>
     @livewireStyles(['nonce' => csp_nonce()])
 </head>
 <body class="sh-body">
-    <a class="skip-link" href="#main">Skip to main content</a>
     <x-banner />
+
+    @php
+        $team = $user->currentTeam;
+        $hasTeams = Laravel\Jetstream\Jetstream::hasTeamFeatures() && $team;
+        // On Browse the header search keeps the tab, category and sort the visitor has chosen.
+        $keepFields = request()->routeIs('auctions.index')
+            ? collect(['state', 'category', 'sort'])->mapWithKeys(fn ($k) => [$k => request()->query($k)])->filter(fn ($v) => is_string($v) && $v !== '')->all()
+            : [];
+        $accountLinks = [['label' => 'Profile and security', 'href' => route('profile.show'), 'current' => request()->routeIs('profile.show')]];
+        if ($hasTeams) {
+            $accountLinks[] = ['rule' => true];
+            $accountLinks[] = ['label' => 'Team settings', 'href' => route('teams.show', $team->id)];
+            if (Gate::forUser($user)->check('create', Laravel\Jetstream\Jetstream::newTeamModel())) {
+                $accountLinks[] = ['label' => 'Create team', 'href' => route('teams.create')];
+            }
+            if ($user->allTeams()->count() > 1) {
+                $accountLinks[] = ['heading' => 'Switch team'];
+                foreach ($user->allTeams() as $switchTeam) {
+                    $accountLinks[] = ['label' => $switchTeam->name, 'current' => $user->isCurrentTeam($switchTeam), 'form' => ['action' => route('current-team.update'), 'method' => 'PUT', 'fields' => ['team_id' => $switchTeam->id]]];
+                }
+            }
+        }
+        $account = [
+            'name' => $user->name, 'email' => $user->email, 'team' => $team?->name,
+            'links' => $accountLinks, 'signOut' => ['action' => route('logout'), 'label' => 'Log out'], 'theme' => true,
+        ];
+    @endphp
+
+    {{-- One header for every width: the logo, the search (centred on the header grid, a full-screen sheet on phones), the platform switcher, the bell and the account.
+         The rail below it is this platform's own navigation on a wide screen; on a phone the same destinations are in the shared drawer (the menu button, or "More" in the bottom bar). --}}
+    <x-dot.header brand-href="{{ route('dashboard') }}" brand-label="Dot.Auction home" skip="#main" drawer-title="Menu" :account="$account" class="dh--swpanel">
+        <x-slot:brand>
+            <x-ds.brand variant="lockup" :width="74" class="sh-brand sh-brand--lockup" />
+            <x-ds.brand variant="mark" :width="52" class="sh-brand sh-brand--mark" />
+        </x-slot:brand>
+        <x-slot:search>
+            <x-dot.search id="shell-search" name="q" :value="request()->routeIs('auctions.index') && is_string(request()->query('q')) ? request()->query('q') : ''" placeholder="Search lots" label="Search lots" :action="route('auctions.index')" :form-attributes="['id' => 'shell-search-form']" :hidden-fields="$keepFields" />
+        </x-slot:search>
+        <x-slot:tools>
+            @isset($topbar){{ $topbar }}@endisset
+            @if ($payMode === 'test')
+                <x-ds.badge tone="notice" class="sh-mode" title="Paystack test keys are in use: no real money moves">Test mode</x-ds.badge>
+            @elseif ($payMode === 'live')
+                <x-ds.badge tone="urgent" class="sh-mode" title="Real money moves">Live mode</x-ds.badge>
+            @endif
+            <x-dot.switcher platform="auction" :company="$team?->infodot_team_uuid" :company-name="$team?->name" logos="/dot-ui/img/platforms" />
+            <livewire:notification-bell />
+        </x-slot:tools>
+        <x-slot:drawer-before>
+            @if ($payMode === 'test')
+                <p class="sh-drawer-mode"><x-ds.badge tone="notice">Test mode</x-ds.badge> No real money moves.</p>
+            @elseif ($payMode === 'live')
+                <p class="sh-drawer-mode"><x-ds.badge tone="urgent">Live mode</x-ds.badge> Real money moves.</p>
+            @endif
+        </x-slot:drawer-before>
+        <x-slot:drawer>
+            @include('layouts.partials.nav-items', ['variant' => 'drawer'])
+        </x-slot:drawer>
+    </x-dot.header>
 
     <div class="sh">
         <nav class="sh-side" aria-label="Main">
-            <x-ds.brand :href="route('dashboard')" :width="124" class="sh-side__brand" />
             <div class="sh-side__list">
                 @include('layouts.partials.nav-items', ['variant' => 'rail'])
             </div>
@@ -38,31 +91,6 @@
         </nav>
 
         <div class="sh-col">
-            <header class="sh-top">
-                <x-ds.brand variant="mark" :width="52" :href="route('dashboard')" class="sh-top__mark" />
-                <div class="sh-search">
-                    {{-- On Browse this is the page's search from 64rem up, so it keeps the tab, category and sort the visitor has chosen. --}}
-                    @php
-                        $keepFields = request()->routeIs('auctions.index')
-                            ? collect(['state', 'category', 'sort'])->mapWithKeys(fn ($k) => [$k => request()->query($k)])->filter(fn ($v) => is_string($v) && $v !== '')->all()
-                            : [];
-                    @endphp
-                    <x-dot.search id="shell-search" name="q" :value="request()->routeIs('auctions.index') && is_string(request()->query('q')) ? request()->query('q') : ''" placeholder="Search lots" label="Search lots" :action="route('auctions.index')" :form-attributes="['id' => 'shell-search-form']" :hidden-fields="$keepFields" />
-                </div>
-                <div class="sh-top__tools">
-                    @isset($topbar){{ $topbar }}@endisset
-                    @if ($payMode === 'test')
-                        <x-ds.badge tone="notice" title="Paystack test keys are in use: no real money moves">Test mode</x-ds.badge>
-                    @elseif ($payMode === 'live')
-                        <x-ds.badge tone="urgent" title="Real money moves">Live mode</x-ds.badge>
-                    @endif
-                    <x-dot.switcher platform="auction" :company="$user->currentTeam?->infodot_team_uuid" :company-name="$user->currentTeam?->name" logos="/dot-ui/img/platforms" />
-                    <livewire:notification-bell />
-                    <x-ds.theme-toggle />
-                    <div class="sh-top__user">@include('layouts.partials.user-menu')</div>
-                </div>
-            </header>
-
             <main id="main" class="sh-main" tabindex="-1">
                 <div class="sh-page sh-page--{{ $width }}">
                     @php
@@ -90,25 +118,9 @@
             <x-ds.nav-item variant="bar" :href="route('auctions.index')" icon="browse" :active="request()->routeIs('auctions.*')">Browse</x-ds.nav-item>
             <x-ds.nav-item variant="bar" :href="auction_route('buyer.bids')" icon="bids" :active="request()->routeIs('buyer.bids')">My bids</x-ds.nav-item>
             <x-ds.nav-item variant="bar" :href="auction_route('buyer.watchlist')" icon="bookmark" :active="request()->routeIs('buyer.watchlist')">Watching</x-ds.nav-item>
-            <button type="button" class="ds-nav ds-nav--bar" data-dialog-open="shell-menu"><x-ds.icon name="menu" :size="22" /><span class="ds-nav__label">More</span></button>
+            <button type="button" class="ds-nav ds-nav--bar" data-dh-menu-button aria-controls="dh-drawer" aria-expanded="false"><x-ds.icon name="menu" :size="22" /><span class="ds-nav__label">More</span></button>
         </nav>
     </div>
-
-    <x-ds.dialog id="shell-menu" title="Menu" size="sm" class="sh-sheet">
-        <nav aria-label="All pages" class="sh-sheet__nav">
-            @include('layouts.partials.nav-items', ['variant' => 'row'])
-        </nav>
-        <hr class="ds-menu__rule">
-        <div class="sh-sheet__nav">
-            <a class="ds-menurow" href="{{ route('profile.show') }}"><x-ds.icon name="user" :size="20" /> Profile and security</a>
-            @if (Laravel\Jetstream\Jetstream::hasTeamFeatures() && $user->currentTeam)
-                <a class="ds-menurow" href="{{ route('teams.show', $user->currentTeam->id) }}"><x-ds.icon name="users" :size="20" /> Team: {{ $user->currentTeam->name }}</a>
-            @endif
-            <x-ds.theme-toggle variant="menu" />
-            <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="ds-menurow"><x-ds.icon name="logout" :size="20" /> Log out</button></form>
-        </div>
-        <p class="sh-sheet__who">Signed in as {{ $user->name }}</p>
-    </x-ds.dialog>
 
     <x-ds.toasts />
     @stack('modals')

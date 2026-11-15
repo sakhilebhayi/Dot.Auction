@@ -19,7 +19,7 @@
         ->values()->all();
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dot-roboto" data-dh-theme-class="dark" data-dh-theme-key="dot-theme">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -27,11 +27,11 @@
     <meta name="robots" content="noindex">
     <title>{{ $code }} @yield('title') | Dot.Auction</title>
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
-    <link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/archivo-var-latin.woff2') }}" crossorigin>
-    <style @if ($nonce) nonce="{{ $nonce }}" @endif>body{margin:0;font-family:system-ui,sans-serif;line-height:1.5}main{max-width:40rem;padding:2rem 1rem}a{color:inherit}</style>
-    <script @if ($nonce) nonce="{{ $nonce }}" @endif>
-        (function () { try { var s = localStorage.getItem('dot-theme'); var m = (s === 'dark' || s === 'light') ? s : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); document.documentElement.dataset.theme = m; document.documentElement.classList.toggle('dark', m === 'dark'); } catch (e) {} })();
-    </script>
+    <link rel="preload" as="font" type="font/woff2" href="{{ asset('dot-ui/fonts/roboto/roboto-latin-wght-normal.woff2') }}" crossorigin>
+    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-roboto.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-type.min.css') }}">
+    <style @if ($nonce) nonce="{{ $nonce }}" @endif>body{margin:0;font-family:Roboto,system-ui,sans-serif;line-height:1.5}main{max-width:40rem;padding:2rem 1rem}a{color:inherit}</style>
+    <script src="{{ asset('dot-ui/js/dot-theme-boot.min.js') }}"></script>
     @foreach ($entries as $entry)
         @if (str_ends_with($entry, '.css'))<link rel="stylesheet" href="{{ asset('build/'.$built[$entry]['file']) }}">@else<script type="module" src="{{ asset('build/'.$built[$entry]['file']) }}"></script>@endif
     @endforeach

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Auctions\AuctionImageVariants;
+use App\Services\Auctions\LotBrowser;
 use App\Services\DisplayTime;
 use Database\Factories\AuctionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -286,9 +287,14 @@ class Auction extends Model
         return $this->isActive() && now()->addHours($hours)->greaterThanOrEqualTo($this->ends_at);
     }
 
+    /**
+     * The public lots: everything that has been published, i.e. every state a lot can be in once it left draft. This is the one definition of
+     * "a lot anyone signed in may see in a list or find by searching" (AuctionPolicy::view() agrees: only a draft is private). It is an
+     * allow-list, so a status added later stays out of every list and search until it is added to LotBrowser::PUBLIC_STATUSES on purpose.
+     */
     public function scopeBrowsable($query)
     {
-        return $query->where('status', '!=', 'draft');
+        return $query->whereIn($query->getModel()->getTable().'.status', LotBrowser::PUBLIC_STATUSES);
     }
 
     public function scopeEndingSoon($query, int $hours = 24)

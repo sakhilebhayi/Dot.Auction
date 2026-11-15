@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * The signed-in shell (R-42): a rail from 64rem up, a top bar everywhere, and a bottom bar plus a menu sheet on phones. These
+ * The signed-in shell (R-42, header and menu moved to the shared dot-ui in R-52): the shared header everywhere, a rail from 861px, and a bottom bar plus the shared drawer on phones. These
  * tests pin the markup hooks (landmarks, skip link, one h1, titles, navigation, bell, theme); the layout itself is CSS and is
  * checked by eye and in a browser, not here.
  */
@@ -58,7 +58,7 @@ class ResponsiveShellTest extends TestCase
         $skip = $xpath->query('//a[contains(@class,"skip-link")][@href="#main"]');
         $this->assertSame(1, $skip->length, 'a skip link comes first');
         $this->assertSame(1, $xpath->query('//main[@id="main"]')->length, 'one main landmark, the skip link target');
-        $this->assertSame(1, $xpath->query('//header[contains(@class,"sh-top")]')->length, 'one top bar');
+        $this->assertSame(1, $xpath->query('//header[@data-dh]')->length, 'one top bar');
         $this->assertSame(1, $xpath->query('//h1')->length, 'exactly one h1 per page');
         $this->assertNotSame('', trim($xpath->query('//h1')->item(0)->textContent));
 
@@ -75,9 +75,9 @@ class ResponsiveShellTest extends TestCase
         foreach (['dashboard', 'buyer.bids'] as $name) {
             $this->assertSame(1, $xpath->query('//nav[contains(@class,"sh-bar")]//a[@href="'.route($name).'"]')->length, "the phone bar lists $name");
         }
-        $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"]//a[@href="'.route('seller.auctions.create').'"]')->length, 'List a lot is in the menu sheet');
-        $this->assertSame(1, $xpath->query('//nav[contains(@class,"sh-bar")]//button[@data-dialog-open="shell-menu"]')->length, 'More opens the menu sheet');
-        $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"][@aria-labelledby="shell-menu-title"]')->length);
+        $this->assertSame(1, $xpath->query('//div[@id="dh-drawer"]//a[@href="'.route('seller.auctions.create').'"]')->length, 'List a lot is in the drawer');
+        $this->assertSame(1, $xpath->query('//nav[contains(@class,"sh-bar")]//button[@data-dh-menu-button][@aria-controls="dh-drawer"]')->length, 'More opens the drawer');
+        $this->assertSame(1, $xpath->query('//div[@id="dh-drawer"][@data-dh-drawer]//*[@role="dialog"][@aria-modal="true"][@aria-label="Menu"]')->length);
         $this->assertSame(1, $xpath->query('//meta[@name="viewport"][contains(@content,"width=device-width")]')->length);
 
         // Nothing from a CDN, and no icon font.
@@ -94,11 +94,11 @@ class ResponsiveShellTest extends TestCase
         $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
         $xpath = $this->xpath($html);
 
-        $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"]//a[@href="'.route('teams.show', $user->currentTeam->id).'"]')->length);
-        $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"]//form[@action="'.route('logout').'"]//button[@type="submit"]')->length);
-        $this->assertSame(1, $xpath->query('//dialog[@id="shell-menu"]//button[@data-theme-toggle]')->length);
-        // Desktop: the account menu in the top bar holds profile, team and log out.
-        $this->assertSame(1, $xpath->query('//header[contains(@class,"sh-top")]//div[@data-ds-dropdown]//form[@action="'.route('logout').'"]')->length);
+        $this->assertSame(1, $xpath->query('//div[@id="dh-drawer"]//a[@href="'.route('teams.show', $user->currentTeam->id).'"]')->length);
+        $this->assertSame(1, $xpath->query('//div[@id="dh-drawer"]//form[@action="'.route('logout').'"]//button[@type="submit"]')->length);
+        $this->assertGreaterThanOrEqual(1, $xpath->query('//div[@id="dh-drawer"]//button[@data-dh-theme-set]')->length);
+        // Desktop: the account menu in the header holds profile, team and log out.
+        $this->assertSame(1, $xpath->query('//header[@data-dh]//div[@data-dh-account]//form[@action="'.route('logout').'"]')->length);
         $this->assertSame(0, $xpath->query('//div[contains(@class,"shell-legacy-nav")]')->length, 'the hidden legacy Jetstream bar is no longer rendered');
     }
 
@@ -110,21 +110,21 @@ class ResponsiveShellTest extends TestCase
         $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
         $xpath = $this->xpath($html);
 
-        $forms = $xpath->query('//header[contains(@class,"sh-top")]//form[@action="'.route('current-team.update').'"]');
+        $forms = $xpath->query('//header[@data-dh]//form[@action="'.route('current-team.update').'"]');
         $this->assertSame(2, $forms->length, 'the account menu lists both teams');
-        $this->assertSame(1, $xpath->query('//header[contains(@class,"sh-top")]//form[@action="'.route('current-team.update').'"][input[@name="team_id"][@value="'.$other->id.'"]]//button[contains(.,"Boerdery Naledi")]')->length);
+        $this->assertSame(1, $xpath->query('//header[@data-dh]//form[@action="'.route('current-team.update').'"][input[@name="team_id"][@value="'.$other->id.'"]]//button[contains(.,"Boerdery Naledi")]')->length);
     }
 
-    public function test_the_notification_bell_and_theme_toggle_are_named_and_reachable_in_the_top_bar(): void
+    public function test_the_notification_bell_is_named_and_the_theme_choice_is_in_the_account_menu(): void
     {
         $user = User::factory()->withPersonalTeam()->create();
 
         $xpath = $this->xpath($this->actingAs($user)->get('/dashboard')->assertOk()->getContent());
 
-        $bell = $xpath->query('//header[contains(@class,"sh-top")]//button[contains(@class,"ds-iconbtn")][.//*[contains(@class,"sr-only")][contains(.,"Notifications")]]');
-        $this->assertSame(1, $bell->length, 'the bell is named by its own text, so the visible count is part of the name');
-        $this->assertSame(0, $xpath->query('//header[contains(@class,"sh-top")]//button[@aria-label="Notifications"]')->length, 'no aria-label that differs from the visible text');
-        $this->assertSame(1, $xpath->query('//header[contains(@class,"sh-top")]//button[@data-theme-toggle]')->length);
+        $bell = $xpath->query('//header[@data-dh]//button[contains(@class,"dh-bell")][@aria-controls="nf-panel"][@aria-label="Notifications"]');
+        $this->assertSame(1, $bell->length, 'the shared bell button is named "Notifications" (with the count when there are unread ones)');
+        $this->assertSame(0, $xpath->query('//header[@data-dh]//button[@data-theme-toggle]')->length, 'one theme control, in the account menu');
+        $this->assertSame(3, $xpath->query('//header[@data-dh]//div[@data-dh-account]//button[@data-dh-theme-set]')->length);
     }
 
     public function test_the_theme_choice_is_applied_before_first_paint_and_the_bundle_wires_the_behaviour(): void
@@ -133,8 +133,10 @@ class ResponsiveShellTest extends TestCase
 
         $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
 
-        $this->assertStringContainsString("localStorage.getItem('dot-theme')", $html, 'the head script restores the saved theme');
-        $this->assertStringContainsString('prefers-color-scheme: dark', $html);
+        $this->assertStringContainsString('dot-ui/js/dot-theme-boot.min.js', $html, 'an external head script restores the saved theme before first paint');
+        $this->assertStringContainsString('data-dh-theme-key="dot-theme"', $html);
+        $this->assertStringContainsString('data-dh-theme-class="dark"', $html);
+        $this->assertStringNotContainsString("localStorage.getItem('dot-theme')", $html, 'no inline theme script');
 
         $source = (string) file_get_contents(dirname(__DIR__, 2).'/resources/js/ds.js');
         foreach (["'Escape'", 'data-theme-toggle', 'data-ds-countdown', 'showModal', 'prefers-reduced-motion'] as $hook) {

@@ -26,7 +26,7 @@
     display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
     min-height: var(--hit); padding: 0 var(--s-4);
     border: 1px solid transparent; border-radius: var(--r-2);
-    font: inherit; font-size: var(--t-md); font-weight: 650; line-height: 1; letter-spacing: 0;
+    font: inherit; font-size: var(--t-md); font-weight: 600; line-height: 1; letter-spacing: 0;
     text-decoration: none; white-space: nowrap; cursor: pointer;
     transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
     -webkit-tap-highlight-color: transparent;
@@ -73,15 +73,15 @@
 }
 
 /* ---------- Money ---------- */
-.ds-money { display: inline-flex; align-items: baseline; white-space: nowrap; font-weight: 650; font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; letter-spacing: -0.01em; color: var(--c-ink); }
+.ds-money { display: inline-flex; align-items: baseline; white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; letter-spacing: -0.01em; color: var(--c-ink); }
 .ds-money__sym { margin-right: 0.12em; font-size: 0.66em; font-weight: 600; color: var(--c-ink-2); }
-.ds-money__cents { font-size: 0.64em; font-weight: 550; color: var(--c-ink-2); }
+.ds-money__cents { font-size: 0.64em; font-weight: 500; color: var(--c-ink-2); }
 .ds-money__sign { margin-right: 0.05em; }
 .ds-money--sm { font-size: var(--t-sm); }
 .ds-money--md { font-size: var(--t-md); }
 .ds-money--lg { font-size: var(--t-xl); letter-spacing: -0.02em; }
-.ds-money--xl { font-size: var(--t-2xl); letter-spacing: -0.025em; font-stretch: 104%; }
-.ds-money--money { font-size: var(--t-money); letter-spacing: -0.03em; font-stretch: 106%; font-weight: 700; line-height: 1; }
+.ds-money--xl { font-size: var(--t-2xl); letter-spacing: -0.025em; }
+.ds-money--money { font-size: var(--t-money); letter-spacing: -0.03em; font-weight: 700; line-height: 1; }
 .ds-money.is-muted, .ds-money.is-muted .ds-money__sym, .ds-money.is-muted .ds-money__cents { color: var(--c-ink-3); }
 .ds-money.is-struck { text-decoration: line-through; text-decoration-thickness: 1px; }
 
@@ -89,7 +89,7 @@
 .ds-status {
     display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
     padding: 3px 9px 3px 7px; border: 1px solid currentColor; border-radius: var(--r-1);
-    font-size: var(--t-sm); font-weight: 650; line-height: 1.25; white-space: normal;
+    font-size: var(--t-sm); font-weight: 600; line-height: 1.25; white-space: normal;
 }
 .ds-status > span { min-width: 0; overflow-wrap: anywhere; }
 .ds-status--sm { padding: 2px 7px 2px 5px; font-size: var(--t-xs); gap: 5px; }
@@ -101,7 +101,7 @@
 .ds-status--muted { color: var(--c-ink-2); background: transparent; border-color: var(--c-line-strong); }
 .ds-status--neutral { color: var(--c-ink-2); background: var(--c-sunken); border-color: var(--c-line-strong); }
 
-.ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border: 1px solid var(--c-line-strong); border-radius: var(--r-1); background: transparent; color: var(--c-ink-2); font-size: var(--t-xs); font-weight: 650; line-height: 1.5; white-space: nowrap; }
+.ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border: 1px solid var(--c-line-strong); border-radius: var(--r-1); background: transparent; color: var(--c-ink-2); font-size: var(--t-xs); font-weight: 600; line-height: 1.5; white-space: nowrap; }
 .ds-badge--sm { padding: 0 6px; }
 .ds-badge--ink { background: var(--c-ink); color: var(--c-ground); border-color: var(--c-ink); }
 .ds-badge--live { color: var(--c-live); background: var(--c-live-bg); border-color: currentColor; }

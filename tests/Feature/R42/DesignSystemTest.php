@@ -151,14 +151,18 @@ class DesignSystemTest extends TestCase
 
     public function test_fonts_are_self_hosted_with_their_licences_and_the_deploy_checks_them(): void
     {
-        foreach (['archivo-var-latin.woff2', 'chivo-mono-var-latin.woff2', 'LICENSE-Archivo-OFL.txt', 'LICENSE-ChivoMono-OFL.txt'] as $file) {
-            $this->assertFileExists(public_path('fonts/'.$file));
+        // R-52: Roboto (shared dot-ui) is the text face; Chivo Mono stays for the clock, lot numbers and references. Archivo is gone.
+        foreach (['dot-ui/fonts/roboto/roboto-latin-wght-normal.woff2', 'dot-ui/fonts/roboto/OFL.txt', 'fonts/chivo-mono-var-latin.woff2', 'fonts/LICENSE-ChivoMono-OFL.txt'] as $file) {
+            $this->assertFileExists(public_path($file));
         }
-        $this->assertGreaterThan(10000, filesize(public_path('fonts/archivo-var-latin.woff2')));
-        $this->assertStringContainsString('SIL OPEN FONT LICENSE', (string) file_get_contents(public_path('fonts/LICENSE-Archivo-OFL.txt')));
+        $this->assertGreaterThan(10000, filesize(public_path('dot-ui/fonts/roboto/roboto-latin-wght-normal.woff2')));
+        $this->assertStringContainsString('SIL OPEN FONT LICENSE', strtoupper((string) file_get_contents(public_path('dot-ui/fonts/roboto/OFL.txt'))));
+        $this->assertFileDoesNotExist(public_path('fonts/archivo-var-latin.woff2'));
 
         $deploy = (string) file_get_contents(base_path('.github/workflows/deploy.yml'));
-        $this->assertStringContainsString('fonts/archivo-var-latin.woff2', $deploy, 'the smoke check requests the font');
+        $this->assertStringContainsString('dot-ui/fonts/roboto/roboto-latin-wght-normal.woff2', $deploy, 'the smoke check requests Roboto');
+        $this->assertStringContainsString('fonts/chivo-mono-var-latin.woff2', $deploy, 'the smoke check requests the mono');
+        $this->assertStringNotContainsString('archivo', strtolower($deploy));
         $this->assertStringContainsString('"$DOCROOT/fonts"', $deploy, 'the deploy mirrors or links public/fonts into the docroot');
     }
 

@@ -44,7 +44,8 @@ document.addEventListener('click', (event) => {
 });
 theme.apply(theme.current());
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => {
-    if (!theme.stored()) { theme.apply(theme.current()); }
+    const choice = theme.stored();
+    if (!choice || choice === 'system') { theme.apply(theme.current()); }
 });
 
 /* ---------- Countdown and rail: server time first, this file only keeps it ticking ---------- */
