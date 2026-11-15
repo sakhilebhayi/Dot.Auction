@@ -1,7 +1,7 @@
 /*
  * Hallmark custom run · Dot.Auction "Rostrum" · idea: a price climbs a ladder while the clock runs down a rail
  * Look: Chalk and Graphite grounds (cool neutral, green undertone) + Gavel gold (the logo disc), Hammer red (the logo chevron), Ring teal, Dusk blue
- * Faces: Archivo (variable weight AND width, one family for UI, display and money) + Chivo Mono (the sale-room clock and lot numbers only)
+ * Faces: Roboto (shared dot-ui, one family for UI, display and money) + Chivo Mono (the sale-room clock, lot numbers and payment references only)
  * Waived: none. Source of truth for every colour, size and duration in the app: DESIGN.md names each token below.
  *
  * Tokens are defined ONCE, here. The neutral ramp and the four hue ramps are fixed; the semantic roles (--c-*) point at the ramp
@@ -57,7 +57,7 @@
     --blue-900: #172a3d;
 
     /* Type */
-    --f-ui: "Archivo", "Archivo Fallback", ui-sans-serif, system-ui, sans-serif;
+    --f-ui: var(--dot-font-sans, "Roboto", "Roboto Fallback", ui-sans-serif, system-ui, sans-serif);
     --f-mono: "Chivo Mono", "Chivo Mono Fallback", ui-monospace, "SF Mono", Menlo, monospace;
     --t-xs: 0.75rem;
     --t-sm: 0.875rem;

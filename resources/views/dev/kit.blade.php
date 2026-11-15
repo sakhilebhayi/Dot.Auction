@@ -3,7 +3,7 @@
   Each section renders the same partial twice, once inside data-scheme="light" and once inside data-scheme="dark", so tokens resolve per pane.
 --}}
 <!DOCTYPE html>
-<html lang="en-ZA">
+<html lang="en-ZA" class="dot-roboto" data-dh-theme-class="dark" data-dh-theme-key="dot-theme">
 <head>
     @include('layouts.partials.head', ['title' => 'Component kit', 'robots' => 'noindex', 'vite' => ['resources/css/app.css', 'resources/css/kit.css', 'resources/js/app.js']])
 </head>

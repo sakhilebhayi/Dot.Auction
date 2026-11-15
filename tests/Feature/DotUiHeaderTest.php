@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
- * The header carries the shared Dot UI (dot-ui): the search pill and the platform switcher. Presentation changed; the
+ * The header carries the shared Dot UI (dot-ui 0.6.0): the header, the search pill and the platform switcher. Presentation changed; the
  * search form, its route, parameters, results and the bidding pages did not, and the switcher only ever shows what
  * InfoDot says the CURRENT company holds, linking through InfoDot's /go (never straight to a host, never with a token).
  */
@@ -263,7 +263,7 @@ class DotUiHeaderTest extends TestCase
         $response = $this->actingAs($this->memberOf(self::ACME, 'Acme Ltd'))->get(route('auctions.index'))->assertOk();
         $html = $response->getContent();
 
-        foreach (['css/dot-fonts.css', 'css/dot-tokens.css', 'css/dot-search.css', 'css/dot-switcher-fonts.css', 'css/dot-switcher.css', 'js/dot-switcher.js'] as $asset) {
+        foreach (['css/dot-roboto.css', 'css/dot-type.css', 'css/dot-tokens.css', 'css/dot-search.css', 'css/dot-switcher.css', 'css/dot-header.css', 'js/dot-search.js', 'js/dot-switcher.js', 'js/dot-nav.js', 'js/dot-theme-boot.js'] as $asset) {
             $this->assertStringContainsString(asset('dot-ui/'.$asset), $html, $asset.' is linked from this site');
             $this->assertFileExists(public_path('dot-ui/'.$asset));
         }

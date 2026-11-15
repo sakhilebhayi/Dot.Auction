@@ -17,7 +17,7 @@
     $example->setRelation('winningBid', null);
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dot-roboto" data-dh-theme-class="dark" data-dh-theme-key="dot-theme">
 <head>
     @include('layouts.partials.head', ['title' => null, 'description' => 'Dot.Auction lists every lot with its price, bid step and closing time, and says plainly where each sale stands.'])
 </head>

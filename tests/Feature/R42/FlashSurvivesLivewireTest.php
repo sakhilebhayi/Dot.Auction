@@ -50,7 +50,10 @@ class FlashSurvivesLivewireTest extends TestCase
         // post of whatever was clicked (a redirect's flash message was overwritten by the call's stale copy of the session).
         $html = Livewire::actingAs($this->person())->test(NotificationBell::class)->html();
 
-        $this->assertStringContainsString('@click.outside="if ($wire.open) { $wire.close() }"', html_entity_decode($html, ENT_QUOTES));
-        $this->assertStringNotContainsString('@click.outside="$wire.close()"', html_entity_decode($html, ENT_QUOTES));
+        // R-52: the panel is dot-ui's bell, which opens and closes in the browser. The component has no outside-click handler at all.
+        $decoded = html_entity_decode($html, ENT_QUOTES);
+        $this->assertStringNotContainsString('@click.outside', $decoded);
+        $this->assertStringNotContainsString('$wire.close()', $decoded);
+        $this->assertStringNotContainsString('wire:click="close"', $decoded);
     }
 }

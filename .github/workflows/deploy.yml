@@ -612,17 +612,17 @@ jobs:
             CODE=$(status "$SITE_URL/build/$ASSET")
             if [ "$CODE" = "200" ]; then echo "200 $SITE_URL/build/$ASSET"; else echo "::error::$SITE_URL/build/$ASSET answered ${CODE:-no response} (expected 200): the docroot is not serving the new build"; FAILED=1; fi
           done
-          # Self-hosted fonts: the built CSS names these two files by absolute path. A docroot that does not serve /fonts/ leaves every
+          # Self-hosted fonts (R-52: Roboto comes with the shared dot-ui, Chivo Mono is the clock's own): the pages name these two files by absolute path. A docroot that does not serve /fonts/ leaves every
           # page in the fallback face with a 200 for the page itself, so it is checked here the way the built CSS is. A real font file is
           # tens of kilobytes; a few hundred bytes is an error page served with a 200.
-          for FONT in fonts/archivo-var-latin.woff2 fonts/chivo-mono-var-latin.woff2; do
+          for FONT in dot-ui/fonts/roboto/roboto-latin-wght-normal.woff2 fonts/chivo-mono-var-latin.woff2; do
             CODE=$(status "$SITE_URL/$FONT")
             SIZE=$(curl -s --max-time 30 -o /dev/null -w '%{size_download}' "$SITE_URL/$FONT" || echo 0)
             if [ "$CODE" = "200" ] && [ "${SIZE:-0}" -gt 10000 ]; then echo "200 $SITE_URL/$FONT (${SIZE} bytes)"; else echo "::error::$SITE_URL/$FONT answered ${CODE:-no response}, ${SIZE:-0} bytes (expected 200 and a font file): the docroot is not serving public/fonts"; FAILED=1; fi
           done
-          # Shared Dot UI (R-51): the search pill and the platform switcher load from /dot-ui; a docroot that does not serve it leaves the
+          # Shared Dot UI (R-51/R-52): the header, the search pill, the platform switcher and Roboto load from /dot-ui; a docroot that does not serve it leaves the
           # header unstyled with a 200 for the page itself.
-          for UIFILE in dot-ui/css/dot-search.css dot-ui/css/dot-switcher.css dot-ui/js/dot-switcher.js; do
+          for UIFILE in dot-ui/css/dot-roboto.css dot-ui/css/dot-header.css dot-ui/css/dot-search.css dot-ui/css/dot-switcher.css dot-ui/js/dot-nav.js dot-ui/js/dot-switcher.js dot-ui/js/dot-theme-boot.js; do
             CODE=$(status "$SITE_URL/$UIFILE")
             if [ "$CODE" = "200" ]; then echo "200 $SITE_URL/$UIFILE"; else echo "::error::$SITE_URL/$UIFILE answered ${CODE:-no response} (expected 200): the docroot is not serving public/dot-ui"; FAILED=1; fi
           done

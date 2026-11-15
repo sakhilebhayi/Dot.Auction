@@ -9,8 +9,8 @@
         <div class="kit-swatch" style="background: var(--c-notice-bg); color: var(--c-notice)"><span>notice</span></div>
         <div class="kit-swatch" style="background: var(--c-scheduled-bg); color: var(--c-scheduled)"><span>scheduled</span></div>
     </div>
-    <h3>Heading three in Archivo</h3>
-    <p>Body text in Archivo at sixteen pixels. A lot closes at 18:30 South African time and a late bid moves the close out by five minutes. <a href="#">A link looks like this</a>.</p>
+    <h3>Heading three in Roboto</h3>
+    <p>Body text in Roboto at sixteen pixels. A lot closes at 18:30 South African time and a late bid moves the close out by five minutes. <a href="#">A link looks like this</a>.</p>
     <p class="num" style="font-size: var(--t-xl); font-weight: 650">0 1 2 3 4 5 6 7 8 9 &nbsp; 1,000,000.00 &nbsp; 0O 0O</p>
     <p style="font-family: var(--f-mono); font-size: var(--t-lg); font-weight: 600">Lot 0407 &nbsp; 12:08:45 &nbsp; 0O 0O</p>
     <div class="kit-row">

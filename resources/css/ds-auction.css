@@ -8,7 +8,7 @@
 .ds-countdown__at { flex-basis: 100%; font-size: var(--t-sm); color: var(--c-ink-3); }
 .ds-cd-n { font-variant-numeric: tabular-nums; }
 .ds-cd-u { margin: 0 0 0 0.12ch; font-family: var(--f-ui); font-size: max(0.7em, 0.75rem); font-weight: 600; color: var(--c-ink-3); letter-spacing: 0; }
-.ds-cd-word { font-family: var(--f-ui); font-size: 0.8em; font-weight: 650; letter-spacing: 0; }
+.ds-cd-word { font-family: var(--f-ui); font-size: 0.8em; font-weight: 600; letter-spacing: 0; }
 .ds-countdown.is-urgent .ds-countdown__value { color: var(--c-urgent); }
 .ds-countdown.is-urgent .ds-cd-u { color: var(--c-urgent); }
 .ds-countdown.is-over .ds-countdown__value { color: var(--c-ink-2); }
@@ -41,8 +41,8 @@
 .ds-lot__rail { position: absolute; left: 0; right: 0; bottom: 0; }
 .ds-lot__body { display: grid; align-content: start; gap: var(--s-2); padding: var(--s-4); flex: 1; }
 .ds-lot__tags { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); align-items: center; min-height: 1.5rem; }
-.ds-lot__watching { display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-xs); font-weight: 650; color: var(--c-ink-2); }
-.ds-lot__title { font-size: var(--t-md); font-stretch: 100%; font-weight: 650; line-height: 1.3; letter-spacing: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ds-lot__watching { display: inline-flex; align-items: center; gap: 4px; font-size: var(--t-xs); font-weight: 600; color: var(--c-ink-2); }
+.ds-lot__title { font-size: var(--t-md); font-weight: 600; line-height: 1.3; letter-spacing: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ds-lot__link { color: var(--c-ink); text-decoration: none; }
 .ds-lot__link::after { content: ""; position: absolute; inset: 0; }
 .ds-lot__link:hover { text-decoration: underline; text-underline-offset: 0.2em; }
@@ -74,14 +74,14 @@ button.ds-rung__row { cursor: pointer; transition: background-color var(--dur-mi
 button.ds-rung__row:hover { background: var(--c-quiet-hover); }
 button.ds-rung__row:active { transform: translateY(1px); }
 .ds-rung--next .ds-rung__row { background: var(--c-raised); border-color: var(--c-line-strong); }
-.ds-rung--next .ds-rung__label { color: var(--c-ink); font-weight: 650; }
+.ds-rung--next .ds-rung__label { color: var(--c-ink); font-weight: 600; }
 .ds-rung--step .ds-money { color: var(--c-ink-2); }
 .ds-rung--buynow .ds-rung__row { background: var(--c-sunken); border: 1px dashed var(--c-line-strong); }
 .ds-rung--current { margin-block: var(--s-1); }
 .ds-rung--current::before { height: 4px; margin-top: -2px; background: var(--c-ink); }
 .ds-rung--current .ds-rung__row { padding-block: var(--s-3); background: var(--c-action); border-color: var(--c-action-edge); color: var(--c-on-action); }
 .ds-rung--current .ds-rung__label, .ds-rung--current .ds-money, .ds-rung--current .ds-money__sym, .ds-rung--current .ds-money__cents { color: var(--c-on-action); }
-.ds-rung--current .ds-rung__label { font-weight: 650; }
+.ds-rung--current .ds-rung__label { font-weight: 600; }
 .ds-rung--yours .ds-rung__row { background: var(--c-sunken); border: 1px dashed var(--c-line-strong); }
 .ds-rung--start .ds-rung__label { color: var(--c-ink-3); }
 .ds-rung__you { align-self: center; flex: none; padding: 0 8px; background: var(--c-ink); color: var(--c-ground); border-radius: var(--r-1); font-size: var(--t-xs); font-weight: 700; line-height: 1.6; }
@@ -91,9 +91,9 @@ button.ds-rung__row:active { transform: translateY(1px); }
 /* ---------- Stat and definition list ---------- */
 .ds-stat { display: grid; gap: 2px; margin: 0; min-width: 0; }
 .ds-stat__label { font-size: var(--t-sm); color: var(--c-ink-3); font-weight: 500; }
-.ds-stat__value { margin: 0; font-size: var(--t-2xl); font-weight: 650; line-height: 1.1; letter-spacing: -0.02em; color: var(--c-ink); }
+.ds-stat__value { margin: 0; font-size: var(--t-2xl); font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; color: var(--c-ink); }
 .ds-stat--sm .ds-stat__value { font-size: var(--t-xl); }
-.ds-stat--lg .ds-stat__value { font-size: var(--t-money); letter-spacing: -0.03em; font-stretch: 106%; font-weight: 700; }
+.ds-stat--lg .ds-stat__value { font-size: var(--t-money); letter-spacing: -0.03em; font-weight: 700; }
 .ds-stat--urgent .ds-stat__value { color: var(--c-urgent); }
 .ds-stat--ok .ds-stat__value { color: var(--c-ok); }
 .ds-stat__note { margin: 0; font-size: var(--t-xs); color: var(--c-ink-3); }
@@ -103,6 +103,6 @@ button.ds-rung__row:active { transform: translateY(1px); }
 .ds-dl dd { margin: 0; color: var(--c-ink); }
 .ds-dl--ledger .ds-dl__row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); }
 .ds-dl--ledger .ds-dl__row:first-child { border-top: 1px solid var(--c-line); }
-.ds-dl--ledger dd { text-align: right; font-weight: 550; font-variant-numeric: tabular-nums lining-nums; }
+.ds-dl--ledger dd { text-align: right; font-weight: 500; font-variant-numeric: tabular-nums lining-nums; }
 .ds-dl--stacked { display: grid; gap: var(--s-4); }
 .ds-dl--inline { display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-8); }

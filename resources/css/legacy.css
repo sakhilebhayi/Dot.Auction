@@ -24,7 +24,7 @@
 textarea.dot-input { min-height: 7rem; line-height: 1.5; resize: vertical; }
 select.dot-input option { background: var(--c-raised); color: var(--c-ink); }
 
-.dot-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: var(--hit); padding: 0 var(--s-4); border: 1px solid transparent; border-radius: var(--r-2); font: inherit; font-size: var(--t-md); font-weight: 650; line-height: 1; text-decoration: none; cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out); }
+.dot-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: var(--hit); padding: 0 var(--s-4); border: 1px solid transparent; border-radius: var(--r-2); font: inherit; font-size: var(--t-md); font-weight: 600; line-height: 1; text-decoration: none; cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out); }
 .dot-btn:active { transform: translateY(1px); }
 .dot-btn-primary { background: var(--c-action); color: var(--c-on-action); border-color: var(--c-action-edge); }
 .dot-btn-primary:hover { background: var(--c-action-hover); }
@@ -35,17 +35,17 @@ select.dot-input option { background: var(--c-raised); color: var(--c-ink); }
 .dot-btn-block { display: flex; width: 100%; }
 .dot-btn-small { min-height: 2.25rem; padding: 0 var(--s-3); font-size: var(--t-sm); }
 .dot-btn[disabled] { opacity: 0.55; cursor: not-allowed; }
-.dot-pill-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: var(--hit); padding: 0 var(--s-4); background: transparent; color: var(--c-ink); border: 1px solid var(--c-line-strong); border-radius: var(--r-2); font: inherit; font-weight: 650; cursor: pointer; }
+.dot-pill-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: var(--hit); padding: 0 var(--s-4); background: transparent; color: var(--c-ink); border: 1px solid var(--c-line-strong); border-radius: var(--r-2); font: inherit; font-weight: 600; cursor: pointer; }
 
-.dot-badge { display: inline-flex; align-items: center; padding: 1px 8px; border: 1px solid var(--c-line-strong); border-radius: var(--r-1); font-size: var(--t-xs); font-weight: 650; }
+.dot-badge { display: inline-flex; align-items: center; padding: 1px 8px; border: 1px solid var(--c-line-strong); border-radius: var(--r-1); font-size: var(--t-xs); font-weight: 600; }
 .dot-badge-accent { background: var(--c-notice-bg); color: var(--c-notice); border-color: var(--c-notice); }
 
 
 .dot-link { color: var(--c-link); font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; }
 .dot-mono { font-family: var(--f-mono); }
-.metric-val { font-variant-numeric: tabular-nums lining-nums; font-weight: 650; letter-spacing: -0.01em; }
+.metric-val { font-variant-numeric: tabular-nums lining-nums; font-weight: 600; letter-spacing: -0.01em; }
 
-.dot-status { display: inline-flex; align-items: center; padding: 2px 9px; border: 1px solid currentColor; border-radius: var(--r-1); font-size: var(--t-xs); font-weight: 650; white-space: nowrap; }
+.dot-status { display: inline-flex; align-items: center; padding: 2px 9px; border: 1px solid currentColor; border-radius: var(--r-1); font-size: var(--t-xs); font-weight: 600; white-space: nowrap; }
 .dot-status-draft, .dot-status-expired, .dot-status-cancelled { color: var(--c-ink-2); background: transparent; border-color: var(--c-line-strong); }
 .dot-status-active, .dot-status-paid { color: var(--c-live); background: var(--c-live-bg); }
 .dot-status-scheduled, .dot-status-awaiting_payment, .dot-status-initiated, .dot-status-pending_review { color: var(--c-notice); background: var(--c-notice-bg); }
@@ -55,7 +55,7 @@ select.dot-input option { background: var(--c-raised); color: var(--c-ink); }
 .dot-mode-live { border-style: solid; border-color: var(--c-urgent); color: var(--c-urgent); }
 
 .dot-table { width: 100%; border-collapse: collapse; }
-.dot-table th { padding: var(--s-3); text-align: left; font-size: var(--t-sm); font-weight: 650; color: var(--c-ink-3); white-space: nowrap; border-bottom: 1px solid var(--c-line-strong); }
+.dot-table th { padding: var(--s-3); text-align: left; font-size: var(--t-sm); font-weight: 600; color: var(--c-ink-3); white-space: nowrap; border-bottom: 1px solid var(--c-line-strong); }
 .dot-table td { padding: var(--s-3); border-bottom: 1px solid var(--c-line); vertical-align: top; }
 .dot-table .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .dot-table tr:last-child td { border-bottom: 0; }

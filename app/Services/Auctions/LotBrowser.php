@@ -49,6 +49,14 @@ final class LotBrowser
 
     public const DEFAULT_SORT = 'ending';
 
+    /**
+     * The stored statuses a person who is not the seller may see: a published lot in any state. A draft is the only private one (its seller sees it
+     * under My lots), and anything not listed here is treated as private, so a new internal status cannot leak into a list or the header search.
+     *
+     * @var list<string>
+     */
+    public const PUBLIC_STATUSES = ['active', 'pending_review', 'ended', 'cancelled'];
+
     /** Old query strings (?status=active) still land somewhere sensible. */
     private const LEGACY = ['active' => 'live', 'pending_review' => 'pending'];
 
@@ -73,7 +81,8 @@ final class LotBrowser
     }
 
     /**
-     * Lots a person may see in a list: everything but drafts.
+     * Lots a person may see in a list, and the only lots the header search can return: the published ones (Auction::browsable(), an allow-list of
+     * PUBLIC_STATUSES). The search term matches the lot's title and nothing else: not the description, the reserve, the seller or any bid.
      *
      * @return Builder<Auction>
      */
