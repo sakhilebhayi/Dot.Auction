@@ -14,16 +14,10 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dot-roboto" data-dh-theme-class="dark" data-dh-theme-key="dot-theme">
 <head>
-    @include('layouts.partials.head', ['title' => $title, 'description' => $description, 'robots' => 'noindex'])
-    {{-- Shared Dot UI (header, search pill, platform switcher; Roboto and the type scale come from the head partial), served from this site's own public/dot-ui.
+    @include('layouts.partials.head', ['title' => $title, 'description' => $description, 'robots' => 'noindex', 'dotUiBundle' => true])
+    {{-- Shared Dot UI 0.6.1 (header, search pill, platform switcher: dot-ui.min.css is linked first in the head partial, dot-ui-core.min.js here), served from this site's own public/dot-ui.
          The host mapping block is in resources/css/shell.css. --}}
-    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-tokens.css') }}">
-    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-search.css') }}">
-    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-switcher.css') }}">
-    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-header.css') }}">
-    <script src="{{ asset('dot-ui/js/dot-search.js') }}" nonce="{{ csp_nonce() }}" defer></script>
-    <script src="{{ asset('dot-ui/js/dot-switcher.js') }}" nonce="{{ csp_nonce() }}" defer></script>
-    <script src="{{ asset('dot-ui/js/dot-nav.js') }}" nonce="{{ csp_nonce() }}" defer></script>
+    <script src="{{ asset('dot-ui/js/dot-ui-core.min.js') }}" nonce="{{ csp_nonce() }}" defer></script>
     @livewireStyles(['nonce' => csp_nonce()])
 </head>
 <body class="sh-body">

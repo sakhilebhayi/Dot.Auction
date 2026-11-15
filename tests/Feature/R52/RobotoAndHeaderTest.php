@@ -54,9 +54,13 @@ class RobotoAndHeaderTest extends TestCase
         $html = $this->actingAs(User::factory()->withPersonalTeam()->create())->get($url)->assertOk()->getContent();
 
         $this->assertMatchesRegularExpression('/<html[^>]*class="dot-roboto"/', $html);
-        $this->assertStringContainsString(asset('dot-ui/css/dot-roboto.css'), $html);
-        $this->assertStringContainsString(asset('dot-ui/css/dot-type.css'), $html);
-        $this->assertStringContainsString(asset('dot-ui/fonts/roboto/roboto-latin-wght-normal.woff2'), $html, 'the one file the first paint needs is preloaded');
+        // dot-ui 0.6.1: Roboto, the type scale, tokens, search, switcher and header are one stylesheet, linked before the host CSS.
+        $this->assertStringContainsString(asset('dot-ui/css/dot-ui.min.css'), $html);
+        preg_match('/<link rel="stylesheet" href="([^"]+)"/', $html, $first);
+        $this->assertStringEndsWith('dot-ui/css/dot-ui.min.css', $first[1], 'the dot-ui bundle is the first stylesheet, before the host CSS');
+        $this->assertStringNotContainsString('dot-ui/css/dot-roboto', $html, 'the bundle already holds Roboto');
+        // dot-ui 0.6.1: no font preload (it delayed the dashboard's text LCP here by about 0.15 s on the throttled profile); the bundle's @font-face names the latin file.
+        $this->assertStringNotContainsString('rel="preload" as="font"', $html);
         $this->assertStringNotContainsString('archivo', strtolower($html));
         $this->assertStringNotContainsString('big-shoulders', strtolower($html));
         foreach (['fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.', 'unpkg.com', 'typekit', 'use.fontawesome'] as $external) {
@@ -71,8 +75,8 @@ class RobotoAndHeaderTest extends TestCase
         $html = $response->getContent();
 
         $this->assertMatchesRegularExpression('/<html[^>]*class="dot-roboto"/', $html);
-        $this->assertStringContainsString('dot-ui/css/dot-roboto.css', $html);
-        $this->assertStringContainsString('dot-ui/js/dot-theme-boot.js', $html, 'the theme is applied before first paint by an external file');
+        $this->assertStringContainsString('dot-ui/css/dot-roboto.min.css', $html);
+        $this->assertStringContainsString('dot-ui/js/dot-theme-boot.min.js', $html, 'the theme is applied before first paint by an external file');
         $this->assertStringNotContainsString("localStorage.getItem('dot-theme')", $html, 'no inline theme script');
         $this->assertStringNotContainsString('archivo', strtolower($html));
     }
@@ -227,10 +231,12 @@ class RobotoAndHeaderTest extends TestCase
         // The logo carries one custom property for its width (a style attribute the policy already allows); nothing else in the bar is inline-styled.
         $this->assertSame(0, preg_match_all('/ style="(?!--brand-w: \d+px")/', $m[0]));
 
+        // dot-ui 0.6.1: one bundle (search, switcher, nav; the results controller is lazy) replaces the three scripts.
+        $this->assertMatchesRegularExpression('#<script src="[^"]*dot-ui/js/dot-ui-core\.min\.js" nonce="[^"]+" defer>#', $html);
         foreach (['dot-nav.js', 'dot-search.js', 'dot-switcher.js'] as $script) {
-            $this->assertMatchesRegularExpression('#<script src="[^"]*dot-ui/js/'.preg_quote($script, '#').'" nonce="[^"]+" defer>#', $html, $script);
+            $this->assertStringNotContainsString('dot-ui/js/'.$script, $html, $script.' is inside the bundle');
         }
-        $this->assertStringContainsString('dot-ui/js/dot-theme-boot.js', $html);
+        $this->assertStringContainsString('dot-ui/js/dot-theme-boot.min.js', $html);
         $policy = (string) $response->headers->get('Content-Security-Policy');
         $this->assertStringNotContainsString('http', preg_replace('#https?://[^\s;]*report[^\s;]*#', '', $policy), 'the policy lists no external origin');
     }

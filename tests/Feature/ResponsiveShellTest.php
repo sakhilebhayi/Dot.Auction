@@ -133,7 +133,7 @@ class ResponsiveShellTest extends TestCase
 
         $html = $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
 
-        $this->assertStringContainsString('dot-ui/js/dot-theme-boot.js', $html, 'an external head script restores the saved theme before first paint');
+        $this->assertStringContainsString('dot-ui/js/dot-theme-boot.min.js', $html, 'an external head script restores the saved theme before first paint');
         $this->assertStringContainsString('data-dh-theme-key="dot-theme"', $html);
         $this->assertStringContainsString('data-dh-theme-class="dark"', $html);
         $this->assertStringNotContainsString("localStorage.getItem('dot-theme')", $html, 'no inline theme script');

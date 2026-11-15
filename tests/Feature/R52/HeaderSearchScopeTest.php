@@ -68,6 +68,25 @@ class HeaderSearchScopeTest extends TestCase
         $this->assertStringNotContainsString('Brass Draft Lot', $html);
     }
 
+    /**
+     * The tenant-OR sweep (0.6.1 re-sync): the "unsold" tab is an OR of two conditions. Combined with a search it must stay one grouped
+     * condition beside the published-only scope, so an ungrouped OR can never pull a draft (or an unknown status) in through that tab.
+     */
+    public function test_no_state_tab_combined_with_a_search_can_pull_in_a_draft_or_an_unknown_status(): void
+    {
+        $viewer = User::factory()->withPersonalTeam()->create();
+        $this->lot('Brass Draft Lot', 'draft', ['ends_at' => now()->subHour()]);
+        $this->lot('Brass Mystery Lot', 'archived', ['ends_at' => now()->subHour()]);
+        $this->lot('Brass Lapsed Lot', 'active', ['ends_at' => now()->subHour()]);
+
+        foreach (['live', 'ending', 'scheduled', 'pending', 'sold', 'unsold', 'cancelled'] as $state) {
+            $html = $this->search($viewer, 'brass', ['state' => $state]);
+            $this->assertStringNotContainsString('Brass Draft Lot', $html, "state=$state");
+            $this->assertStringNotContainsString('Brass Mystery Lot', $html, "state=$state");
+        }
+        $this->assertStringContainsString('Brass Lapsed Lot', $this->search($viewer, 'brass', ['state' => 'unsold']));
+    }
+
     public function test_a_sellers_own_draft_is_not_a_search_result_either(): void
     {
         $seller = User::factory()->withPersonalTeam()->create();

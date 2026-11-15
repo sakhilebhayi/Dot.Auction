@@ -622,7 +622,7 @@ jobs:
           done
           # Shared Dot UI (R-51/R-52): the header, the search pill, the platform switcher and Roboto load from /dot-ui; a docroot that does not serve it leaves the
           # header unstyled with a 200 for the page itself.
-          for UIFILE in dot-ui/css/dot-roboto.css dot-ui/css/dot-header.css dot-ui/css/dot-search.css dot-ui/css/dot-switcher.css dot-ui/js/dot-nav.js dot-ui/js/dot-switcher.js dot-ui/js/dot-theme-boot.js; do
+          for UIFILE in dot-ui/css/dot-ui.min.css dot-ui/css/dot-roboto.min.css dot-ui/js/dot-ui-core.min.js dot-ui/js/dot-theme-boot.min.js; do
             CODE=$(status "$SITE_URL/$UIFILE")
             if [ "$CODE" = "200" ]; then echo "200 $SITE_URL/$UIFILE"; else echo "::error::$SITE_URL/$UIFILE answered ${CODE:-no response} (expected 200): the docroot is not serving public/dot-ui"; FAILED=1; fi
           done

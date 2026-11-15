@@ -27,11 +27,10 @@
     <meta name="robots" content="noindex">
     <title>{{ $code }} @yield('title') | Dot.Auction</title>
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
-    <link rel="preload" as="font" type="font/woff2" href="{{ asset('dot-ui/fonts/roboto/roboto-latin-wght-normal.woff2') }}" crossorigin>
-    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-roboto.css') }}">
-    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-type.css') }}">
+    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-roboto.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('dot-ui/css/dot-type.min.css') }}">
     <style @if ($nonce) nonce="{{ $nonce }}" @endif>body{margin:0;font-family:Roboto,system-ui,sans-serif;line-height:1.5}main{max-width:40rem;padding:2rem 1rem}a{color:inherit}</style>
-    <script src="{{ asset('dot-ui/js/dot-theme-boot.js') }}"></script>
+    <script src="{{ asset('dot-ui/js/dot-theme-boot.min.js') }}"></script>
     @foreach ($entries as $entry)
         @if (str_ends_with($entry, '.css'))<link rel="stylesheet" href="{{ asset('build/'.$built[$entry]['file']) }}">@else<script type="module" src="{{ asset('build/'.$built[$entry]['file']) }}"></script>@endif
     @endforeach

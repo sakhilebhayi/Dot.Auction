@@ -354,4 +354,6 @@ th[aria-sort="descending"] .dc-sort::after { opacity: 1; }
     .ds-lot__link, .dc-close__link { padding-block: 14px; }
     .ds-catalogue .ds-lot__watch, .ds-lot__watch, .dc-sort { min-height: var(--hit); }
     .dc-sort { min-width: var(--hit); }
+    /* The foot's count that links to the decisions list (seller, one item awaiting a decision) is a tap target too. */
+    .dc-foot dd a { display: inline-flex; align-items: center; justify-content: center; min-width: var(--hit); min-height: var(--hit); }
 }
