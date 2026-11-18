@@ -12,6 +12,11 @@ return [
     // Auction has always created an account for a person InfoDot vouches for (INFODOT_PROVISION_USERS), so that stays.
     'auto_provision' => (bool) env('DOTSSO_AUTO_PROVISION', env('INFODOT_PROVISION_USERS', true)),
 
+    // This platform's signed-in routes use `auth:sanctum`, which switches the request's DEFAULT guard to `sanctum` before the
+    // package's revocation middleware runs (route middleware with a priority runs ahead of it). `sanctum` cannot log out, so
+    // the package must name the session guard explicitly.
+    'guard' => 'web',
+
     'landing' => '/dashboard',
 
     // A deep link is only ever a same-origin path (the package enforces that); it may open any signed-in page of the app

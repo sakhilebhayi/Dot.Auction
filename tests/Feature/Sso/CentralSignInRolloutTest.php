@@ -9,6 +9,7 @@ use App\Sso\AuctionProvisioner;
 use Dot\SsoClient\Tests\Support\FakeIdp;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Laravel\Jetstream\Mail\TeamInvitation;
@@ -262,5 +263,17 @@ class CentralSignInRolloutTest extends TestCase
         $mail = (new TeamInvitation($invitation))->render();
 
         $this->assertStringContainsString(route('dotsso.login', ['screen' => 'register']), $mail);
+    }
+
+    public function test_a_back_channel_logout_ends_a_signed_in_session_even_though_the_routes_use_auth_sanctum(): void
+    {
+        $this->on();
+        $this->signInVia(['sub' => 'infodot-bc-1', 'email' => 'bc@example.test'])->assertRedirect('/dashboard');
+        $this->get('/dashboard')->assertOk();
+
+        DB::table('dotsso_revocations')->insert(['sub' => 'infodot-bc-1', 'revoked_at_ms' => (int) floor(microtime(true) * 1000) + 5000, 'created_at' => now(), 'updated_at' => now()]);
+
+        $this->get('/dashboard')->assertRedirect(url('/'));
+        $this->assertFalse(session()->has('dotsso.session'), 'the SSO session was invalidated');
     }
 }
