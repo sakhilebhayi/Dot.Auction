@@ -31,7 +31,8 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
-            "Dot\\Ui\\": "dot-ui/src/"
+            "Dot\\Ui\\": "dot-ui/src/",
+            "Dot\\SsoClient\\": "packages/dot-sso-client/src/"
         },
         "files": [
             "app/Support/helpers.php"
@@ -39,7 +40,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/"
+            "Tests\\": "tests/",
+            "Dot\\SsoClient\\Tests\\": "packages/dot-sso-client/tests/"
         }
     },
     "scripts": {

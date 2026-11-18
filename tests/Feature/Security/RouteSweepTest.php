@@ -177,6 +177,9 @@ class RouteSweepTest extends TestCase
         // Laravel's own: the storage fallback (only with a local public disk) and the dev-only Boost log sink.
         'GET /storage/{path}', 'PUT /storage/{path}',
         'POST /_boost/browser-logs',
+        // R-54: the shared sign-in package (packages/dot-sso-client). Registered always; every one answers 404 while DOTSSO_ENABLED is false.
+        'GET /sso/login', 'GET /sso/callback', 'GET /sso/claim', 'POST /sso/claim', 'POST /sso/claim/resend', 'POST /sso/claim/cancel',
+        'POST /sso/logout', 'POST /sso/backchannel-logout',
         // Local/testing only; absent in production (see test_dev_routes_exist_only_in_local_and_testing).
         'GET /dev/kit', 'GET /dev/login/{who}', 'GET /dev/logout',
     ];
