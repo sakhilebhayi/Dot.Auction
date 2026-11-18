@@ -31,6 +31,7 @@ class RateLimitAndCsrfTest extends TestCase
         'POST /csp-report' => 'browser-sent violation reports; no session, nothing is stored but a directive name and a host',
         'POST /webhooks/paystack' => 'HMAC-SHA512 signature over the raw body, constant-time compare',
         'POST /broadcasting/auth' => 'framework route: answers with a channel signature that only the page itself can read (same-origin response), and only for a signed-in session',
+        'POST /sso/backchannel-logout' => 'R-54: InfoDot posts a signed logout token (RS256 JWT checked against the issuer keys); no session, no browser',
         'POST /_boost/browser-logs' => 'Laravel Boost development log sink; only registered where boost is installed (dev dependency)',
     ];
 

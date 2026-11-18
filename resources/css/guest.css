@@ -45,3 +45,7 @@
 .gx-stack { display: grid; gap: var(--s-5); }
 .gx-card__alt-link { display: inline-flex; align-items: center; min-height: var(--hit); color: var(--c-link); font-weight: 600; }
 .ds-field.has-error { }
+
+/* R-54 claim page: the six-digit code reads as figures, spaced, and keeps the 44px target of every Rostrum control. */
+.gx-claim { display: grid; gap: var(--s-5); }
+.gx-claim__code input { letter-spacing: 0.35em; font-variant-numeric: tabular-nums; font-size: var(--t-xl); text-align: center; }

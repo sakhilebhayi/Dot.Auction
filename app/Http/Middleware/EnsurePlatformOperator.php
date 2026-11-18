@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\CentralSignIn;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,7 +18,7 @@ class EnsurePlatformOperator
         $user = $request->user();
 
         if ($user === null) {
-            return redirect()->guest(route('login'));
+            return redirect()->guest(CentralSignIn::login());
         }
 
         abort_unless($user->isPlatformOperator(), 403);

@@ -35,7 +35,7 @@
             @auth
                 <x-ds.button :href="route('dashboard')" size="sm">Open dashboard</x-ds.button>
             @else
-                <x-ds.button :href="route('login')" size="sm">Sign in</x-ds.button>
+                <x-ds.button :href="\App\Support\CentralSignIn::login()" size="sm">Sign in</x-ds.button>
             @endauth
         </div>
     </header>
@@ -49,7 +49,10 @@
                     @auth
                         <x-ds.button :href="route('auctions.index')" size="lg" icon-right="arrow-right">Browse lots</x-ds.button>
                     @else
-                        <x-ds.button :href="route('login')" size="lg" icon-right="arrow-right">Sign in to bid</x-ds.button>
+                        <x-ds.button :href="\App\Support\CentralSignIn::login()" size="lg" icon-right="arrow-right">Sign in to bid</x-ds.button>
+                        @if (\App\Support\CentralSignIn::active())
+                            <x-ds.button :href="\App\Support\CentralSignIn::register('')" variant="quiet" size="lg">Create account</x-ds.button>
+                        @endif
                     @endauth
                     <x-ds.button href="#how" variant="quiet" size="lg">How a sale works</x-ds.button>
                 </div>
@@ -108,9 +111,13 @@
 
         <section class="wl-close" aria-labelledby="wl-close">
             <h2 id="wl-close">Have a Dot account? You can bid today.</h2>
-            <p>Dot.Auction accounts come from InfoDot. Sign in from InfoDot, or use your Dot.Auction sign-in if you already have one.</p>
+            @if (\App\Support\CentralSignIn::active())
+                <p>Dot.Auction accounts come from InfoDot. Sign in or create one there and you come straight back to the lot you were looking at.</p>
+            @else
+                <p>Dot.Auction accounts come from InfoDot. Sign in from InfoDot, or use your Dot.Auction sign-in if you already have one.</p>
+            @endif
             @guest
-                <x-ds.button :href="route('login')" size="lg" icon-right="arrow-right">Sign in</x-ds.button>
+                <x-ds.button :href="\App\Support\CentralSignIn::login()" size="lg" icon-right="arrow-right">Sign in</x-ds.button>
             @else
                 <x-ds.button :href="route('auctions.index')" size="lg" icon-right="arrow-right">Browse lots</x-ds.button>
             @endguest

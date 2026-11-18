@@ -9,6 +9,6 @@
     @if ((bool) rescue(fn () => auth()->check(), false, false))
         <x-ds.button :href="Route::has('dashboard') ? route('dashboard') : '/'" variant="quiet">Go to dashboard</x-ds.button>
     @elseif (Route::has('login'))
-        <x-ds.button :href="route('login')" variant="quiet">Sign in</x-ds.button>
+        <x-ds.button :href="\App\Support\CentralSignIn::login()" variant="quiet">Sign in</x-ds.button>
     @endif
 @endsection
