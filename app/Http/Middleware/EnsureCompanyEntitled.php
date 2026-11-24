@@ -6,6 +6,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Services\InfoDot\CompanyEntitlement;
 use Closure;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -20,6 +21,11 @@ use Symfony\Component\HttpFoundation\Response;
  * It only stops requests. It never touches an auction, a bid or a settlement: lots still close on time, standing bids
  * still count, and the scheduled commands (settling, overdue marking, notices) run exactly as before, because console
  * commands and queued jobs do not pass through HTTP middleware.
+ *
+ * R-61: when InfoDot has switched Dot.Auction off (maintenance, unavailable) the same signed-in requests get a 503 with
+ * InfoDot's message, ahead of the company check. Nothing is read, changed or deleted: auctions, bids and settlements are
+ * exactly as they were, lots still close on time, the scheduler still settles, and the person is not signed out.
+ * The exemptions are unchanged, so the settlement pages stay reachable while off.
  *
  * Off with AUCTION_ENTITLEMENT_CHECK=false. When InfoDot cannot give a clear answer the request carries on.
  */
@@ -46,6 +52,9 @@ class EnsureCompanyEntitled
         'seller.auctions.index',        // my listings, including sold lots (read only)
     ];
 
+    /** The reason word in the JSON 503 when InfoDot has switched Dot.Auction off (R-61); not a status InfoDot sends. */
+    public const UNAVAILABLE = 'platform_unavailable';
+
     /** Where the sign-in hand-off records what InfoDot said (see EcosystemAuthController). */
     public const SESSION_KEY = 'entitlement';
 
@@ -68,6 +77,11 @@ class EnsureCompanyEntitled
 
         if ($team instanceof Team && filled($uuid)) {
             $answer = $this->entitlement->check((string) $uuid);
+
+            // R-61: a platform InfoDot has switched off is off for everyone, whatever they hold. Checked before what the company holds.
+            if ($answer !== null && $answer['available'] === false) {
+                return $this->unavailable($request, $answer['message']);
+            }
 
             return $answer !== null && $answer['entitled'] === false
                 ? $this->refuse($request, $user, $answer['status'], $team->name)
@@ -112,6 +126,26 @@ class EnsureCompanyEntitled
         }
 
         return false;
+    }
+
+    /** 503 with the message and nothing else. A Livewire call gets a real JSON 503 (thrown, so Livewire cannot discard it). */
+    private function unavailable(Request $request, ?string $message): Response
+    {
+        $message ??= 'Dot.Auction is temporarily unavailable.';
+
+        if ($request->is('livewire/*', 'livewire-*/*') || $request->hasHeader('X-Livewire') || $request->expectsJson()) {
+            $json = response()->json(['message' => $message, 'reason' => self::UNAVAILABLE], 503)
+                ->header('Retry-After', '60')->header('Cache-Control', 'no-store, private');
+
+            if ($request->is('livewire/*', 'livewire-*/*') || $request->hasHeader('X-Livewire')) {
+                throw new HttpResponseException($json);
+            }
+
+            return $json;
+        }
+
+        return response()->view('errors.platform-unavailable', ['message' => $message, 'signedIn' => true], 503)
+            ->header('Cache-Control', 'no-store, private')->header('Retry-After', '60');
     }
 
     private function refuse(Request $request, User $user, ?string $status, ?string $company): Response

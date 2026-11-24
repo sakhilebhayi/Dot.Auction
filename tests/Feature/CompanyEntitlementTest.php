@@ -315,7 +315,7 @@ class CompanyEntitlementTest extends TestCase
         ));
     }
 
-    public function test_a_failure_is_forgotten_after_a_minute_and_an_answer_after_ten(): void
+    public function test_a_failure_is_forgotten_after_a_minute_and_an_answer_after_a_minute_too(): void
     {
         $user = $this->memberOf(self::NORTHWIND);
         $this->infodotAnswers(fn () => Http::response('down', 500));
@@ -326,11 +326,11 @@ class CompanyEntitlementTest extends TestCase
         $this->actingAs($user)->get('/dashboard')->assertOk();
         $this->assertSame(1, $this->reads(), 'asked again once the failure window passed');
 
-        $this->travel(9)->minutes();
+        $this->travel(30)->seconds();
         $this->actingAs($user)->get('/dashboard')->assertOk();
         $this->assertSame(1, $this->reads());
 
-        $this->travel(2)->minutes();
+        $this->travel(40)->seconds();
         $this->infodotAnswers([self::NORTHWIND => ['status' => 'suspended', 'entitled' => false]]);
         $this->actingAs($user)->get('/dashboard')->assertStatus(403);
     }
@@ -649,5 +649,106 @@ class CompanyEntitlementTest extends TestCase
         $settlement = AuctionSettlement::sole();
         $this->assertSame($winner->id, $settlement->winner_id);
         $this->assertSame(1, $this->reads(), 'only the page request asked InfoDot; the commands never do');
+    }
+
+    // ---- R-61 availability contract ----
+
+    private function own(bool $entitled, ?bool $available, ?string $message = null): array
+    {
+        return ['status' => $entitled ? 'active' : 'suspended', 'entitled' => $entitled]
+            + ($available === null ? [] : ['available' => $available])
+            + ($message === null ? [] : ['message' => $message]);
+    }
+
+    public function test_a_platform_switched_off_gives_503_even_when_the_company_holds_it(): void
+    {
+        $user = $this->memberOf(self::NORTHWIND);
+        $this->infodotAnswers([self::NORTHWIND => $this->own(true, false, 'Back at 18:00.')]);
+
+        $response = $this->actingAs($user)->get('/dashboard')->assertStatus(503);
+        $this->assertStringContainsString('Back at 18:00.', $response->getContent());
+        $this->assertSame('60', $response->headers->get('Retry-After'));
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+
+        $json = $this->actingAs($user)->getJson('/dashboard')->assertStatus(503);
+        $this->assertSame('platform_unavailable', $json->json('reason'));
+        $this->assertAuthenticated();
+    }
+
+    public function test_it_is_checked_before_what_the_company_holds(): void
+    {
+        $user = $this->memberOf(self::NORTHWIND);
+        $this->infodotAnswers([self::NORTHWIND => $this->own(false, false)]);
+
+        $this->actingAs($user)->get('/dashboard')->assertStatus(503);
+    }
+
+    public function test_a_livewire_update_gets_a_json_503_while_switched_off(): void
+    {
+        $user = $this->memberOf(self::NORTHWIND);
+        $this->infodotAnswers([self::NORTHWIND => $this->own(true, false)]);
+
+        $this->actingAs($user)->post('/livewire/update', ['components' => []], ['X-Livewire' => '1'])
+            ->assertStatus(503)->assertJsonPath('reason', 'platform_unavailable');
+        $this->assertSame(0, Auction::count());
+    }
+
+    public function test_it_is_back_within_a_minute_of_switching_on(): void
+    {
+        $user = $this->memberOf(self::NORTHWIND);
+        $this->infodotAnswers([self::NORTHWIND => $this->own(true, false)]);
+        $this->actingAs($user)->get('/dashboard')->assertStatus(503);
+
+        $this->infodotAnswers([self::NORTHWIND => $this->own(true, true)]);
+        $this->travel(70)->seconds();
+        $this->actingAs($user)->get('/dashboard')->assertOk();
+    }
+
+    public function test_an_older_infodot_without_the_fields_is_not_a_switch_off(): void
+    {
+        $user = $this->memberOf(self::NORTHWIND);
+        $this->infodotAnswers([self::NORTHWIND => $this->own(true, null)]);
+
+        $this->actingAs($user)->get('/dashboard')->assertOk();
+    }
+
+    public function test_an_outage_keeps_the_last_unavailable_answer_for_six_hours_then_carries_on(): void
+    {
+        $user = $this->memberOf(self::NORTHWIND);
+        $this->infodotAnswers([self::NORTHWIND => $this->own(true, false)]);
+        $this->actingAs($user)->get('/dashboard')->assertStatus(503);
+
+        $this->infodotAnswers(fn () => Http::response('', 500));
+        $this->travel(2)->minutes();
+        $this->actingAs($user)->get('/dashboard')->assertStatus(503);
+        $this->travel(5)->hours();
+        $this->actingAs($user)->get('/dashboard')->assertStatus(503);
+
+        $this->travel(2)->hours();
+        $this->actingAs($user)->get('/dashboard')->assertOk();
+    }
+
+    public function test_available_stays_available_through_an_outage(): void
+    {
+        $user = $this->memberOf(self::NORTHWIND);
+        $this->infodotAnswers([self::NORTHWIND => $this->own(true, true)]);
+        $this->actingAs($user)->get('/dashboard')->assertOk();
+
+        $this->infodotAnswers(fn () => Http::response('', 500));
+        $this->travel(2)->minutes();
+        $this->actingAs($user)->get('/dashboard')->assertOk();
+    }
+
+    public function test_the_payment_webhook_and_the_settlement_pages_still_work_while_switched_off(): void
+    {
+        $user = $this->memberOf(self::NORTHWIND);
+        $this->infodotAnswers([self::NORTHWIND => $this->own(true, false)]);
+        $this->actingAs($user);
+
+        // Unsigned, so the webhook's own 401 proves the middleware let it through; the settlement list is exempt.
+        $this->post('/webhooks/paystack', [])->assertStatus(401);
+        $this->get(route('settlements.index'))->assertOk();
+        $this->get('/up')->assertOk();
+        $this->assertSame(0, $this->reads());
     }
 }

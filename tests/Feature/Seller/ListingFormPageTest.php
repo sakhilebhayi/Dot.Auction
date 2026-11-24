@@ -58,6 +58,10 @@ class ListingFormPageTest extends TestCase
 
     public function test_a_closing_time_typed_in_local_time_is_stored_in_utc_and_shown_back_in_local_time(): void
     {
+        // The dates below are fixed, so the clock is too: a start time already in the past is moved to now, which is how this test began to fail once
+        // 2026-11-20 had gone by.
+        $this->travelTo('2026-11-08 10:00:00');
+
         $seller = $this->seller();
 
         $this->actingAs($seller)->post(route('seller.auctions.store'), $this->payload(['ends_at' => '2026-12-01T18:00', 'starts_at' => '2026-11-20T09:30']))->assertRedirect();

@@ -14,18 +14,25 @@ use Throwable;
 /**
  * Asks InfoDot whether a company still holds this platform (R-50), and builds the page shown when it does not.
  *
- * One read per company per ten minutes. Only a clear answer about this platform's own row counts. Anything else (a
- * timeout, a refusal, a server error, a body that is not what was expected, no secret configured) is "not known": the
- * caller carries on as before, the failure is logged once and remembered for a minute. An outage at InfoDot must never
- * lock a company out, and "not known" is never shown to anyone as "active".
+ * One read per company per minute (R-61: a platform switched off or on at InfoDot takes effect within about a minute).
+ * Only a clear answer about this platform's own row counts, and it also says whether InfoDot has the platform switched
+ * on (`available`, `message`; absent or anything but exactly false means available). Every clear answer is also
+ * remembered for six hours: when InfoDot gives no clear answer (a timeout, a refusal, a server error, a body that is
+ * not what was expected, no secret configured) the last clear answer under six hours old is used, so a platform last
+ * told "unavailable" stays unavailable and one last told "available" stays available. With none, the answer is "not
+ * known": the caller carries on as before and the failure is logged once. An outage at InfoDot must never lock a
+ * company out, and "not known" is never shown to anyone as "active".
  *
  * Nothing here reads or writes auctions, bids or settlements, and nothing the scheduler runs passes through it.
  */
 class CompanyEntitlement
 {
-    public const ANSWER_SECONDS = 600;
+    public const ANSWER_SECONDS = 60;
 
     public const FAILURE_SECONDS = 60;
+
+    /** How long the last clear answer is used when InfoDot cannot be reached. */
+    public const LAST_KNOWN_SECONDS = 21600;
 
     /** Not a status from InfoDot: the person is in a personal workspace, which does not hold this platform. */
     public const NEEDS_COMPANY = 'needs_company';
@@ -41,7 +48,7 @@ class CompanyEntitlement
     }
 
     /**
-     * @return array{entitled: bool, status: string}|null null when the answer is not known
+     * @return array{entitled: bool, status: string, available: bool, message: ?string}|null null when the answer is not known
      */
     public function check(string $companyUuid): ?array
     {
@@ -49,24 +56,46 @@ class CompanyEntitlement
         $cached = Cache::get($key);
 
         if (is_array($cached) && array_key_exists('known', $cached)) {
-            return $cached['known'] ? ['entitled' => (bool) $cached['entitled'], 'status' => (string) $cached['status']] : null;
+            return $cached['known'] ? $this->shape($cached) : null;
         }
 
         $answer = $this->ask($companyUuid);
 
-        if ($answer === null) {
-            Cache::put($key, ['known' => false], self::FAILURE_SECONDS);
+        try {
+            if ($answer !== null) {
+                Cache::put($key.':last', ['answer' => $answer, 'at' => time()], self::LAST_KNOWN_SECONDS);
+            } else {
+                $last = Cache::get($key.':last');
 
-            return null;
+                if (is_array($last) && is_array($last['answer'] ?? null) && time() - (int) ($last['at'] ?? 0) < self::LAST_KNOWN_SECONDS) {
+                    $answer = $last['answer'];
+                }
+            }
+
+            Cache::put($key, $answer === null ? ['known' => false] : ['known' => true] + $answer, $answer === null ? self::FAILURE_SECONDS : self::ANSWER_SECONDS);
+        } catch (Throwable) {
+            // No cache, no memory of the answer: the next request asks again.
         }
-
-        Cache::put($key, ['known' => true] + $answer, self::ANSWER_SECONDS);
 
         return $answer;
     }
 
     /**
-     * @return array{entitled: bool, status: string}|null
+     * @param  array<string, mixed>  $cached
+     * @return array{entitled: bool, status: string, available: bool, message: ?string}
+     */
+    private function shape(array $cached): array
+    {
+        return [
+            'entitled' => (bool) $cached['entitled'],
+            'status' => (string) ($cached['status'] ?? ''),
+            'available' => ($cached['available'] ?? true) !== false,
+            'message' => is_string($cached['message'] ?? null) ? $cached['message'] : null,
+        ];
+    }
+
+    /**
+     * @return array{entitled: bool, status: string, available: bool, message: ?string}|null
      */
     private function ask(string $companyUuid): ?array
     {
@@ -104,7 +133,13 @@ class CompanyEntitlement
                     return $this->unknown($companyUuid, 'unexpected body');
                 }
 
-                return ['entitled' => $row['entitled'], 'status' => is_string($row['status'] ?? null) ? $row['status'] : ''];
+                return [
+                    'entitled' => $row['entitled'],
+                    'status' => is_string($row['status'] ?? null) ? $row['status'] : '',
+                    // R-61: an InfoDot from before contract 2 gives no `available`, which is not a switch-off.
+                    'available' => ($row['available'] ?? true) !== false,
+                    'message' => is_string($row['message'] ?? null) && $row['message'] !== '' ? mb_substr($row['message'], 0, 400) : null,
+                ];
             }
         }
 
