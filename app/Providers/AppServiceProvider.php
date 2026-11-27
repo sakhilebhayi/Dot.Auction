@@ -7,6 +7,7 @@ use App\Services\InfoDot\E2eFakeIdentityClient;
 use App\Services\InfoDot\IdentityClient;
 use App\Services\Paystack\E2eFakePaystackClient;
 use App\Services\Paystack\PaystackClient;
+use App\Support\EssentialCron;
 use Carbon\Carbon as BaseCarbon;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Events\DiagnosingHealth;
@@ -42,6 +43,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        EssentialCron::listen();
+
         // /up answered 200 whenever PHP booted, even with the database down. The framework dispatches DiagnosingHealth
         // before it renders the page: a failing query turns the answer into a 500 (the exception text is never shown).
         // Display-zone helpers (R-42 F-11): `$at->local()` is a copy in the display zone, `$at->localFormat('H:i', true)`
