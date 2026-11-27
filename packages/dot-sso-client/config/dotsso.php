@@ -40,7 +40,10 @@ return [
     // email-verified. Anything less goes to the claim flow (a code sent to the address on file). Never silent.
     'link_verified_email' => (bool) env('DOTSSO_LINK_VERIFIED_EMAIL', true),
 
-    'guard' => null,
+    // The SESSION guard the package signs people in and out of. It must be 'web' (or the platform's own session guard), never
+    // left to the default: on a route behind auth:sanctum, Sanctum makes `sanctum` the default guard, and its request guard
+    // has no logout() (a 500 on the first request after an InfoDot sign-out).
+    'guard' => env('DOTSSO_GUARD', 'web'),
 
     // Where a signed-in person lands when no safe deep link is known (a path on this platform).
     'landing' => '/dashboard',

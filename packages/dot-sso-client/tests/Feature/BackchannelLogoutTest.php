@@ -5,6 +5,7 @@ namespace Dot\SsoClient\Tests\Feature;
 use Dot\SsoClient\Tests\DotSsoTestCase;
 use Dot\SsoClient\Tests\Support\FakeIdp;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Testing\TestResponse;
 
@@ -37,6 +38,22 @@ class BackchannelLogoutTest extends DotSsoTestCase
 
         $this->get('https://platform.test/_dotsso/probe')->assertStatus(302)->assertRedirect('/');
         $this->assertGuest();
+    }
+
+    public function test_a_route_behind_auth_sanctum_ends_the_session_instead_of_a_500(): void
+    {
+        Route::middleware(['web', 'auth:sanctum'])->get('/_dotsso/sanctum-probe', fn () => 'ok');
+        $this->app['router']->getRoutes()->refreshActionLookups();
+
+        $this->finishLogin($this->startLogin());
+        $this->get('https://platform.test/_dotsso/sanctum-probe')->assertOk();
+
+        $this->travel(1)->seconds();
+        $this->send($this->logoutToken())->assertOk();
+
+        // Sanctum has made `sanctum` the default guard by the time the revocation check runs; logging out of it used to be a 500.
+        $this->get('https://platform.test/_dotsso/sanctum-probe')->assertRedirect('/');
+        $this->assertGuest('web');
     }
 
     public function test_a_json_request_after_logout_gets_401(): void
